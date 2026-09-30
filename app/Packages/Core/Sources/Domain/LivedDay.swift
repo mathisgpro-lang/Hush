@@ -1,6 +1,6 @@
 import Foundation
 
-public struct LocalDate: Hashable, Comparable, Sendable, CustomStringConvertible {
+public struct LocalDate: Hashable, Comparable, Sendable, Codable, CustomStringConvertible {
     public let year: Int
     public let month: Int
     public let day: Int
@@ -56,5 +56,29 @@ public enum LivedDayRule {
                             matchingPolicy: .nextTime,
                             repeatedTimePolicy: .first,
                             direction: .forward)!
+    }
+}
+
+extension LocalDate {
+    private static let utcCalendar: Calendar = {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "UTC")!
+        return c
+    }()
+
+    private var noonUTC: Date {
+        LocalDate.utcCalendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
+    }
+
+    /// Calendar arithmetic on civil dates (no time zone involved).
+    public func adding(days n: Int) -> LocalDate {
+        let d = LocalDate.utcCalendar.date(byAdding: .day, value: n, to: noonUTC)!
+        let c = LocalDate.utcCalendar.dateComponents([.year, .month, .day], from: d)
+        return LocalDate(year: c.year!, month: c.month!, day: c.day!)
+    }
+
+    /// Whole days from `self` to `other` (positive if `other` is later).
+    public func days(to other: LocalDate) -> Int {
+        LocalDate.utcCalendar.dateComponents([.day], from: noonUTC, to: other.noonUTC).day!
     }
 }
