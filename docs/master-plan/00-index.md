@@ -72,6 +72,19 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
+## ▶ Where we left off (2026-09-30, end of session 1)
+
+**Mathis's to-dos (whenever convenient):**
+1. Accept the Xcode license: in Terminal, `sudo xcodebuild -license accept`, then open Xcode once and let it install its components (iOS 27 platform and simulator).
+2. *(Optional, can wait)* Enroll in the Apple Developer Program ($99/yr). It's needed to send the health question to App Review (draft ready: `docs/vision/app-review-question-health.md`) and later for TestFlight. **Not** needed for the free feel prototype on his own iPhone.
+
+**Waiting for Mathis's answer (next session):**
+- Chapter 03, question 1: where the pillars show up in the Flame (A vessel / B fire / C both, split by time; recommendation C). Codex renders are in `docs/design/flame-pillars/`.
+- Confirm: a planned rest day counts as a full day (+1%, full Vitality).
+- Codex round-4 (final) review outcome: `docs/reviews/2026-09-30-codex-r4.md` plus Claude's summary. Only blocking design-level items need Mathis.
+
+**Next up after that:** finish chapter 03 → **feel prototype on Mathis's iPhone (free, Xcode + cable)** → chapters 28, 05, 06, 07, 08, 12 → 23 (MVP) → build.
+
 ## Working order (updated 2026-09-30, decision 46: MVP first)
 
 **Done:** Phase A (01, 02 ✅) · Phase B foundations (16, 17, 20, 22: Part A ✅, Part B in Codex review)

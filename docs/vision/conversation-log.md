@@ -150,3 +150,16 @@ Mid-turn, **Mathis added:** for a project this big, the backend foundations must
 Also: Mathis confirmed he/him pronouns.
 
 Phase B conversation complete. Next: draft chapters 16, 17, 20 and 22 (first pass).
+
+---
+
+## Session 1 (continued) — 2026-09-30 — Codex reviews, chapter 04, the Flame's form
+
+- **Codex round 1** on the Phase B chapters found 21 issues. Founder decisions came out of it: an honest anonymous device key for the Relay (48), no frontier AI in the MVP (49), and designing for both possible Apple answers on health data (50). Mathis stressed that **trust is important**.
+- **MVP-first planning order** adopted (46). Mathis wants to get to code quickly but also to get the Flame and its growth right for the best MVP.
+- **Chapter 04 (growth model):** widened pillars (47); Depth = effort compounding with consistency (51); Vitality alive and responsive with a comeback moment (52); growth number proportional with a 1% ceiling (53); level learned in the flow zone (54); verified = self-reported in the private Flame (55); chapter approved with two rules (56).
+- **Codex round 2:** narrowed the health rule so a lost phone never lowers the Flame (57).
+- **Codex round 3** found real math bugs in Claude's chapter 04 formulas (the free day didn't work; an extra Action could lower Depth; fill could replace the whole day). Claude verified them with a script. Mathis followed Claude's recommendations: **each day is scored by the rules of its time** (58); structure and numbers sync, words stay on the phone (59); one final revision, then engineering detail moves into implementation plans (60).
+- **The Flame's form:** Claude's inline sketches first. **Mathis asked for Codex to create the visuals** ("much more performant"), and Codex generated the concept art. **Mathis loves B, a living fire in a crafted vessel, where both the outer and inner elements can change** (61). **Design work goes to Codex from now on** (62).
+- **Free route:** Mathis asked how far he can go without paying Apple. Answer: the whole feel (Flame, haptics, tracking moment, on-device AI, likely HealthKit) runs free on his own iPhone via Xcode, with 7-day re-signing; the $99 is only needed for TestFlight, the circle, PCC and App Store. Agreed idea: a **feel prototype** once the Flame direction is set.
+- **Xcode installed** (the license still needs accepting). Mathis paused the session, asking that work continue in the background.
