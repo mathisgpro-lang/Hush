@@ -9,6 +9,10 @@ MVP-first order (decision 46): 04 → 03 → 28 → 05 → 06 → 07 → 08 → 
 
 We are writing the **master plan** before building anything. **Do not write product code, scaffold projects or install dependencies** until the master plan chapters an MVP feature depends on are approved by Mathis. See [docs/master-plan/00-index.md](docs/master-plan/00-index.md) for chapter status and working order.
 
+## Resume protocol
+
+At the start of **every** session (including after a restart), open `docs/master-plan/00-index.md` and follow its **"Where we left off: RESUME HERE"** block exactly: redo any in-flight work listed there, then continue with the next steps. Keep that block current whenever work pauses.
+
 ## Start every session by reading
 
 1. [docs/master-plan/00-index.md](docs/master-plan/00-index.md): where we are and what's next
