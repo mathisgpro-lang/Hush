@@ -100,6 +100,11 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 28-a | The world is **your Sanctuary**: Dune-like ruins reclaimed by nature, with traces of future tech; it changes with each Transformation era and breathes with Vitality | ch. 28 §A.2 |
 | 28-b | The myth paragraph: *"Every person carries a flame…"*, the seed of the app's voice (mythic, sparse, never cheesy) | ch. 28 §A.3 |
 | 28-c | **Hidden Sparks**: rare challenges that appear only when a pillar is deep enough (six in the MVP) | ch. 28 §A.5 |
+| 05-a | A small day: 1–3 Path Actions + 1 Spark; at most 3 active Paths in the MVP; Actions get harder, not more numerous | ch. 05 §A.1 |
+| 05-b | At most one gentle notification a day (opt-in), optional 20-second "Close the day" in the evening | ch. 05 §A.2 |
+| 05-c | The Ritual is weekly and a bonus: it never counts against your day | ch. 05 §A.4 |
+| 05-d | **Pause** (sick, travelling): Vitality protected, no growth earned, up to 14 days per 90 | ch. 05 §A.6 |
+| 05-e | Finishing a Path leaves a small permanent mark in your vessel | ch. 05 §A.5 |
 | 28-d | **The weekly Chronicle**: a few mythic lines of your week, written on your phone, building a book of your life | ch. 28 §A.6 |
 
 ## Working order (updated 2026-09-30, decision 46: MVP first)
