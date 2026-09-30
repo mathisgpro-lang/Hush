@@ -43,6 +43,8 @@ final class AppModel {
             chooseFirstPath(Catalog.paths[0])
             if let first = cards.first(where: { $0.id == Catalog.firstSparkKey }) { _ = complete(first) }
         }
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "-demoAdvance"), i + 1 < args.count, let n = Int(args[i + 1]) { devAdvance(days: n) }
     }
 
     var now: Date { Date().addingTimeInterval(devOffset) }
