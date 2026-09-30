@@ -15,6 +15,7 @@ struct TodayView: View {
     @State private var forging = false
     @State private var showSettings = false
     @State private var showVoice = false
+    @State private var showStory = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -22,6 +23,15 @@ struct TodayView: View {
         ZStack {
             SanctuaryView(vitality: s.vitality, era: model.era)
             PixelFlameView(vitality: s.vitality, depth: s.depth, stage: stage, era: model.era, shake: forging ? 1 : 0)
+            // Touch your Flame: a heartbeat. Press and hold: your story (chapter 03 §A.6).
+            GeometryReader { geo in
+                Color.clear.contentShape(Rectangle())
+                    .frame(width: geo.size.height * 0.18, height: geo.size.height * 0.28)
+                    .position(x: geo.size.width / 2, y: geo.size.height * 0.43)
+                    .onTapGesture { haptics.heartbeat(); stage.flare(seconds: 0.6, strength: 0.4) }
+                    .onLongPressGesture(minimumDuration: 0.6) { haptics.thrum(.spirit, intensity: 0.7); showStory = true }
+                    .accessibilityLabel("Your Flame").accessibilityHint("Double-tap and hold to see your story")
+            }
             VStack(spacing: 0) {
                 header(s)
                 JourneyMarker(step: model.journeyStep).padding(.top, 6)
@@ -39,6 +49,7 @@ struct TodayView: View {
         .sheet(isPresented: $showJourney) { JourneySheet(model: model).presentationDetents([.large]) }
         .sheet(isPresented: $showSettings) { SettingsSheet(model: model) }
         .sheet(isPresented: $showVoice) { VoiceSheet(model: model) }
+        .sheet(isPresented: $showStory) { StorySheet(model: model).presentationDetents([.medium, .large]) }
         .overlay { if let step = model.pendingUnlock { UnlockMoment(step: step) { model.witnessUnlock(step); haptics.thrum(.spirit, intensity: 0.8) } } }
         .overlay { if model.forgeReady && model.pendingUnlock == nil { ForgeMoment(forging: $forging, haptics: haptics, synth: synth, stage: stage) { model.witnessForge() } } }
         .onAppear { model.dealTodayIfNeeded(); synth.setAmbience(vitality: model.state.vitality) }
@@ -410,5 +421,53 @@ struct ForgeMoment: View {
             synth.play(.birth)
             withAnimation(.easeOut(duration: 1.2)) { phase = 2 }
         }
+    }
+}
+
+/// Your story (chapter 03 §A.6): what built your Flame, pillar by pillar.
+struct StorySheet: View {
+    let model: AppModel
+    var body: some View {
+        let s = model.state
+        let counts = model.pillarCounts
+        let maxDepth = max(1, s.depth.values.max() ?? 1)
+        NavigationStack {
+            List {
+                Section {
+                    if let born = s.bornDay {
+                        LabeledContent("Born", value: born.description)
+                    }
+                    LabeledContent("Days since your Flame's birth", value: "\(s.daysSinceBirth)")
+                    LabeledContent("Days you showed up", value: "\(s.activeDays)")
+                    LabeledContent("Ascent", value: String(format: "×%.3f", s.ascent))
+                    LabeledContent("Era", value: model.era >= 2 ? "Metal" : "Stone")
+                }
+                Section("What built your Flame") {
+                    ForEach(Pillar.allCases, id: \.self) { p in
+                        HStack(spacing: 10) {
+                            Text(p.name).font(Theme.ceremonial(16)).frame(width: 64, alignment: .leading)
+                            PixelBar(value: (s.depth[p] ?? 0) / maxDepth, color: p.color)
+                            Text("\(counts[p] ?? 0)").font(.caption).foregroundStyle(.secondary).frame(width: 34, alignment: .trailing)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Your story").navigationBarTitleDisplayMode(.inline)
+        }
+        .preferredColorScheme(.dark)
+    }
+}
+
+/// A blocky, pixel-art progress bar (decision 77).
+struct PixelBar: View {
+    let value: Double
+    let color: Color
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(0..<12, id: \.self) { i in
+                Rectangle().fill(Double(i) < value * 12 ? color : Color.white.opacity(0.1)).frame(width: 10, height: 12)
+            }
+        }
+        .accessibilityValue("\(Int(value * 100)) percent")
     }
 }

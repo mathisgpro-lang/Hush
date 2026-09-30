@@ -326,6 +326,19 @@ final class AppModel {
     /// Ascent at the end of yesterday, for "Close the day".
     var ascentYesterday: Double { state.ascent / (1 + 0.01 * state.todayCompletion) }
 
+    // MARK: your story (press and hold the Flame, chapter 03 §A.6)
+
+    /// How many distinct things you've done per pillar, all time (corrections applied).
+    var pillarCounts: [Pillar: Int] {
+        var seen = Set<String>()
+        var out: [Pillar: Int] = [:]
+        for e in GrowthEngine.effectiveEntries(entries) {
+            if case .actionCompleted(let key, let w, _, _) = e.payload, seen.insert(key).inserted,
+               let p = w.max(by: { $0.value < $1.value })?.key { out[p, default: 0] += 1 }
+        }
+        return out
+    }
+
     // MARK: your record (chapter 17 §B.9: export in an open format; delete everything)
 
     /// An open, documented JSON export of the whole record (format v1).

@@ -79,6 +79,11 @@ final class Haptics {
         play(events, curves: [fade])
     }
 
+    /// Touching your Flame: a warm heartbeat under your finger (chapter 03 §A.6).
+    func heartbeat() {
+        play([transient(0.7, 0.2), transient(0.45, 0.15, at: 0.16)])
+    }
+
     /// The last Action of the day: two soft resolving beats.
     func dayComplete() {
         play([transient(0.5, 0.3), transient(0.8, 0.2, at: 0.18)])
