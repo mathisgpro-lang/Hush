@@ -40,8 +40,8 @@ struct FlameView: View {
     let recentMix: [Pillar: Double]
     let stage: FlameStage
     var era: Int = 1
-    var center: CGFloat = 0.46
-    var height: CGFloat = 0.26
+    var center: CGFloat = 0.44
+    var height: CGFloat = 0.30
     var shake: Double = 0
 
     var body: some View {
@@ -116,20 +116,21 @@ struct FlameView: View {
 
         if let body = UIImage(named: era >= 2 ? "vessel-body-metal" : "vessel-body") {
             // Codex layered art (chapter 03 §B.5); image framing: vessel ≈ 80% of canvas height.
-            let scale = r.height / (CGFloat(body.size.height) * 0.8)
+            let scale = r.height / (CGFloat(body.size.height) * 0.76)
             let w = CGFloat(body.size.width) * scale, h = CGFloat(body.size.height) * scale
             let frame = CGRect(x: r.midX - w / 2, y: r.midY - h / 2, width: w, height: h)
             // The live fire burns BEHIND the carved body; the keyed (transparent) cavity lets it shine through.
             var behind = ctx
             behind.clip(to: diamond(r, inset: 0))
-            drawFire(&behind, r: r, cavity: cavity, t: t, v: v, clipToCavity: false)
+            drawFire(&behind, r: r, cavity: cavity, t: t, v: v, clipToCavity: false, baseY: r.midY + r.height * 0.16)
             ctx.draw(Image(uiImage: body), in: frame)
-            var veins = ctx
-            veins.blendMode = .plusLighter
+            // Pillar motifs on real art: each deepening pillar glows within the stone in its own color.
             for p in Pillar.allCases where veinLength(p) > 0 {
-                let path = vein(p, in: r).trimmedPath(from: 0, to: veinLength(p))
-                veins.stroke(path, with: .color(p.color.opacity(0.25)), style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                veins.stroke(path, with: .color(p.color.opacity(0.9)), style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+                var tint = ctx
+                tint.blendMode = .plusLighter
+                tint.opacity = 0.22 * veinLength(p)
+                tint.addFilter(.colorMultiply(p.color))
+                tint.draw(Image(uiImage: body), in: frame)
             }
         } else {
             let material = era >= 2
@@ -168,14 +169,15 @@ struct FlameView: View {
         }
     }
 
-    private func drawFire(_ ctx: inout GraphicsContext, r: CGRect, cavity: Path, t: Double, v: Double, clipToCavity: Bool) {
+    private func drawFire(_ ctx: inout GraphicsContext, r: CGRect, cavity: Path, t: Double, v: Double, clipToCavity: Bool,
+                          baseY: CGFloat? = nil) {
         var fire = ctx
         if clipToCavity { fire.clip(to: cavity) }
         fire.blendMode = .plusLighter
         let embers = v < 0.3
         let count = Int(30 + 70 * min(1, v))
-        let base = CGPoint(x: r.midX, y: r.maxY - r.height * 0.22)
-        let height = r.height * (0.16 + 0.42 * min(1.2, v))
+        let base = CGPoint(x: r.midX, y: baseY ?? (r.maxY - r.height * 0.22))
+        let height = r.height * (baseY == nil ? (0.16 + 0.42 * min(1.2, v)) : (0.12 + 0.30 * min(1.2, v)))
         for i in 0..<count {
             let phase = (t * (0.5 + 0.35 * v) + Double(i) * 0.618).truncatingRemainder(dividingBy: 1)
             let sway = sin(t * 2.1 + Double(i) * 1.7) * r.width * 0.06 * phase
