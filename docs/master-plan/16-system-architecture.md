@@ -1,6 +1,6 @@
 # 16 — System Architecture
 
-**Status:** First pass (Phase B foundations): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B 🔎 revision 4 (final design pass, decision 60), in Codex review · **Last updated:** 2026-09-30
+**Status:** First pass (Phase B foundations): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B revision 5 (Codex round-4 blocking items fixed), 🔎 targeted Codex check · **Last updated:** 2026-09-30
 **Based on:** decisions 20, 23, 28–50 · **Reviews:** [Codex round 1](../reviews/2026-09-30-codex-phaseB.md) · **Research:** §B.12
 
 This chapter has two layers:
@@ -213,7 +213,8 @@ Every record entry is a **P envelope** (it always syncs) that may have **H2 atta
   3. write the entry referencing the operationId;
   4. on launch, reconcile orphans in both directions.
 - If a write is denied, the type is unsupported, or HealthKit is unavailable, the Action is still completed (self-reported, private). Completion **never** depends on HealthKit (P4).
-- **Evidence de-duplication:** a HealthKit `sampleUUID` can be evidence for at most one occurrence. Completions *created from* a HealthKit sample (auto-detected workouts) use `occurrenceKey = hk:{sampleUUID}`, so one sample can never produce two completions (chapter 17 §B.4).
+- **Evidence de-duplication:** a HealthKit `sampleUUID` can be evidence for at most one occurrence. **No HealthKit identifier ever appears in a P envelope** (Codex round 4, blocking #2).
+- **Auto-detected activity is a suggestion, not an automatic completion.** When a HealthKit workout matches an open slot, the app offers "Count this morning's run?". Confirming completes **that slot** (its app-owned `occurrenceKey`), so slot keys de-duplicate across devices. If no slot matches, the confirmation creates a free Action (`free:{entryId}`). The sample → occurrence mapping lives only in the H2 `evidenceAssessed` attachment. **Accepted limitation:** confirming the same unmatched workout on two devices creates two free Actions. That's the user's responsibility (P2), and the same device never offers an already-mapped sample twice.
 
 ## B.7 The Relay (MVP: Rituals only)
 
@@ -244,10 +245,10 @@ Every record entry is a **P envelope** (it always syncs) that may have **H2 atta
 
 ## B.8 Sync (`Data/Sync`, CKSyncEngine, private database)
 
-- **Zones are generation-named:** `Record-{gen}`, `Working-{gen}` (gen = the current `DatasetGeneration` ID), plus a permanent `Meta` zone holding `{currentGeneration, retiredGenerations[]}`. Generation IDs are random and carry no personal data (§B.9).
+- **Zones are generation-named:** `Record-{gen}`, `Working-{gen}`, plus a permanent `Meta` zone holding the **generation lifecycle** (§B.9). Generation IDs are random and carry no personal data.
 - **Outbox:** every local write inserts its outbox row **in the same transaction**. Each row is tagged with the generation it was created under. CKSyncEngine's `nextRecordZoneChangeBatch` reads from the outbox, and rows are removed only after a confirmed save. Rows tagged with a retired generation are discarded, never sent.
 - **Engine state:** `stateSerialization` is persisted in the database on every `stateUpdate` event. CKRecord system fields are stored in a separate metadata table.
-- **Errors:** handled per `CKError` category (retry with backoff, zone-not-found → recreate within the current generation, quota exceeded → the decision-32 UI, partial failures handled per record).
+- **Errors:** handled per `CKError` category (retry with backoff, zone-not-found → **never recreate**: re-fetch `Meta` and follow §B.9, quota exceeded → the decision-32 UI, partial failures handled per record).
 - **Conflicts:**
   - Entries are immutable. Same ID + same canonical content hash (which covers **every immutable field, including `recordedAt`**; chapter 17 §B.2) = no-op. Same ID + different content = **quarantine** both, plus a non-personal diagnostic, and the projection uses neither until resolved.
   - `PlanRevision` records are immutable. The `ActivePlan` pointer and `Setting`s are last-writer-wins by `modifiedAt`, with deterministic tiebreak by device ID.
@@ -262,24 +263,25 @@ Every record entry is a **P envelope** (it always syncs) that may have **H2 atta
 
 **Fencing principle:** data is written only into zones named for the *current* generation. A deleted generation's zones are gone, so any stale write to them fails with `zoneNotFound`.
 
-**Zone creation happens only inside the generation-creation procedure, and only for a brand-new random generation ID.** Ordinary sync never creates zones. On `zoneNotFound`, a client never recreates the zone: it re-fetches `Meta` and follows the stale-device path (step 6). Because a generation ID is used for creation only once, by the device that minted it, a delayed zone-creation operation can only ever create zones for a generation that device itself proposed. Such zones are removed by the sweep below if they didn't become current.
+**Generation lifecycle in `Meta`** (Codex round 4, blocking #1): `generations: [genId → state]` with states `proposed → active → retired`, or `proposed → abandoned`, plus `currentGeneration` (always the single `active` one). Every Meta write uses the server change tag; a conflict means re-fetch and re-evaluate.
 
-**Generation-creation procedure** (first launch on an account, or step 5 of deletion):
-- mint `newGen`;
-- create `Record-{newGen}` and `Working-{newGen}`;
-- save `Meta` with the server change tag (`currentGeneration = newGen`);
-- if the Meta save loses a race: delete the zones just created, and adopt the winner's generation.
+**Zone creation happens only inside the generation-creation procedure, for a brand-new random ID.** The same ordering applies at first launch and at deletion step 5:
+1. mint `newGen` and write Meta with `newGen: proposed`;
+2. create `Record-{newGen}` and `Working-{newGen}`;
+3. write Meta: `newGen: active`, `currentGeneration = newGen` (and, for deletion, the old generation becomes `retired`).
+- If step 3 loses a race to another device's activation: mark `newGen: abandoned` and adopt the winner.
+- **Ordinary sync never creates or recreates zones.**
 
-**Sweep (garbage collection):** on each launch, a client lists the zones in the private database and deletes any `Record-*` / `Working-*` zone whose generation ≠ `Meta.currentGeneration`. This cleans up orphans from lost races and delayed operations. The platform guarantee relied on (zone deletion removes the zone's records; saves into a missing zone fail rather than creating it) must be verified by real-CloudKit scenario tests (chapter 22).
+**Sweep (garbage collection):** deletes zones **only** for generations in state `retired` or `abandoned`, **never merely "not current."** A `proposed` generation older than 7 days whose creator never activated it may be marked `abandoned` by any device (change-tagged), and swept after that.
 
-**Concurrent deletions:** two devices deleting at once both attempt the change-tagged Meta update. The loser re-fetches. If its `generationToRetire` is already in `retiredGenerations`, its intent is satisfied: it clears the intent and adopts the current generation. It never retires the winner's new generation.
+**Deletion intent:** bound to `{accountHash, generationToRetire}`, persisted in the Keychain, and **kept until zone deletion of the retired generation is confirmed**. It isn't cleared merely because Meta records the retirement. A concurrent-deletion loser whose target is already retired keeps its intent until the old zones are confirmed gone (it may perform that deletion itself), then clears it.
 
 1. Persist a `DeletionIntent {generationToRetire, startedAt}` in the Keychain (it survives a local wipe) and stop all outgoing sync.
 2. Wipe local data immediately (both stores), so the user sees an instant reset.
-3. Update `Meta`: append `generationToRetire` to `retiredGenerations` and set `currentGeneration = newGen`. Save with the server change tag, so a concurrent Meta change forces a re-fetch and retry.
+3. Run the generation-creation procedure (above). Its step 3 marks the old generation `retired`.
 4. Delete zones `Record-{old}` and `Working-{old}`. Retry until confirmed; the intent survives relaunches.
-5. Create `Record-{newGen}` and `Working-{newGen}`. Clear the intent.
-6. **Stale device B** (the interleaving from Codex round 2): B's prepared upload to `Record-{old}` fails with `zoneNotFound` once step 4 completes. If it lands *before* step 4, those records are deleted with the zone. B then re-fetches `Meta`, sees its generation is retired, discards its outbox and local data for that account, and informs the user. **The retired generation is never recreated, so resurrection is impossible.**
+5. Once deletion is confirmed, clear the intent.
+6. **Stale device B** (the interleaving from Codex round 2): B's prepared upload to `Record-{old}` fails with `zoneNotFound` once step 4 completes. If it lands *before* step 4, those records are deleted with the zone. B then re-fetches `Meta`, sees its generation is `retired`, discards its outbox and local data for that account, and informs the user. **Nothing ever recreates a zone for an existing generation ID, so resurrection is impossible.**
 7. **HealthKit samples written by the app:** the user is offered a choice to delete them too.
 8. **Exports the user saved** are the user's files and aren't touched. The confirmation screen says so. An export's manifest records its generation, and import honors `retiredGenerations` (chapter 17 §B.9).
 9. **Single memory deletion** = tombstone (§B.8).

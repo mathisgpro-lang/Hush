@@ -1,6 +1,6 @@
 # 17 — Data Model
 
-**Status:** First pass (Phase B core backbone): Part A ✅ approved 2026-09-30 (small revisions after Codex review) · Part B 🔎 revision 4 (final design pass, decision 60), in Codex review · **Last updated:** 2026-09-30
+**Status:** First pass (Phase B core backbone): Part A ✅ approved 2026-09-30 (small revisions after Codex review) · Part B revision 5 (Codex round-4 blocking items fixed), 🔎 targeted Codex check · **Last updated:** 2026-09-30
 **Based on:** decisions 30–33, 35–37, 43–44, 48–50 · **Depends on:** [16-system-architecture.md](16-system-architecture.md)
 
 The two layers work as in chapter 16: Part A is for Mathis, and Part B is for the builders.
@@ -84,7 +84,8 @@ Entry {
 
 | Kind | P envelope (structure and numbers only) | H2 attachment (words and health readings) |
 |---|---|---|
-| `dayPlanned` | livedDay, rulesVersion, isPlannedRest, slots[{slotId, occurrenceKey, kind, pillarWeights, d, isEdge}] (chapter 04 §B.1) | — |
+| `scheduleIssued` | pathId, planRevisionId, effectiveFrom/To, weekPattern (rest flags, slots with trackId, pillarWeights, stretch) (chapter 04 §B.1) | — |
+| `dayPlanned` | livedDay, isPlannedRest, slots[{slotId, occurrenceKey, kind, pillarWeights, d, isEdge}] (chapter 04 §B.1). `rulesVersion` is derived from the livedDay | — |
 | `actionCompleted` | `occurrenceKey`, `actionRef {catalogRef or planRevisionId, slotId, version}`, source (`path`/`spark`/`ritual`/`free`), pillarWeights, `d`, isEdge | note (optional); `evidenceAssessed` (optional) |
 | `correction` | `targetId`, action (`void` \| `amend`), reason code, amended fields (only `occurredAt`/`livedDay`, `pillarWeights`, `occurrenceKey`) | — |
 | `pathStarted` / `pathRevised` / `pathEnded` | pathId, pillar(s), `goalCatalogRef?`, `planRevisionId`, reason code | goal wording |
@@ -104,10 +105,9 @@ Entry {
   - Path item: `path:{pathId}:{livedDay}:{slotId}`, where `slotId` is the schedule slot (e.g. `am-run`), which survives plan revisions. The plan revision is recorded in `actionRef`, not in the key.
   - Spark: `spark:{sparkDealtEntryId}`
   - Ritual: `ritual:{ritualWindowId}`
-  - Created from a HealthKit sample (auto-detected): `hk:{sampleUUID}`
   - Free Action: `free:{entryId}` (always unique)
-- **Projection rule:** for each `occurrenceKey`, the first non-voided completion by `(occurredAt, id)` counts. Later duplicates are ignored for growth but remain in the record.
-- **Evidence:** a HealthKit `sampleUUID` supports at most one occurrence. If two manually logged occurrences cite the same sample, the earliest by `(occurredAt, id)` keeps the verified evidence and the other stays `selfReported`. Manual logging is the user's own responsibility (P2); auto-detected completions can't double count because they're keyed by sample.
+- **Projection rule:** for each `occurrenceKey`, the non-voided completion with the **highest `d × edge`** counts (ties → earliest `(occurredAt, id)`). The others stay in the record but are ignored for growth. Adding a duplicate can never lower growth (chapter 04 §B.2).
+- **Evidence:** a HealthKit `sampleUUID` supports at most one occurrence (H2 mapping only; no HealthKit identifier in P). Auto-detected activity is a confirmed suggestion that fills a slot (chapter 16 §B.6).
 - **Spark swap limit (one per lived day):** enforced locally at the moment of swapping. **Accepted limitation:** two devices offline at the same time could each swap once. After sync, both swaps stand (no retroactive punishment, P6), and the next day is normal.
 
 ## B.5 Evidence

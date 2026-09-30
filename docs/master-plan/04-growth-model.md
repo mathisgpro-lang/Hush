@@ -1,6 +1,6 @@
 # 04 — The Growth Model
 
-**Status:** Part A ✅ approved 2026-09-30 (decisions 56, 58) · Part B revision 2 (after Codex round 3), 🔎 in Codex review · **Last updated:** 2026-09-30
+**Status:** Part A ✅ approved 2026-09-30 (decisions 56, 58) · Part B revision 3 (after Codex round 4; blocking items fixed), 🔎 targeted Codex check · **Last updated:** 2026-09-30
 **Based on:** decisions 13–15, 47, 51–55 · **Feeds:** chapter 03 (the Flame draws what this chapter calculates), 05, 10, 16 §B.3, 17
 
 Part A is for Mathis. Part B is for the builders (and goes to Codex review).
@@ -99,21 +99,28 @@ All functions live in `Domain.GrowthEngine`. They're pure and deterministic (16 
 
 ## B.1 The scoring day (frozen inputs, decision 58)
 
-- When a lived day D is first dealt (at the day boundary via the background scheduler, or at the first app open on D, whichever comes first), the app writes a **`dayPlanned`** entry (P-class, decision 59):
+- **Rule-set effectivity is by lived day:** a published table `ruleSetEffectiveFrom: [livedDay → rulesVersion]` (shipped in the app and the content catalog). `rulesVersion(D)` is a pure function of D, so competing records can never disagree about a day's rules.
+- **`scheduleIssued`** (P, decision 59): written when a plan (revision) is accepted.
   ```
-  dayPlanned { livedDay, rulesVersion, isPlannedRest: Bool,
-               slots: [{ slotId, occurrenceKey, kind: path|spark, pillarWeights, d, isEdge }] }
+  scheduleIssued { pathId, planRevisionId, effectiveFrom: LivedDay, effectiveTo: LivedDay?,
+                   weekPattern: [weekday → { isPlannedRest, slots: [{slotId, trackId?, pillarWeights, stretch, sessionsPerWeek?}] }] }
   ```
-  It contains only structure and numbers; wording lives in H2 attachments.
-- **The scoring set S(D) is frozen** by this entry. Plan revisions made later affect only days not yet dealt.
-- **Multiple `dayPlanned` for one lived day** (offline devices): the winner is the earliest by `(recordedAt, id)`. Completions whose `occurrenceKey` isn't in the winner's slots count as non-S (fill).
-- **Spark swap:** a `sparkSwapped { replacedSlotId, replacement: {slotId, occurrenceKey, pillarWeights, d, isEdge} }` entry. If several swaps target the same slot (offline devices), the earliest by `(recordedAt, id)` defines S(D). Other replacements count as non-S. All swaps stay in the record (decision 16's accepted limitation).
-- **`rulesVersion` of a day** = the value in its winning `dayPlanned`. A day with completions but no `dayPlanned` uses the rules in effect at its first completion's `recordedAt`.
+  It contains structure and numbers only; the prose stays in the H2 plan revision.
+- **`dayPlanned`** (P): written when a lived day is dealt (background scheduler or first open, whichever comes first). It freezes that day's slots with their `d`, and the Spark:
+  ```
+  dayPlanned { livedDay, isPlannedRest, slots: [{ slotId, occurrenceKey, kind: path|spark, pillarWeights, d, isEdge }] }
+  ```
+- **Days the app never ran on** (no `dayPlanned`, which is common because background execution isn't guaranteed): the engine **materializes** S(D) deterministically from the latest `scheduleIssued` effective on D (by `effectiveFrom`, then `(recordedAt, id)`), with `d = stretch` for track slots (1.0 normally) and 1.0 otherwise. There's no Spark on undealt days. A planned rest day in the pattern is preserved, so it's never counted as absence. A day with no effective schedule is **unplanned** (S empty), which is distinct from a planned day that simply wasn't dealt.
+- **Competing day contracts never retract growth** (Codex round 4, blocking #3):
+  - every `dayPlanned` for D (any device) is a **contract**;
+  - each device's `sparkSwapped` entries for D apply to its own contracts (matched by `deviceId`);
+  - `completion(D) = max over contracts c of completion_c(D)`. Adding a contract or a swap can only raise the day's score (reference vectors V10).
 - **Finalization:** D is *finalized* when `asOf ≥ B(D+1)` (the lived-day boundary instant, 17 §B.6). Today is provisional.
 
 ## B.2 Inputs per completed Action (after de-duplication and corrections, 17 §B.4, §B.7)
 
 - `pillarWeights` (Σ = 1; any listed pillar ≥ 0.1) and `d` are copied from the slot for S actions. For non-S actions they're set at completion time.
+- **Duplicates of one occurrence** (same `occurrenceKey`): the completion with the **highest** `d × edge` counts, with ties broken by the earliest `(occurredAt, id)`. So a duplicate can never replace a harder completion with an easier one, and adding a duplicate never lowers growth.
 - `isEdge` = spark **or** `d ≥ 1.2`.
 - Evidence is **ignored** by all growth formulas (decision 55). Growth reads P-class entries only.
 
@@ -128,7 +135,7 @@ Depth(p)          = Σ_{D ≤ asOf.livedDay} dayDepth(p,D)
 ```
 - **Monotonicity:** adding a positive Action increases E on its day (f is non-decreasing) and can only increase `activeDays` for later days. So **Depth never decreases when an Action is added** (vector V3). It decreases only through corrections.
 - `activeDays(p, range)` = the number of lived days in the range with E(p,D) > 0.
-- Rules of its time: each `dayDepth` is computed with its own day's `rulesVersion`. The engine keeps every published rule set forever.
+- Rules of its time: each `dayDepth` is computed with `rulesVersion(D)` (B.1). The engine keeps every published rule set forever.
 
 ## B.4 Day completion and the growth number
 
@@ -138,11 +145,12 @@ C_S        = Σ_{completed slots} d(s)
 F          = Σ_{completed non-S actions} d(a)
 completion = min(1, (C_S + min(F, 0.5·T)) / T)          if S(D) non-empty
            = min(1, F / 2.0)                              if S(D) empty (early days, no plan)
-           = 1                                            if isPlannedRest (decision 65)
+           = restGrowthCredit (RuleSet v1: 1.0)           if isPlannedRest (decision 65, by default; reversible by setting 0)
 G          = Π_{finalized D} (1 + 0.01 × completion(D)) × (1 + 0.01 × completion(today))
 ```
 - **Fill can cover at most half the day:** extra effort helps, but you can't earn a full day without your day (vector V7c).
-- Each day's completion uses its own `rulesVersion`. G changes only through corrections.
+- **completion(D) is the max over the day's contracts (B.1).** Each day's completion uses `rulesVersion(D)`. G changes only through corrections.
+- **Vitality presence is separate from growth credit:** `presence(D) = 1` on a planned rest day regardless of `restGrowthCredit`.
 - A correction that voids surplus effort on a full day leaves completion at 1 (vector V8b).
 
 ## B.5 Vitality
@@ -152,7 +160,7 @@ presence(D)  = completion(D)                    // planned rest ⇒ 1
 window       = the last 14 finalized days, i = 1 (yesterday) … 14; missing days = 0
 w_i          = 0.8^(i−1) / Σ_{j=1..14} 0.8^(j−1)
 freeDay      : if any presence(i) > 0 for i ∈ 1…7, set the lowest presence among i ∈ 1…7 to 1.0
-               (ties → smallest i; the result is tie-independent)
+               (ties → smallest i; the tie-break matters because weights differ, so it's normative)
 V_hist       = Σ w_i × presence_i
 V_live       = V_hist + (1 − V_hist) × 0.3 × presence(today)        // doing today's things brightens today
 V            = max(0.15, V_comeback)
@@ -164,7 +172,8 @@ V            = max(0.15, V_comeback)
 - **Active** iff `absence ≥ 3` and `1 ≤ n ≤ 3`. Then `V_comeback = max(V_live, R(n))` with `R(1)=0.60, R(2)=0.80, R(3)=1.00`. These are **minimums**: if V_live is already higher, it stands.
 - Otherwise `V_comeback = V_live`.
 - A provisional today with presence 0 doesn't end a comeback. Only a finalized presence-0 day does, because it resets the trailing run.
-- **The sensory event `comeback`** fires on the first completion of the day where n becomes 1. It's acknowledged by a `momentWitnessed { key: "comeback:{livedDay}" }` entry, so it never fires twice (including across devices).
+- **Forgiveness (Codex round 4, blocking #5): once a comeback completes (n ≥ 3), the absence before it is forgiven.** The window then includes only days from C onward, and the weights renormalize over the included days. So completing day 4 of a comeback can never dim the Flame (vectors V9a–c), and normal decay resumes only with a real new absence (V9d). This implements "welcomed home, never judged" (decision 52).
+- **The sensory event `comeback`** fires on the first completion of the day where n becomes 1. It's shown **at most once per installation**, and suppressed on any device once a synced `momentWitnessed { key: "comeback:{livedDay}" }` has arrived. Two devices used offline at the same moment may each show it once; that's an accepted limitation, since eventual sync can't promise global exactly-once.
 
 ## B.6 Level and difficulty (skill tracks)
 
@@ -174,7 +183,7 @@ V            = max(0.15, V_comeback)
   1. the median of HealthKit history over the last 4 weeks for the track, if permitted and > 0 (H2: the seed lives in a `levelSeeded` H2 attachment);
   2. else the Companion's estimate, clamped into the track's starting range (chapter 07);
   3. else the track default.
-  Every level is clamped to `[Lmin(track) > 0, Lmax(track)]`.
+  Every level is clamped to `[Lmin(track) > 0, Lmax(track)]`. **After a device loss in `.phoneOnly` mode, levels are freshly re-seeded** (HealthKit or Companion), and adaptation continues from the new seed. They don't converge to the old value, and that's accepted: historical scores are unaffected because each day's `d` is frozen in P entries.
 - **Transition table** (events processed in order `(livedDay, occurredAt, id)`; state per track: `L`, `streak`, `skips`, `lastEasyBumpDay`):
 
 | Event | Effect |
@@ -187,14 +196,14 @@ V            = max(0.15, V_comeback)
 
   - increase: `L ← L × 1.07`; decrease: `L ← L × 0.90`.
   - **At most one increase and one decrease per track per lived day. If both trigger on the same day, only the decrease applies.** Then the safety validators clamp the result (chapter 07).
-- **Difficulty is fixed when the day is dealt:** `target = L_at_dealing × stretch` (stretch 1.0 for Path items, 1.25 for Sparks). For a `perWeek` track, the session target = `L_week × stretch / sessionsPerWeek(plan)`. The slot's `d = target / L_at_dealing` (so normally 1.0 or 1.25). For fixed-target catalog items (e.g. "run 5 km"), `d = target / L`, clamped to [0.5, 2.0]. Adaptation after dealing never changes a dealt day.
+- **Difficulty is fixed when the day is dealt:** `target = L_at_dealing × stretch` (stretch 1.0 for Path items, 1.25 for Sparks). For a `perWeek` track: `sessionBaseline = L_week / sessionsPerWeek`, `target = sessionBaseline × stretch`, and **`d = target / sessionBaseline`** (= stretch). For `perSession` tracks, `d = target / L_at_dealing` (= stretch). So a slot's d is normally 1.0 or 1.25. For fixed-target catalog items (e.g. "run 5 km"), `d = target / L`, clamped to [0.5, 2.0]. Adaptation after dealing never changes a dealt day.
 - **The feedback prompt** is shown iff `SHA-256(occurrenceKey)` mod 5 = 0 (mod 2 during the first 14 lived days since the first entry), on the first eligible completion of the lived day only, never on a comeback completion. This is deterministic, so no randomness needs storing.
 
 ## B.7 Balance
 - No balance term in any formula (decision 56). The pillar Depth vector goes to chapter 03 unchanged.
 - **Companion nudge rule (for chapter 07):** a pillar with no contribution for 21+ days *and* a Depth share < 10% may be suggested at most once per 14 days, and never during an active comeback.
 
-## B.8 Golden vectors (computed by the reference implementation; all pass)
+## B.8 Golden vectors (computed by the reference implementation; tolerance 1e-9; all pass)
 
 | ID | Fixture | Expected |
 |---|---|---|
@@ -203,18 +212,20 @@ V            = max(0.15, V_comeback)
 | V3a / V3b | two d=2 actions / plus an earlier d=0.5 | **2.95** / **3.075** (adding raises Depth) |
 | V4 | one action d=1, weights body .5 / heart .5 | body = **0.5** |
 | V5a / V5b | Spark d=1 / Path item d=1.25 | **1.2** / **1.5** |
-| V6a | 30 full days | V = **1.0** |
-| V6b | …then yesterday off | V = **1.0** (free day) |
-| V6c | …then 3 days off | V = **0.698751** |
+| V6a / V6b | 30 full days / then yesterday off | **1.0** / **1.0** (free day) |
+| V6c | 30 full days, then 3 days off | **0.6987509255933241** |
 | V6d / V6e | 14 days off / 30 days off | **0.15** / **0.15** |
 | V6f–h | after 14 off, comeback days 1, 2, 3 (today presence 1) | **0.60**, **0.80**, **1.00** |
 | V7a / V7b | S = [1,1], both / one done | G = **1.01** / **1.005** |
 | V7c | S = [1,1], none done, four extra d=1 | completion = **0.5** (fill cap) |
 | V7d | S empty, one action d=1 | completion = **0.5** |
-| V7e | 365 full days | G = **37.783434** |
+| V7e | 365 full days | G = **37.783434332887275** |
 | V8a / V8b | void one of two S items / void surplus on a full day | completion **0.5** / **1.0** |
+| V9a–c | comeback day 4 before acting / day 4 completed / day 5 | **1.0** / **1.0** / **1.0** (no dimming) |
+| V9d | after a completed comeback, 3 days absent | **0.6355744157043132** |
+| V10a / V10b | device A's contract completed / plus B's competing contract | **1.0** / **1.0** (never retracts) |
 
-Still to add in the implementation plan, as tests (decision 60): permutation invariance, `dayPlanned` conflict resolution, concurrent swaps, rule-version mixing across days, the level transition table (each row plus same-day conflicts), and the prompt-selection hash.
+**Moved to the implementation plan (decision 60):** full entry-level fixtures (raw entries → DerivedState, including corrections, permutations, materialized days, swaps, level transition rows, prompt hash) built on this reference. The reference arithmetic stays the oracle.
 
 ## B.9 Open
 - The exact visual mapping from Depth and Vitality to the Flame → chapter 03.
