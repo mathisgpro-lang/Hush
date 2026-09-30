@@ -134,3 +134,19 @@ Mid-turn, **Mathis added:** for a project this big, the backend foundations must
 - **Chapter 02:** approved as written (decision 27).
 - Carried forward: pillar gaps → ch. 04; selling cosmetics → ch. 14; V1 audience → ch. 24.
 - Next: **Phase B, architecture foundations.**
+
+---
+
+## Session 1 (continued) — 2026-09-30 — Phase B: architecture foundations
+
+1. **App technology:** Claude recommended one codebase for iPhone and Android (React Native + Expo) so a solo builder wouldn't have to build two apps. **Mathis chose native Swift**, because the priority is being one of the best-*feeling* apps ever made. Mitigations were agreed: a platform-neutral "brain," strict tests, and simulator self-checks (decision 28).
+2. **Backend:** Claude recommended Supabase. Mathis asked to step back and reflect: **he wants to stay as far as possible from holding any user data**, and delegate everything possible to third parties (decision 29). Claude revised the recommendation to **"the user holds it"**: on-device data plus the user's private iCloud, with the company holding nothing personal. Claude laid out the trade-offs (no support access, a harder Android path, limited cross-user learning, public verification needing care). **Mathis chose it** (decision 30).
+3. **Data backbone:** an append-only record, everything calculated from it, offline-first, exportable (decision 31). If iCloud is off, the app works but protects the user (decision 32). No account in the MVP (decision 33).
+4. **AI:** hybrid, on the phone first and the cloud when needed, provider-neutral; "see in the future" (decision 34).
+5. **Flame rendering:** artist-made pieces assembled live, plus the theme engine rule (decisions 35–36).
+6. **Learning:** nothing in the MVP. **Mathis stressed that the app must become smart and learn from each user over time.** Claude separated personal learning (fully on-device, unlimited) from collective learning (opt-in, privacy-preserving), with a revisit point (decision 37).
+7. **Mathis's role and time:** 1–2 hours a day; he approves each feature on his phone (decisions 38–39).
+
+Also: Mathis confirmed he/him pronouns.
+
+Phase B conversation complete. Next: draft chapters 16, 17, 20 and 22 (first pass).

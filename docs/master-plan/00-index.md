@@ -54,7 +54,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 ### Part IV — Technical
 | # | Chapter | Status | Notes |
 |---|---------|--------|-------|
-| 16 | System architecture: app, backend, AI, data | ⬜ | Decisions 20, 23. **Foundations first (Phase B).** Platform choice pending |
+| 16 | System architecture: app, backend, AI, data | ⬜ | Decisions 20, 23. **Foundations first (Phase B).** Native iOS/Swift chosen (28) |
 | 17 | Data model | ⬜ | **Core backbone in Phase B** |
 | 18 | AI systems: Companion, recommendation engine, difficulty matching, cost per user | ⬜ | |
 | 19 | The theme engine | ⬜ | Decision 11 |

@@ -18,6 +18,7 @@ We are writing the **master plan** before building anything. **Do not write prod
 **Mathis** is the founder and user zero: solo, **not a developer**, and building entirely with Claude Code and Codex.
 - Act as a **thinking partner, not a yes-man.** Push back honestly on tensions and risks, and give a recommendation rather than a neutral list.
 - **One question at a time**, preferably multiple choice with your recommended option first and its trade-offs.
+- **Show documents directly in the chat** (full content, or the changed sections), not just file links. Mathis wants to do everything from the conversation.
 - **Explain technical things in plain language.** Never assume coding knowledge. When a technical choice matters, say what it means for the product.
 - He thinks big. Respect the ambition, and be honest about scope and sequencing.
 
@@ -53,9 +54,15 @@ We are writing the **master plan** before building anything. **Do not write prod
 - **Users never feel they've lost it all.**
 - **The Flame drives the whole app's look** through a theme engine designed in from day one. Full transformations happen only at big milestones.
 
-## When building starts (future)
+## Architecture foundations (Phase B, decisions 28–39)
 
-- The architecture foundations (platform, stack, backend, data backbone, security) are designed early and against the **full** vision (decision 23).
-- Prefer mainstream, well-documented tech that AI agents build reliably, and a managed backend.
-- Build small, well-bounded modules with automated tests; Mathis can't read the code, so the code has to prove itself.
-- Two AIs: one builds, the other reviews.
+- **Native iPhone app first, in Swift** (SwiftUI, Metal for the Flame, Core Haptics, HealthKit). Android later as a separate app, so growth rules must stay platform-neutral.
+- **The user holds their data** (a core priority, decisions 29–30). Personal data lives on-device and in the user's **private iCloud** (CloudKit); the company holds nothing personal. Delegate everything possible to trusted third parties (Apple sign-in and payments, HealthKit, a zero-retention AI provider). **No account in the MVP.**
+- **The record:** an append-only history of Actions; Depth, Vitality and the Flame are always *calculated* from it. Offline-first, exportable, deletable by the user.
+- **The Companion's AI:** hybrid. Apple's on-device model for everyday tasks, a cloud AI (provider-neutral) for heavy thinking, through a pass-through server that stores nothing.
+- **Theme engine:** nothing hard-codes its look; everything flows from the Flame's state. The Flame = artist-made pieces assembled live.
+- **Analytics:** none in the MVP; later only opt-in, anonymous, privacy-preserving.
+
+## Build workflow (when building starts)
+
+approved chapter → build plan → Claude Code builds with automated tests → runs in the iOS Simulator and checks screenshots → Codex reviews independently → fixes → **Mathis tries it on his iPhone (TestFlight)** → done only when it *feels* right. Mathis has 1–2 hours a day. Prefer well-documented tech that AI agents build reliably, and small, well-bounded modules; Mathis can't read code, so the code must prove itself.
