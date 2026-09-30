@@ -1,0 +1,26 @@
+#!/bin/zsh
+# Relaunch any Codex job that was in flight when work paused.
+# Called by Claude on "work again" (see CLAUDE.md, "Resume protocol").
+# Each job: skip if its outputs already exist, otherwise rerun its saved brief.
+set -u
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+CODEX="/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex"
+
+run_brief() {  # $1 = brief file, rest = expected output files
+  local brief="$1"; shift
+  local missing=0
+  for f in "$@"; do [[ -f "$ROOT/$f" ]] || missing=1; done
+  if (( missing )); then
+    echo "relaunching: $brief"
+    local prompt="$(sed -n '/^---$/,$p' "$ROOT/$brief" | tail -n +2)"
+    "$CODEX" exec -s workspace-write -C "$ROOT" --ephemeral "$prompt" > /dev/null 2>&1
+    echo "done: $brief"
+  else
+    echo "already complete: $brief"
+  fi
+}
+
+run_brief docs/design/briefs/sanctuary.md \
+  docs/design/sanctuary/stone-era-bright.png \
+  docs/design/sanctuary/stone-era-embers.png \
+  docs/design/sanctuary/metal-era-bright.png

@@ -77,6 +77,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 **Any new session: read this block first and continue exactly from it.** Standing rule (decision 63): adopt Claude's recommendations by default, log them as [by default], add them to the review table below, and keep moving.
 
 ### 1. Work that was in flight at shutdown (redo these first)
+- **Codex jobs:** run `scripts/resume-codex.sh` in the background; it relaunches every unfinished Codex job.
 - **Sanctuary concept art (Codex):** check `docs/design/sanctuary/` for `stone-era-bright.png`, `stone-era-embers.png`, `metal-era-bright.png`. If any are missing, rerun the brief in `docs/design/briefs/sanctuary.md` (in the background), then review the images and show them to Mathis (SendUserFile, render).
 - **The two remaining Codex blockers** (`docs/reviews/2026-09-30-codex-r5.md`). Fix both in chapter 04 Part B **and** the reference script (`docs/master-plan/reference/growth_reference_v1.py`), add vectors, run it:
   1. **Duplicates must preserve per-pillar contributions.** Replace "highest d × edge wins" with: for each occurrence, the effective contribution **per pillar** = the max over its duplicates of `w_p × d × edge`. Adding a duplicate can then never lower any pillar. Add Codex's counterexample (Body 0.90 → 0.11) as a vector.

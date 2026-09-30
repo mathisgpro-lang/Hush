@@ -9,7 +9,12 @@ MVP-first order (decision 46): 04 → 03 → 28 → 05 → 06 → 07 → 08 → 
 
 We are writing the **master plan** before building anything. **Do not write product code, scaffold projects or install dependencies** until the master plan chapters an MVP feature depends on are approved by Mathis. See [docs/master-plan/00-index.md](docs/master-plan/00-index.md) for chapter status and working order.
 
-## Resume protocol
+## Resume protocol: when Mathis says "work again"
+
+**"work again"** (or "continue") means: resume everything exactly where it stopped, both Claude's work and Codex's.
+1. Run `scripts/resume-codex.sh` **in the background**. It relaunches any Codex job whose outputs are missing (add new jobs to that script whenever a Codex brief is started).
+2. Read the **"Where we left off: RESUME HERE"** block in `docs/master-plan/00-index.md` and continue its steps in order, without asking, under decision 63.
+3. Tell Mathis in two or three lines what resumed and what's next.
 
 At the start of **every** session (including after a restart), open `docs/master-plan/00-index.md` and follow its **"Where we left off: RESUME HERE"** block exactly: redo any in-flight work listed there, then continue with the next steps. Keep that block current whenever work pauses.
 
