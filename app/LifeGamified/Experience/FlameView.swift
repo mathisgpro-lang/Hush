@@ -119,20 +119,17 @@ struct FlameView: View {
             let scale = r.height / (CGFloat(body.size.height) * 0.8)
             let w = CGFloat(body.size.width) * scale, h = CGFloat(body.size.height) * scale
             let frame = CGRect(x: r.midX - w / 2, y: r.midY - h / 2, width: w, height: h)
+            // The live fire burns BEHIND the carved body; the keyed (transparent) cavity lets it shine through.
+            var behind = ctx
+            behind.clip(to: diamond(r, inset: 0))
+            drawFire(&behind, r: r, cavity: cavity, t: t, v: v, clipToCavity: false)
             ctx.draw(Image(uiImage: body), in: frame)
-            drawFire(&ctx, r: r, cavity: cavity, t: t, v: v, clipToCavity: true)
-            var glow = ctx
-            glow.blendMode = .screen
-            if let rim = UIImage(named: "vessel-rim-light") {
-                glow.opacity = min(1, 0.3 + 0.7 * v)
-                glow.draw(Image(uiImage: rim), in: frame)
-            }
-            for p in Pillar.allCases {
-                if let img = UIImage(named: "veins-\(p.name.lowercased())"), veinLength(p) > 0 {
-                    var layer = glow
-                    layer.opacity = veinLength(p)
-                    layer.draw(Image(uiImage: img), in: frame)
-                }
+            var veins = ctx
+            veins.blendMode = .plusLighter
+            for p in Pillar.allCases where veinLength(p) > 0 {
+                let path = vein(p, in: r).trimmedPath(from: 0, to: veinLength(p))
+                veins.stroke(path, with: .color(p.color.opacity(0.25)), style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                veins.stroke(path, with: .color(p.color.opacity(0.9)), style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
             }
         } else {
             let material = era >= 2
