@@ -24,3 +24,13 @@ run_brief docs/design/briefs/sanctuary.md \
   docs/design/sanctuary/stone-era-bright.png \
   docs/design/sanctuary/stone-era-embers.png \
   docs/design/sanctuary/metal-era-bright.png
+
+run_brief docs/design/briefs/birth-storyboard.md \
+  docs/design/birth/01-ember.png docs/design/birth/02-touch.png docs/design/birth/03-carving.png \
+  docs/design/birth/04-dawn.png docs/design/birth/05-first-spark.png
+
+run_brief docs/design/briefs/home-screen.md \
+  docs/design/home/home-today.png docs/design/home/home-evening.png
+
+run_brief docs/design/briefs/tracking-moment.md \
+  docs/design/tracking/storyboard.png
