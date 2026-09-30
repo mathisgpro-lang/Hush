@@ -1,6 +1,6 @@
 # 20 — Security, Privacy and Compliance
 
-**Status:** First pass (Phase B baseline): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B 🔎 revision 3, in Codex review · **Last updated:** 2026-09-30
+**Status:** First pass (Phase B baseline): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B ✅ approved 2026-10-01 (decision 66, Codex round 6) · **Last updated:** 2026-09-30
 **Based on:** decisions 29, 30, 34, 37, 43, 48–50 · **Depends on:** chapters 16, 17
 
 ---

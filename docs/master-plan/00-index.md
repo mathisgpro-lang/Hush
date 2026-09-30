@@ -35,10 +35,10 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 |---|---------|--------|-------|
 | 03 | [The Flame](03-the-flame.md): Depth, Vitality, visual anatomy, milestone transformations | 📝 (defaults) | Decisions 7, 10, 12, 13 |
 | 28 | [**The Adventure**](28-the-adventure.md): the world, the journey, and real game depth (progression, discovery, mystery, meaningful choices) | 📝 (defaults, MVP slice) | Decision 40. Added 2026-09-30 |
-| 04 | [Growth model](04-growth-model.md): pillars, what "1%" means, difficulty matching, evidence | ✅ A / 🔎 B | Decisions 13–15; science research needed; settle where finances, adventure/play and home belong |
+| 04 | [Growth model](04-growth-model.md): pillars, what "1%" means, difficulty matching, evidence | ✅ | Decisions 13–15; science research needed; settle where finances, adventure/play and home belong |
 | 05 | The daily loop: Paths, Spark, Ritual, the shape of a day | ⬜ | Decision 16; confirm Spark swap rule |
 | 06 | [The tracking moment](06-tracking-moment.md): sensory design (haptics, sound, motion, completion) | 📝 (defaults) | Decision 14; prototype needed |
-| 07 | The Companion: personality, voice, knowledge, plan building, safety limits, cited sources | ⬜ | Decisions 17–19; needs Mathis's own goals |
+| 07 | [The Companion](07-companion.md): personality, voice, knowledge, plan building, safety limits, cited sources | 📝 (defaults) | Decisions 17–19; needs Mathis's own goals |
 | 08 | Getting to know you: onboarding without questionnaires | ⬜ | Decisions 5, 40: **the first launch is the birth of your Flame, the start of the adventure**; research pass needed |
 | 09 | Verification: private vs. verified progress, integrations | ⬜ | Decision 3 |
 | 10 | Rewards and milestones: two tiers, titles, icons, big transformations, scarcity rules | ⬜ | Decisions 6, 10; rewards psychology research needed |
@@ -55,13 +55,13 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 ### Part IV — Technical
 | # | Chapter | Status | Notes |
 |---|---------|--------|-------|
-| 16 | [System architecture](16-system-architecture.md): app, backend, AI, data | 📝 | Decisions 20, 23. **Foundations first (Phase B).** Native iOS/Swift chosen (28) |
-| 17 | [Data model](17-data-model.md) | 📝 | **Core backbone in Phase B** |
+| 16 | [System architecture](16-system-architecture.md): app, backend, AI, data | ✅ | Decisions 20, 23. **Foundations first (Phase B).** Native iOS/Swift chosen (28) |
+| 17 | [Data model](17-data-model.md) | ✅ | **Core backbone in Phase B** |
 | 18 | AI systems: Companion, recommendation engine, difficulty matching, cost per user | ⬜ | |
 | 19 | The theme engine | ⬜ | Decision 11 |
-| 20 | [Security, privacy and compliance](20-security-privacy.md) | 📝 | **Baseline in Phase B.** Health data |
+| 20 | [Security, privacy and compliance](20-security-privacy.md) | ✅ | **Baseline in Phase B.** Health data |
 | 21 | Quality and testing strategy | ⬜ | |
-| 22 | [Building with AI agents](22-build-workflow.md): the Claude Code + Codex workflow | 📝 | Decision 20. **Phase B** |
+| 22 | [Building with AI agents](22-build-workflow.md): the Claude Code + Codex workflow | ✅ | Decision 20. **Phase B** |
 
 ### Part V — Roadmap
 | # | Chapter | Status | Notes |
@@ -112,6 +112,12 @@ A free, throwaway spike on Mathis's own iPhone (Xcode 27 + cable + Developer Mod
 | 06-c | Each pillar has its own sound and haptic "voice" (Body drum, Mind chime, Heart string…) | ch. 06 §A.3 |
 | 06-d | No confetti or casino effects, ever; only the comeback and Transformations are allowed to be big | ch. 06 §A.5 |
 | 06-e | 5-second Undo, then "This didn't happen" as a correction anytime | ch. 06 §A.6 |
+| 07-a | The Companion's voice: a wise travelling companion; calm, warm, direct; practical versus ceremonial registers | ch. 07 §A.1 |
+| 07-b | **Plans = a proven fixed skeleton + AI personalization inside hard limits**; the AI never invents a health or training plan from scratch | ch. 07 §A.3 |
+| 07-c | The MVP Path library (running, strength, sleep, eating habits, reading, learning, relationships, meditation, gratitude, deep work, craft, money habits, nature, helping, home) | ch. 07 §A.4 |
+| 07-d | No diets, calorie targets or weight-loss plans; no investment advice | ch. 07 §A.4 |
+| 07-e | Fixed, human-written referral texts for warning signs; a crisis screen for self-harm, never AI-generated | ch. 07 §A.5 |
+| 07-f | The MVP is for adults (18+) | ch. 07 §A.5 |
 | 28-a | The world is **your Sanctuary**: Dune-like ruins reclaimed by nature, with traces of future tech; it changes with each Transformation era and breathes with Vitality | ch. 28 §A.2 |
 | 28-b | The myth paragraph: *"Every person carries a flame…"*, the seed of the app's voice (mythic, sparse, never cheesy) | ch. 28 §A.3 |
 | 28-c | **Hidden Sparks**: rare challenges that appear only when a pillar is deep enough (six in the MVP) | ch. 28 §A.5 |

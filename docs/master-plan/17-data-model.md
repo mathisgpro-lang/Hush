@@ -1,6 +1,6 @@
 # 17 — Data Model
 
-**Status:** First pass (Phase B core backbone): Part A ✅ approved 2026-09-30 (small revisions after Codex review) · Part B revision 5 (Codex round-4 blocking items fixed), 🔎 targeted Codex check · **Last updated:** 2026-09-30
+**Status:** First pass (Phase B core backbone): Part A ✅ approved 2026-09-30 (small revisions after Codex review) · Part B ✅ approved 2026-10-01 (decision 66, Codex round 6) · **Last updated:** 2026-09-30
 **Based on:** decisions 30–33, 35–37, 43–44, 48–50 · **Depends on:** [16-system-architecture.md](16-system-architecture.md)
 
 The two layers work as in chapter 16: Part A is for Mathis, and Part B is for the builders.

@@ -1,6 +1,6 @@
 # 16 — System Architecture
 
-**Status:** First pass (Phase B foundations): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B revision 5 (Codex round-4 blocking items fixed), 🔎 targeted Codex check · **Last updated:** 2026-09-30
+**Status:** First pass (Phase B foundations): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B ✅ approved 2026-10-01 (decision 66, Codex round 6) · **Last updated:** 2026-09-30
 **Based on:** decisions 20, 23, 28–50 · **Reviews:** [Codex round 1](../reviews/2026-09-30-codex-phaseB.md) · **Research:** §B.12
 
 This chapter has two layers:

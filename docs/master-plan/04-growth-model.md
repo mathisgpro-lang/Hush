@@ -1,6 +1,6 @@
 # 04 — The Growth Model
 
-**Status:** Part A ✅ approved 2026-09-30 (decisions 56, 58) · Part B revision 4 (Codex round-5 items fixed; reference vectors V1–V13 pass), 🔎 targeted Codex check · **Last updated:** 2026-09-30
+**Status:** Part A ✅ approved 2026-09-30 (decisions 56, 58) · Part B ✅ approved 2026-10-01 (decision 66, Codex round 6) · **Last updated:** 2026-09-30
 **Based on:** decisions 13–15, 47, 51–55 · **Feeds:** chapter 03 (the Flame draws what this chapter calculates), 05, 10, 16 §B.3, 17
 
 Part A is for Mathis. Part B is for the builders (and goes to Codex review).

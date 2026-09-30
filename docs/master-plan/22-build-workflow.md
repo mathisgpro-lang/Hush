@@ -1,6 +1,6 @@
 # 22 — Building with AI Agents
 
-**Status:** First pass (Phase B): Part A ✅ approved 2026-09-30 · Part B revision 5, 🔎 targeted Codex check · **Last updated:** 2026-09-30
+**Status:** First pass (Phase B): Part A ✅ approved 2026-09-30 · Part B ✅ approved 2026-10-01 (decision 66, Codex round 6) · **Last updated:** 2026-09-30
 **Based on:** decisions 20, 38, 39, 46
 
 ---
