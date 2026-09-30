@@ -96,7 +96,7 @@ struct BirthDawn: View {
         ZStack {
             SanctuaryView(vitality: 1).opacity(light)
             Color.black.opacity(0.9 * (1 - light)).ignoresSafeArea()
-            FlameView(vitality: 0.4 + 0.6 * light, depth: [:], recentMix: [:], stage: stage)
+            PixelFlameView(vitality: 0.4 + 0.6 * light, depth: [:], stage: stage)
             VStack {
                 Spacer()
                 Text("It will never be finished. It will never go out.")

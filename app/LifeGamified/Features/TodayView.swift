@@ -21,7 +21,7 @@ struct TodayView: View {
         let s = model.state
         ZStack {
             SanctuaryView(vitality: s.vitality, era: model.era)
-            FlameView(vitality: s.vitality, depth: s.depth, recentMix: s.recentMix, stage: stage, era: model.era, shake: forging ? 1 : 0)
+            PixelFlameView(vitality: s.vitality, depth: s.depth, stage: stage, era: model.era, shake: forging ? 1 : 0)
             VStack(spacing: 0) {
                 header(s)
                 JourneyMarker(step: model.journeyStep).padding(.top, 6)
