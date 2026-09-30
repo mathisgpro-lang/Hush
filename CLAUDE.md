@@ -1,6 +1,6 @@
 # Life Gamified (working title)
 
-A long-horizon self-growth app, built to last years and decades. At its center is **the Flame**, a living representation of the user's soul that deepens as they genuinely grow (like the gem in Opal). The app is both **tracker and Companion**: it hands you your day, builds the plan for any goal, makes each day's invisible 1% progress visible today, and turns growth into lasting, verifiable proof. The aesthetic is Iron Man cockpit × Dune × nature sanctuary. The ambition is millions of users and a profoundly good product.
+A long-horizon self-growth app, built to last years and decades, and **the creation of a whole universe**. At its center is **the Flame**: a personified cartoon character (eyes, a mouth, expressions) that *is* the user and evolves over days, months and years as they genuinely grow. It lives in **an explorable world** (a map of realms and locations, lore) that opens only by living. See [docs/master-plan/29-the-universe.md](docs/master-plan/29-the-universe.md): **the heart of the project.** The app is both **tracker and Companion**: it hands you your day, builds the plan for any goal, makes each day's invisible 1% progress visible today, and turns growth into lasting, verifiable proof. The aesthetic is **cartoon / anime-like** (decision 79): warm, soft, expressive. Not photoreal, not pixel art. The ambition is millions of users and a profoundly good product.
 
 ## Current phase: PLANNING the MVP. No code yet.
 
@@ -47,7 +47,8 @@ At the start of **every** session (including after a restart), open `docs/master
 
 | Term | Meaning |
 |------|---------|
-| **The Flame** | The user's soul; the center of the app. It evolves in **depth and complexity, never size**. |
+| **The Flame** | The user's soul as a **personified cartoon character** (decisions 79–80): eyes, mouth, moods, evolves through stages (Spark → Flame → Blaze → Kindled → Beyond). It's the center of the app. |
+| **The World** | The explorable universe (chapter 29): a map of **realms** and **locations** that open only by living, with **lore** found along the way. |
 | **Depth** | The permanent layer of the Flame: who you've become. It can never be lost. |
 | **Vitality** | The recent layer of the Flame: how you've been living lately. It dims when you're away, never dies, and relights quickly. |
 | **Pillars** | Six universal life dimensions: **Body, Mind, Heart** (relationships), **Spirit, Craft** (work and skills), **World** (others and the planet). Names are provisional. |
@@ -65,6 +66,7 @@ At the start of **every** session (including after a restart), open `docs/master
 - **No manipulation, no scams.** Rewards are scarce because they took effort, not because of fear of missing out.
 - **Users never feel they've lost it all.**
 - **The Flame drives the whole app's look** through a theme engine designed in from day one. Full transformations happen only at big milestones.
+- **The universe is the core of the project** (decision 81): the personified Flame and the world it explores. The world only moves forward when the user does in real life: no in-app grinding, no paid progress.
 
 ## Architecture foundations (Phase B, decisions 28–39)
 

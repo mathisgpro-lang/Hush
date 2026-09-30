@@ -63,6 +63,11 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 21 | Quality and testing strategy | ⬜ | |
 | 22 | [Building with AI agents](22-build-workflow.md): the Claude Code + Codex workflow | ✅ | Decision 20. **Phase B** |
 
+### Part VI — The Universe (the heart of the project)
+| # | Chapter | Status | Notes |
+|---|---------|--------|-------|
+| 29 | [**The Universe**](29-the-universe.md): your personified Flame, the world map, realms, lore | 📝 (defaults) | Decisions 79–81. U1 (character v1) is built. Next: U2 character bible, U3 world bible, U4 map v1 |
+
 ### Part V — Roadmap
 | # | Chapter | Status | Notes |
 |---|---------|--------|-------|
@@ -98,7 +103,9 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
   - `docs/design/pixel/sanctuary-metal-empty.png`: the Metal Era. Copy it to `Resources/sanctuary-pixel-metal.png`; `SanctuaryView` picks it up automatically.
 - **Art direction is pixel art (decision 77).** The live Flame is `Experience/PixelFlameView.swift` (pixel-fire simulation, pixel vessel). The birth carving is pixelated. The old realistic assets (`FlameView`, `vessel-body*.png`) are unused, kept only as a fallback.
 
-### 3. Next
+### 3. Next (the Universe, chapter 29, is now the core)
+- **U2 character bible** (Codex, after the usage reset): an original cartoon flame, an expression sheet, evolution stages. Mathis picks.
+- **U3 world bible** + **U4 world map v1** (the Sanctuary + the Whispering Grove at step III, tap to travel, enter the scene).
 - Real sound design (the current sounds are synthesized placeholders).
 - The Companion slice: needs the chapter 07 safety fixes (decision 70) and the $99 program for Private Cloud Compute (Mathis's iPhone 15 has no on-device model).
 - Sync (iCloud) slice.
