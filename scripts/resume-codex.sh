@@ -13,7 +13,7 @@ run_brief() {  # $1 = brief file, rest = expected output files
   if (( missing )); then
     echo "relaunching: $brief"
     local prompt="$(sed -n '/^---$/,$p' "$ROOT/$brief" | tail -n +2)"
-    "$CODEX" exec -s workspace-write -C "$ROOT" --ephemeral "$prompt" > /dev/null 2>&1
+    "$CODEX" exec -s workspace-write -C "$ROOT" --ephemeral "$prompt" < /dev/null > /dev/null 2>&1
     echo "done: $brief"
   else
     echo "already complete: $brief"
@@ -43,3 +43,6 @@ run_brief docs/design/briefs/sanctuary-empty-pedestal.md \
 
 run_brief docs/design/briefs/vessel-bodies.md \
   assets/flame/stone/vessel-body.png assets/flame/metal/vessel-body.png
+
+# style tests (decision 75)
+"$ROOT/scripts/style-tests.sh"
