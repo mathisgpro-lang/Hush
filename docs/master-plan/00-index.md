@@ -37,7 +37,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 28 | [**The Adventure**](28-the-adventure.md): the world, the journey, and real game depth (progression, discovery, mystery, meaningful choices) | 📝 (defaults, MVP slice) | Decision 40. Added 2026-09-30 |
 | 04 | [Growth model](04-growth-model.md): pillars, what "1%" means, difficulty matching, evidence | ✅ A / 🔎 B | Decisions 13–15; science research needed; settle where finances, adventure/play and home belong |
 | 05 | The daily loop: Paths, Spark, Ritual, the shape of a day | ⬜ | Decision 16; confirm Spark swap rule |
-| 06 | The tracking moment: sensory design (haptics, sound, motion, completion) | ⬜ | Decision 14; prototype needed |
+| 06 | [The tracking moment](06-tracking-moment.md): sensory design (haptics, sound, motion, completion) | 📝 (defaults) | Decision 14; prototype needed |
 | 07 | The Companion: personality, voice, knowledge, plan building, safety limits, cited sources | ⬜ | Decisions 17–19; needs Mathis's own goals |
 | 08 | Getting to know you: onboarding without questionnaires | ⬜ | Decisions 5, 40: **the first launch is the birth of your Flame, the start of the adventure**; research pass needed |
 | 09 | Verification: private vs. verified progress, integrations | ⬜ | Decision 3 |
@@ -107,6 +107,11 @@ A free, throwaway spike on Mathis's own iPhone (Xcode 27 + cable + Developer Mod
 | 03-e | MVP includes one earnable fire style (from the first Ritual) | ch. 03 §A.5 |
 | 03-f | Flame at the center of home; touch = heartbeat haptic; press and hold = your story | ch. 03 §A.6 |
 | 03-g | MVP art: Stone + Metal in full, Crystal + Light as silhouettes | ch. 03 §A.7 |
+| 06-a | The tracking moment is ~1.5 s: press → charge → ignition → a spark flies into the vessel → a warm heartbeat thrum → growth ticks up | ch. 06 §A.2 |
+| 06-b | Press-and-hold (¼ second) makes it a deliberate act; a quick tap still works with a lighter version | ch. 06 §A.2 |
+| 06-c | Each pillar has its own sound and haptic "voice" (Body drum, Mind chime, Heart string…) | ch. 06 §A.3 |
+| 06-d | No confetti or casino effects, ever; only the comeback and Transformations are allowed to be big | ch. 06 §A.5 |
+| 06-e | 5-second Undo, then "This didn't happen" as a correction anytime | ch. 06 §A.6 |
 | 28-a | The world is **your Sanctuary**: Dune-like ruins reclaimed by nature, with traces of future tech; it changes with each Transformation era and breathes with Vitality | ch. 28 §A.2 |
 | 28-b | The myth paragraph: *"Every person carries a flame…"*, the seed of the app's voice (mythic, sparse, never cheesy) | ch. 28 §A.3 |
 | 28-c | **Hidden Sparks**: rare challenges that appear only when a pillar is deep enough (six in the MVP) | ch. 28 §A.5 |
