@@ -6,6 +6,8 @@
 
 **Architecture:** One local Swift package `Core` at `app/Packages/Core` with a single library target `Domain` (Foundation only, no Apple UI or storage frameworks) and a Swift Testing target `DomainTests`. The engine is a set of small, pure, deterministic functions, each in its own file, with every constant in `RuleSetV1`. This plan covers the math core only. Entry parsing, corrections, day assembly, levels and grants come in plan M1b, and storage (GRDB) in M1c.
 
+**Scope note (2026-10-01):** the Codex MVP-chapters review (decision 70) doesn't affect this plan. Pause semantics (B3), entries and day assembly come in M1b, once chapters 05 and 17 are fixed.
+
 **Tech Stack:** Swift 6 (strict concurrency), Swift Package Manager, Swift Testing (`import Testing`), Xcode 27 toolchain, run on the Mac host with `swift test`.
 
 **Spec:**

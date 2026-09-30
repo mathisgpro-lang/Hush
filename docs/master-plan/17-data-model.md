@@ -106,7 +106,7 @@ Entry {
   - Spark: `spark:{sparkDealtEntryId}`
   - Ritual: `ritual:{ritualWindowId}`
   - Free Action: `free:{entryId}` (always unique)
-- **Projection rule:** for each `occurrenceKey`, the non-voided completion with the **highest `d × edge`** counts (ties → earliest `(occurredAt, id)`). The others stay in the record but are ignored for growth. Adding a duplicate can never lower growth (chapter 04 §B.2).
+- **Projection rule:** for each `occurrenceKey`, the non-voided completions contribute, **per pillar, the maximum of `w_p × d × edge` over the duplicates** (chapter 04 §B.2, vector V12; this is authoritative). The duplicates stay in the record. Adding a duplicate can never lower any pillar.
 - **Evidence:** a HealthKit `sampleUUID` supports at most one occurrence (H2 mapping only; no HealthKit identifier in P). Auto-detected activity is a confirmed suggestion that fills a slot (chapter 16 §B.6).
 - **Spark swap limit (one per lived day):** enforced locally at the moment of swapping. **Accepted limitation:** two devices offline at the same time could each swap once. After sync, both swaps stand (no retroactive punishment, P6), and the next day is normal.
 
