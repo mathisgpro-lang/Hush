@@ -89,11 +89,11 @@ This is game-scale, and it needs its own production approach:
 
 | Step | What | Who |
 |---|---|---|
-| U1 | **Character v1** (live, in the app now): moods, cheering, sleeping, first evolution by Depth | Claude (done, first version) |
+| U1 | **Character v1** (live, in the app now): moods, cheering, sleeping, first evolution by Depth. **A placeholder** for mechanics only (decision 82) | Claude (done, first version) |
 | U2 | **Character bible:** the official original design, expression sheet, evolution stages, animation list | Codex concepts → Mathis picks |
 | U3 | **World bible:** map, realms, locations, lore chapters, characters | Claude writes, Codex illustrates, Mathis shapes |
 | U4 | **The world map v1:** the Sanctuary plus the first unlockable location (the Whispering Grove at step III), tap to travel, enter the scene | Claude builds; Codex paints |
-| U5 | **Character animation pipeline:** a rigged character (Rive or SpriteKit) so the Flame can walk, jump and emote smoothly | Claude + Codex; **likely a human animator** for the final quality |
+| U5 | **The final character: stylized 3D** (decision 82), a polished model with volume and light, rigged and animated (real-time 3D or pre-rendered), walking, jumping, emoting | Codex concepts + **a 3D artist or animator** for final quality |
 | U6 | **More realms**, each a release event, over months and years | Ongoing |
 
 **Honest note on scale:** a world like this is the work of years, like any real game. The plan grows it **one realm at a time**, each one a moment users look forward to. The first versions will be simpler than the final vision. The foundation (record, growth engine, the character reacting to real life) is already built to carry it.
