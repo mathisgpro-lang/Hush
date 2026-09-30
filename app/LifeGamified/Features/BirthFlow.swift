@@ -36,8 +36,8 @@ struct BirthFlow: View {
             switch phase {
             case .myth(let i): mythView(i)
             case .touch: touchView
-            case .carving: fullBleed("birth-carving", caption: nil)
-            case .dawn: fullBleed("birth-dawn", caption: "It will never be finished. It will never go out.")
+            case .carving: BirthCarving(duration: 3.0)
+            case .dawn: BirthDawn(model: model)
             case .choosePath: choosePathView
             case .firstSpark, .reveal: firstSparkView
             }
