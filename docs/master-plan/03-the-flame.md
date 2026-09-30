@@ -7,6 +7,9 @@ Items marked **[by default]** were decided under decision 63 and are listed for 
 
 ---
 
+> **Revision note (2026-10-01):** the look is now **pixel art** (decision 77); the realistic concept art is mood reference only. The Flame will later become a **personified companion** with eyes and a mouth that moves around (decision 76), likely merging with chapter 07. The live app renders the Flame in `PixelFlameView` (pixel-fire simulation plus a pixel vessel).
+
+
 # Part A — For Mathis
 
 ## A.1 What the Flame is *[Settled, 61, 64]*

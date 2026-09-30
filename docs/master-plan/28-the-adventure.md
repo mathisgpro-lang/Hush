@@ -5,6 +5,9 @@
 
 ---
 
+> **Revision note (2026-10-01):** the Sanctuary is **pixel art** (decision 77; style test A). The birth is animated live, with no still photos (decision 75). The future personified Flame (decision 76) becomes the adventure's main character.
+
+
 # Part A — For Mathis
 
 ## A.1 The promise *[Settled, 40]*

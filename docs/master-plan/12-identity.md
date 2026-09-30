@@ -5,6 +5,9 @@
 
 ---
 
+> **Revision note (2026-10-01):** the visual identity is **pixel art** (decision 77): crisp pixels, a limited warm palette, 2D. Pillar colors and Era palettes below still apply, quantized to the pixel palette. Typography stays New York + SF Pro for readability over the pixel world, to be revisited with a pixel display font later.
+
+
 # Part A — For Mathis
 
 ## A.1 The feeling in one line *[by default]*
