@@ -76,22 +76,33 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 
 **Any new session: read this block first and continue exactly from it.** Standing rule (decision 63) applies, with its exceptions.
 
-### 1. State: building in living slices (decision 72)
-- **Real app:** `app/LifeGamified.xcodeproj` (iOS 26+, signing team SX845VA92A, bundle `com.mathis.lifegamified`) plus `app/Packages/Core` (targets `Domain` and `Storage` with GRDB; **52 tests pass** via `cd app/Packages/Core && swift test`).
-- **Slice 1 done:** birth flow (myth → hold the ember → carving → dawn → first Path → first spark → Ascent reveal), Today (Codex layout), Flame + Sanctuary (vitality crossfade), the tracking moment (hold, strike, spark flight, thrum, pillar voices), Spark from day 2 with swap, Undo (void correction), Close the day, journey marker I–II, dev menu (long-press the date: time travel, delete everything). Verified in the simulator (day 1, day 2, 14 days away).
-- **Install on Mathis's iPhone 15 (iOS 26.4):** press ▶ in Xcode with the phone connected (or "Connect via network"). The free signing expires every 7 days, so re-run then.
+### 1. State: building in living slices (decisions 72–74)
+- **Real app:** `app/LifeGamified.xcodeproj` (iOS 26+, team SX845VA92A, bundle `com.mathis.lifegamified`) plus `app/Packages/Core` (`Domain`, `Storage` with GRDB; **59 tests pass**: `cd app/Packages/Core && swift test`).
+- **Built and verified in the simulator:**
+  - the birth (resumable);
+  - Today (Codex layout);
+  - Flame + Sanctuary (Vitality crossfade, Metal tint after the Forge);
+  - the tracking moment;
+  - Spark from day 2 with swap; Hidden Sparks;
+  - weekly Ritual (step III); add Paths (step IV); Chronicle (step V); the Forge ceremony (step VI) → Metal Era;
+  - Undo; Close the day; unlock moments; journey sheet;
+  - fire ambience;
+  - dev menu (long-press the date → time travel in a sandbox; delete everything).
+- **Demo launch arguments (simulator only):** `-demoBirth`, `-demoAdvance N`, `-demoLive N`, `-demoWitness`, `-demoForged`.
+- **Install on Mathis's iPhone:** open `app/LifeGamified.xcodeproj`, pick "Mathis's iPhone", press ▶. The free signing expires every 7 days.
 
 ### 2. In flight
-- **Codex: Stone vessel layered assets** (`docs/design/briefs/stone-vessel-assets.md` → `assets/flame/stone/*.png`). When they arrive:
-  1. key out the black backgrounds (or keep screen blending for the emissive layers);
-  2. copy them into `app/LifeGamified/Resources/` named `vessel-body`, `vessel-rim-light`, `veins-body`, `veins-mind` (FlameView picks them up automatically when `vessel-body` exists);
-  3. check in the simulator;
+- **Codex: vessel bodies** (`docs/design/briefs/vessel-bodies.md` → `assets/flame/stone/vessel-body.png`, `assets/flame/metal/vessel-body.png`). When they arrive:
+  1. `swift scripts/key-black.swift <in> <out>` to make black transparent;
+  2. copy to `app/LifeGamified/Resources/vessel-body.png` and `vessel-body-metal.png`;
+  3. check the framing in the simulator;
   4. commit.
+- **Still needed from Codex later:** Metal-era Sanctuary with an empty pedestal (`sanctuary-metal.png`, `sanctuary-metal-embers.png`).
 
-### 3. Next slices (decision 72)
-- **Slice 2:** Paths screen (add up to 3 Paths), a Hidden Spark, a first real Ritual (local, no Relay count), the Chronicle (template) → First Journey steps III–V.
-- **Slice 3:** the Forge (the Stone → Metal ceremony) and Metal Era art.
-- **Before any health or training plans or Companion AI:** the chapter 07 safety fixes (decision 70, B5–B8) and Mathis's decisions on a qualified reviewer and the Path library.
+### 3. Next
+- Real sound design (the current sounds are synthesized placeholders).
+- The Companion slice: needs the chapter 07 safety fixes (decision 70) and the $99 program for Private Cloud Compute (Mathis's iPhone 15 has no on-device model).
+- Sync (iCloud) slice.
 
 ### 4. Needs Mathis
 - Live with Slice 1 on his phone; share what feels good or off.
