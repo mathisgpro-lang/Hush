@@ -80,4 +80,21 @@ struct GrowthEngineTests {
         let b = GrowthEngine.compute(entries: entries, asOf: asOf, settings: settings)
         #expect(a == b)
     }
+
+    @Test func aCompetingContractNeverRetractsGrowthEvenWithFill() {   // Codex code review example
+        let a = PlannedSlot(occurrenceKey: "a", pillarWeights: [.body: 1], d: 1, isSpark: false)
+        let b = PlannedSlot(occurrenceKey: "b", pillarWeights: [.body: 1], d: 1, isSpark: false)
+        let x = PlannedSlot(occurrenceKey: "x", pillarWeights: [.mind: 1], d: 1, isSpark: false)
+        let y = PlannedSlot(occurrenceKey: "y", pillarWeights: [.mind: 1], d: 3, isSpark: false)
+        var entries = [
+            entry(.flameBorn(seed: "abc"), at: "2026-10-01T07:00:00Z"),
+            entry(.dayPlanned(isPlannedRest: false, slots: [a, b]), at: "2026-10-01T07:01:00Z"),
+            entry(.actionCompleted(occurrenceKey: "a", pillarWeights: [.body: 1], d: 1, isSpark: false), at: "2026-10-01T08:00:00Z"),
+            entry(.actionCompleted(occurrenceKey: "x", pillarWeights: [.mind: 1], d: 1, isSpark: false), at: "2026-10-01T08:10:00Z"),
+        ]
+        let asOf = utc("2026-10-01T09:00:00Z")
+        expectClose(GrowthEngine.compute(entries: entries, asOf: asOf, settings: settings).todayCompletion, 1.0)
+        entries.append(entry(.dayPlanned(isPlannedRest: false, slots: [x, y]), at: "2026-10-01T08:20:00Z"))
+        expectClose(GrowthEngine.compute(entries: entries, asOf: asOf, settings: settings).todayCompletion, 1.0)
+    }
 }

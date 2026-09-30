@@ -39,8 +39,10 @@ struct FlameView: View {
     let depth: [Pillar: Double]
     let recentMix: [Pillar: Double]
     let stage: FlameStage
+    var era: Int = 1
     var center: CGFloat = 0.46
     var height: CGFloat = 0.26
+    var shake: Double = 0
 
     var body: some View {
         TimelineView(.animation) { timeline in
@@ -100,7 +102,8 @@ struct FlameView: View {
     // MARK: drawing
 
     private func draw(_ ctx: inout GraphicsContext, size: CGSize, t: Double, now: Date) {
-        let r = vesselRect(size)
+        var r = vesselRect(size)
+        if shake > 0 { r = r.offsetBy(dx: sin(t * 60) * 4 * shake, dy: cos(t * 47) * 2 * shake) }
         let outer = diamond(r, inset: 0)
         let cavity = diamond(r, inset: r.width * 0.17)
         let flare = max(0, stage.flareUntil.timeIntervalSince(now)) * stage.flareStrength
@@ -111,7 +114,7 @@ struct FlameView: View {
                  with: .radialGradient(Gradient(colors: [fireColor.opacity(0.35 * min(1, v)), .clear]),
                                        center: CGPoint(x: r.midX, y: r.midY), startRadius: 0, endRadius: glowR))
 
-        if let body = UIImage(named: "vessel-body") {
+        if let body = UIImage(named: era >= 2 ? "vessel-body-metal" : "vessel-body") {
             // Codex layered art (chapter 03 §B.5); image framing: vessel ≈ 80% of canvas height.
             let scale = r.height / (CGFloat(body.size.height) * 0.8)
             let w = CGFloat(body.size.width) * scale, h = CGFloat(body.size.height) * scale
@@ -132,10 +135,13 @@ struct FlameView: View {
                 }
             }
         } else {
-            ctx.fill(outer, with: .linearGradient(Gradient(colors: [Color(red: 0.86, green: 0.74, blue: 0.56),
-                                                                    Color(red: 0.55, green: 0.43, blue: 0.30)]),
+            let material = era >= 2
+                ? [Color(red: 0.62, green: 0.48, blue: 0.30), Color(red: 0.22, green: 0.20, blue: 0.22)]   // forged bronze and steel
+                : [Color(red: 0.86, green: 0.74, blue: 0.56), Color(red: 0.55, green: 0.43, blue: 0.30)]   // carved sandstone
+            ctx.fill(outer, with: .linearGradient(Gradient(colors: material),
                                                   startPoint: CGPoint(x: r.minX, y: r.minY), endPoint: CGPoint(x: r.maxX, y: r.maxY)))
-            ctx.stroke(outer, with: .color(Color(red: 0.35, green: 0.27, blue: 0.18)), lineWidth: 2)
+            ctx.stroke(outer, with: .color(era >= 2 ? Color(red: 0.43, green: 0.66, blue: 0.86) : Color(red: 0.35, green: 0.27, blue: 0.18)),
+                       lineWidth: era >= 2 ? 2.5 : 2)
             var facets = Path()
             facets.move(to: CGPoint(x: r.minX, y: r.midY)); facets.addLine(to: CGPoint(x: r.maxX, y: r.midY))
             facets.move(to: CGPoint(x: r.midX, y: r.minY)); facets.addLine(to: CGPoint(x: r.midX, y: r.maxY))
@@ -207,11 +213,16 @@ struct FlameView: View {
 /// The Sanctuary behind the Flame, breathing with Vitality: calm blue dusk when low, never dark.
 struct SanctuaryView: View {
     let vitality: Double
+    var era: Int = 1
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                layer("sanctuary-stone", geo)
-                layer("sanctuary-stone-embers", geo).opacity(max(0, min(1, (0.9 - vitality) / 0.6)))
+                layer(era >= 2 && UIImage(named: "sanctuary-metal") != nil ? "sanctuary-metal" : "sanctuary-stone", geo)
+                layer(era >= 2 && UIImage(named: "sanctuary-metal-embers") != nil ? "sanctuary-metal-embers" : "sanctuary-stone-embers", geo)
+                    .opacity(max(0, min(1, (0.9 - vitality) / 0.6)))
+                if era >= 2 && UIImage(named: "sanctuary-metal") == nil {
+                    Color(red: 0.25, green: 0.45, blue: 0.7).opacity(0.12).blendMode(.overlay)   // placeholder Metal tint
+                }
                 LinearGradient(colors: [.black.opacity(0.35), .clear, .black.opacity(0.6)], startPoint: .top, endPoint: .bottom)
             }
             .animation(.easeInOut(duration: 1.2), value: vitality)

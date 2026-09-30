@@ -12,13 +12,14 @@ struct TodayView: View {
     @State private var showCloseDay = false
     @State private var showDev = false
     @State private var showJourney = false
+    @State private var forging = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         let s = model.state
         ZStack {
-            SanctuaryView(vitality: s.vitality)
-            FlameView(vitality: s.vitality, depth: s.depth, recentMix: s.recentMix, stage: stage)
+            SanctuaryView(vitality: s.vitality, era: model.era)
+            FlameView(vitality: s.vitality, depth: s.depth, recentMix: s.recentMix, stage: stage, era: model.era, shake: forging ? 1 : 0)
             VStack(spacing: 0) {
                 header(s)
                 JourneyMarker(step: model.journeyStep).padding(.top, 6)
@@ -35,7 +36,18 @@ struct TodayView: View {
         .sheet(isPresented: $showDev) { DevMenu(model: model).presentationDetents([.medium]) }
         .sheet(isPresented: $showJourney) { JourneySheet(model: model).presentationDetents([.large]) }
         .overlay { if let step = model.pendingUnlock { UnlockMoment(step: step) { model.witnessUnlock(step); haptics.thrum(.spirit, intensity: 0.8) } } }
+        .overlay { if model.forgeReady && model.pendingUnlock == nil { ForgeMoment(forging: $forging, haptics: haptics, synth: synth, stage: stage) { model.witnessForge() } } }
         .onAppear { model.dealTodayIfNeeded() }
+        .task { while !Task.isCancelled { try? await Task.sleep(for: .seconds(30)); model.refreshDay() } }
+        .overlay(alignment: .top) {
+            if let problem = model.storageProblem {
+                Text(problem).font(.footnote).padding(12).frame(maxWidth: .infinity)
+                    .background(.red.opacity(0.85), in: RoundedRectangle(cornerRadius: 12)).padding()
+            } else if model.inSandbox {
+                Text("Simulation: nothing here is saved to your real record").font(.caption2)
+                    .padding(6).background(.black.opacity(0.5), in: Capsule()).padding(.top, 2)
+            }
+        }
         .onChange(of: scenePhase) { _, p in if p == .active { model.dealTodayIfNeeded() } }
     }
 
@@ -334,5 +346,56 @@ struct JourneySheet: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .preferredColorScheme(.dark)
+    }
+}
+
+/// The Forge (step VI, chapter 03 §A.4): the stone cracks and falls away, the vessel is forged, the world
+/// shifts. A ceremony, not a notification. Happens once, and the Metal Era is owned forever.
+struct ForgeMoment: View {
+    @Binding var forging: Bool
+    let haptics: Haptics
+    let synth: Synth
+    let stage: FlameStage
+    var onForged: () -> Void
+    @State private var phase = 0     // 0 intro, 1 cracking, 2 revealed
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(phase == 1 ? 0.2 : 0.65).ignoresSafeArea().animation(.easeInOut(duration: 1), value: phase)
+            if phase == 1 { Color.white.opacity(0.0).ignoresSafeArea() }
+            VStack(spacing: 16) {
+                if phase == 0 {
+                    Text("Thirty days of living.").font(Theme.ceremonial(22)).foregroundStyle(Theme.textSecondary)
+                    Text("Your vessel is ready to change.").font(Theme.ceremonial(26)).foregroundStyle(Theme.text)
+                    Button("Hold the Flame") { crack() }.buttonStyle(.bordered).tint(Theme.dawn).padding(.top, 24)
+                } else if phase == 2 {
+                    Text("VI").font(Theme.ceremonial(56)).foregroundStyle(Theme.dawn)
+                    Text("The Forge").font(Theme.ceremonial(32)).foregroundStyle(Theme.text)
+                    Text("The stone has cracked. Your vessel is forged. It will never be stone again.")
+                        .font(Theme.ceremonial(18)).foregroundStyle(Theme.textSecondary)
+                        .multilineTextAlignment(.center).padding(.horizontal, 36)
+                    Button("Enter the Metal Era") { onForged(); forging = false }
+                        .buttonStyle(.bordered).tint(Theme.dawn).padding(.top, 20)
+                }
+            }
+            .padding(.top, 360)
+        }
+    }
+
+    private func crack() {
+        phase = 1
+        forging = true
+        haptics.birthCharge(seconds: 2.4)
+        synth.play(.swell)
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2.4))
+            haptics.carve(seconds: 1.2)
+            try? await Task.sleep(for: .seconds(1.2))
+            forging = false
+            stage.flare(seconds: 3.0, strength: 1.2)
+            haptics.comeback()
+            synth.play(.birth)
+            withAnimation(.easeOut(duration: 1.2)) { phase = 2 }
+        }
     }
 }

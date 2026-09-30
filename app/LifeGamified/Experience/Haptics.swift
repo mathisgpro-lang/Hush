@@ -10,7 +10,13 @@ final class Haptics {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
         engine = try? CHHapticEngine()
         engine?.isAutoShutdownEnabled = false
-        engine?.resetHandler = { [weak self] in try? self?.engine?.start() }
+        // Core Haptics calls this on its own queue: hop to the main actor (Swift 6 isolation; Codex code review).
+        engine?.resetHandler = { @Sendable [weak self] in
+            Task { @MainActor in
+                self?.chargePlayer = nil
+                try? self?.engine?.start()
+            }
+        }
         try? engine?.start()
     }
 

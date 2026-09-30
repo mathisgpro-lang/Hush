@@ -71,12 +71,22 @@ public enum GrowthEngine {
             let day = born.adding(days: i)
             let acts = actions[day] ?? []
             let done = Set(acts.map(\.occurrenceKey))
-            let dayContracts = (contracts[day] ?? []).map { $0.map { Slot(slotId: $0.occurrenceKey, d: $0.d) } }
-            let scheduled = Set((contracts[day] ?? []).flatMap { $0.map(\.occurrenceKey) })
-            let fill = Dictionary(grouping: acts.filter { !scheduled.contains($0.occurrenceKey) }, by: \.occurrenceKey)
-                .values.map { $0.map(\.d).max() ?? 0 }.reduce(0, +)
-            completions.append(DayScore.completion(contracts: dayContracts, done: done, fill: fill,
-                                                   isPlannedRest: rest[day] ?? false))
+            // Each contract is scored with its own fill (actions not in THAT contract), then the max is taken,
+            // so adding a contract can never retract earned growth (chapter 04 §B.1; Codex code review).
+            let dayContractSlots = contracts[day] ?? []
+            func fill(excluding scheduled: Set<String>) -> Double {
+                Dictionary(grouping: acts.filter { !scheduled.contains($0.occurrenceKey) }, by: \.occurrenceKey)
+                    .values.map { $0.map(\.d).max() ?? 0 }.sorted().reduce(0, +)
+            }
+            let isRest = rest[day] ?? false
+            if dayContractSlots.isEmpty {
+                completions.append(DayScore.completion(contracts: [], done: done, fill: fill(excluding: []), isPlannedRest: isRest))
+            } else {
+                completions.append(dayContractSlots.map { c in
+                    DayScore.completion(contracts: [c.map { Slot(slotId: $0.occurrenceKey, d: $0.d) }], done: done,
+                                        fill: fill(excluding: Set(c.map(\.occurrenceKey))), isPlannedRest: isRest)
+                }.max()!)
+            }
             dayActions.append(acts)
         }
 
@@ -99,6 +109,12 @@ public enum GrowthEngine {
         state.completedToday = Set((actions[today] ?? []).map(\.occurrenceKey))
         state.completedEver = Set(actions.values.flatMap { $0.map(\.occurrenceKey) })
         return state
+    }
+
+    /// Entries that still count: corrections resolved (undo and undo-of-undo). For summaries like the Chronicle.
+    public static func effectiveEntries(_ entries: [Entry]) -> [Entry] {
+        let voided = effectiveVoids(entries)
+        return entries.filter { !voided.contains($0.id) }
     }
 
     /// A correction voids its target unless the correction itself is voided (undo of undo).

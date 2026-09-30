@@ -10,7 +10,19 @@ struct BirthFlow: View {
     var onFinished: () -> Void
 
     enum Phase: Equatable { case myth(Int), touch, carving, dawn, choosePath, firstSpark, reveal }
-    @State private var phase: Phase = .myth(0)
+    @State private var phase: Phase
+
+    init(model: AppModel, haptics: Haptics, synth: Synth, startPhase: Phase = .myth(0), onFinished: @escaping () -> Void) {
+        self.model = model; self.haptics = haptics; self.synth = synth; self.onFinished = onFinished
+        _phase = State(initialValue: startPhase)
+    }
+
+    /// Resume where an interrupted birth stopped (Codex code review).
+    static func resumePhase(_ model: AppModel) -> Phase {
+        if !model.isBorn { return .myth(0) }
+        if model.activePaths.isEmpty { return .choosePath }
+        return .firstSpark
+    }
     @State private var holdStart: Date?
     @State private var holdProgress = 0.0
     @State private var stage = FlameStage()
@@ -32,7 +44,10 @@ struct BirthFlow: View {
         }
         .preferredColorScheme(.dark)
         .animation(.easeInOut(duration: 1.0), value: phase)
-        .onAppear { synth.play(.wind); advanceMyth(after: 0) }
+        .onAppear {
+            if case .myth = phase { synth.play(.wind); advanceMyth(after: 0) }
+            if phase == .firstSpark && model.firstSparkDone { onFinished() }
+        }
     }
 
     // MARK: 1. darkness and the myth

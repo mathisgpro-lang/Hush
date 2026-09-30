@@ -26,14 +26,23 @@ struct CompletionOutcome {
 
 @Observable
 final class AppModel {
-    private let store: RecordStore
+    /// The permanent record on the phone. Never silently replaced by anything else (Codex code review).
+    private let realStore: RecordStore?
+    /// Time-travel testing happens in a throwaway copy, never in the real record.
+    private var sandbox: RecordStore?
+    private var store: RecordStore? { sandbox ?? realStore }
     private(set) var entries: [Entry] = []
     private(set) var state: DerivedState
-    private(set) var devOffset: TimeInterval
+    private(set) var devOffset: TimeInterval = 0
+    /// Set when the record can't be read or written; the UI shows it and nothing pretends to succeed.
+    private(set) var storageProblem: String?
+    var inSandbox: Bool { sandbox != nil }
 
     init() {
-        store = (try? RecordStore.onDevice()) ?? (try! RecordStore.inMemory())
-        devOffset = UserDefaults.standard.double(forKey: "dev.offset")
+        do { realStore = try RecordStore.onDevice() } catch {
+            realStore = nil
+            storageProblem = "Your record couldn't be opened, so nothing is being saved right now. Your history is safe on the phone; please restart the app."
+        }
         let settings = EngineSettings(timeZone: .current)
         state = GrowthEngine.compute(entries: [], asOf: .now, settings: settings)
         reload()
@@ -51,6 +60,8 @@ final class AppModel {
                 devAdvance(days: 1)
                 for card in cards where !card.done { _ = complete(card) }
             }
+            if args.contains("-demoWitness"), let step = pendingUnlock { witnessUnlock(step) }
+            if args.contains("-demoForged"), forgeReady { witnessForge() }
         }
     }
 
@@ -64,11 +75,24 @@ final class AppModel {
     var journeyStep: Int {
         Journey.step(daysSinceBirth: state.daysSinceBirth, activeDays: state.activeDays, ownsMetal: ownsMetal)
     }
-    /// The newest step not yet celebrated, if any.
+    /// The newest step not yet celebrated, if any (the Forge has its own ceremony).
     var pendingUnlock: Int? {
         let step = journeyStep
-        guard step > 0, !state.witnessed.contains("journey:\(step)") else { return nil }
+        guard step > 0, step < 5, !state.witnessed.contains("journey:\(step)") else { return nil }
         return step
+    }
+
+    // MARK: Eras and the Forge (chapter 03 §A.4, step VI)
+
+    var era: Int { ownsMetal ? 2 : 1 }
+    /// Earned and not yet witnessed: the ceremony plays, then the Metal Era is owned forever.
+    var forgeReady: Bool {
+        !ownsMetal && Journey.metalEligible(activeDays: state.activeDays, totalDepth: state.totalDepth)
+    }
+    func witnessForge() {
+        append(.momentWitnessed(key: "milestone:stage-2"))
+        for s in 1...5 where !state.witnessed.contains("journey:\(s)") { append(.momentWitnessed(key: "journey:\(s)")) }
+        reload()
     }
     func witnessUnlock(_ step: Int) {
         for s in 1...step where !state.witnessed.contains("journey:\(s)") { append(.momentWitnessed(key: "journey:\(s)")) }
@@ -78,16 +102,38 @@ final class AppModel {
     // MARK: record
 
     func reload() {
-        entries = (try? store.allEntries()) ?? []
+        if let store {
+            do { entries = try store.allEntries() } catch {
+                storageProblem = "Your record couldn't be read just now. Nothing was lost; please restart the app."
+            }
+        }
         state = GrowthEngine.compute(entries: entries, asOf: now, settings: settings)
     }
 
+    /// Writes one entry. Returns nil (and surfaces the problem) if it couldn't be saved: never a false success.
     @discardableResult
-    private func append(_ payload: Payload, at date: Date? = nil) -> Entry {
+    private func append(_ payload: Payload, at date: Date? = nil) -> Entry? {
+        guard let store else { return nil }
         let e = Entry.make(payload, at: date ?? now, settings: settings)
-        try? store.append(e)
+        do { try store.append(e) } catch {
+            storageProblem = "That couldn't be saved. Please try again."
+            return nil
+        }
         return e
     }
+
+    /// If the lived day changed while the app stayed open (e.g. across 04:00), move to the new day
+    /// before any action, so yesterday's cards can never be credited to today (Codex code review).
+    func refreshDay() {
+        let today = LivedDayRule.livedDay(at: now, in: settings.timeZone, boundary: settings.boundary)
+        if today != state.today { dealTodayIfNeeded() }
+    }
+
+    // MARK: onboarding (the birth can be interrupted and resumed)
+
+    var firstSparkDone: Bool { state.completedEver.contains(Catalog.firstSparkKey) }
+    var firstSparkStillToday: Bool { state.todayPlan.contains { $0.occurrenceKey == Catalog.firstSparkKey } }
+    var onboarded: Bool { isBorn && !activePaths.isEmpty && (firstSparkDone || !firstSparkStillToday) }
 
     // MARK: the birth
 
@@ -162,7 +208,7 @@ final class AppModel {
             }
             if slot.isSpark {
                 let id = String(slot.occurrenceKey.split(separator: ":").last ?? "")
-                let text = Catalog.spark(id)?.text ?? "Today's Spark"
+                let text = Catalog.anySpark(id)?.text ?? "Today's Spark"
                 let hidden = id.hasPrefix("x-")
                 return DayCard(id: slot.occurrenceKey, pillar: pillar, label: hidden ? "Hidden Spark · \(pillar.name)" : "Spark · \(pillar.name)",
                                title: text, detail: hidden ? "It appeared because you've grown" : "Your edge today", isSpark: true, done: done)
@@ -179,6 +225,7 @@ final class AppModel {
     }
 
     func swapSpark() {
+        refreshDay()
         guard !sparkSwapUsed, let current = state.todayPlan.first(where: \.isSpark),
               !state.completedToday.contains(current.occurrenceKey) else { return }
         let currentId = String(current.occurrenceKey.split(separator: ":").last ?? "")
@@ -193,13 +240,16 @@ final class AppModel {
     }
 
     func complete(_ card: DayCard) -> CompletionOutcome? {
+        refreshDay()
         guard let slot = state.todayPlan.first(where: { $0.occurrenceKey == card.id }),
               !state.completedToday.contains(card.id) else { return nil }
         let before = state
-        let e = append(.actionCompleted(occurrenceKey: slot.occurrenceKey, pillarWeights: slot.pillarWeights,
-                                        d: slot.d, isSpark: slot.isSpark))
+        guard let e = append(.actionCompleted(occurrenceKey: slot.occurrenceKey, pillarWeights: slot.pillarWeights,
+                                              d: slot.d, isSpark: slot.isSpark)) else { return nil }
         reload()
-        let comeback = state.comebackActive && before.completedToday.isEmpty && before.vitality < 0.5
+        let comebackKey = "comeback:\(state.today)"
+        let comeback = state.comebackActive && before.completedToday.isEmpty && !state.witnessed.contains(comebackKey)
+        if comeback { append(.momentWitnessed(key: comebackKey)); reload() }
         return CompletionOutcome(entryId: e.id, pillar: card.pillar,
                                  gainPercent: (state.ascent / before.ascent - 1) * 100,
                                  dayComplete: before.todayCompletion < 1 && state.todayCompletion >= 1,
@@ -219,9 +269,10 @@ final class AppModel {
     }
 
     func completeRitual() -> CompletionOutcome? {
+        refreshDay()
         guard !ritualDone else { return nil }
         let before = state
-        let e = append(.actionCompleted(occurrenceKey: ritualKey, pillarWeights: [ritual.pillar: 1], d: 1, isSpark: false))
+        guard let e = append(.actionCompleted(occurrenceKey: ritualKey, pillarWeights: [ritual.pillar: 1], d: 1, isSpark: false)) else { return nil }
         reload()
         return CompletionOutcome(entryId: e.id, pillar: ritual.pillar, gainPercent: (state.ascent / before.ascent - 1) * 100,
                                  dayComplete: before.todayCompletion < 1 && state.todayCompletion >= 1,
@@ -248,11 +299,12 @@ final class AppModel {
         guard journeyStep >= 4 else { return nil }
         let end = state.today.adding(days: -7 * (weeksAgo - 1) - 1)
         let start = end.adding(days: -6)
-        let weekEntries = entries.filter { $0.livedDay >= start && $0.livedDay <= end }
+        let weekEntries = GrowthEngine.effectiveEntries(entries).filter { $0.livedDay >= start && $0.livedDay <= end }
         var perPillar: [Pillar: Int] = [:]
         var days = Set<LocalDate>()
+        var seen = Set<String>()
         for e in weekEntries {
-            if case .actionCompleted(_, let w, _, _) = e.payload {
+            if case .actionCompleted(let key, let w, _, _) = e.payload, seen.insert(key).inserted {
                 days.insert(e.livedDay)
                 if let p = w.max(by: { $0.value < $1.value })?.key { perPillar[p, default: 0] += 1 }
             }
@@ -277,20 +329,25 @@ final class AppModel {
     // MARK: developer tools (time travel, reset), hidden behind a long press on the date
 
     func devAdvance(days: Int) {
+        if sandbox == nil, let copy = try? RecordStore.inMemory() {
+            for e in entries { try? copy.append(e) }
+            sandbox = copy
+        }
         devOffset += Double(days) * 86_400
-        UserDefaults.standard.set(devOffset, forKey: "dev.offset")
         dealTodayIfNeeded()
     }
 
+    /// Leaves the simulation: the real record was never touched.
     func devResetTime() {
         devOffset = 0
-        UserDefaults.standard.set(0.0, forKey: "dev.offset")
+        sandbox = nil
+        reload()
         dealTodayIfNeeded()
     }
 
     func devDeleteEverything() {
-        try? store.deleteEverything()
-        devResetTime()
+        try? store?.deleteEverything()
+        if sandbox == nil { devOffset = 0 }
         reload()
     }
 }

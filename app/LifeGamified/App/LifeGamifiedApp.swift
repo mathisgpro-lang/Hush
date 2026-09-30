@@ -10,8 +10,8 @@ struct LifeGamifiedApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if inBirth ?? !model.isBorn {
-                    BirthFlow(model: model, haptics: haptics, synth: synth) {
+                if inBirth ?? !model.onboarded {
+                    BirthFlow(model: model, haptics: haptics, synth: synth, startPhase: BirthFlow.resumePhase(model)) {
                         withAnimation(.easeInOut(duration: 1.2)) { inBirth = false }
                     }
                 } else {
@@ -19,7 +19,7 @@ struct LifeGamifiedApp: App {
                         .transition(.opacity)
                 }
             }
-            .onAppear { if inBirth == nil { inBirth = !model.isBorn } }
+            .onAppear { if inBirth == nil { inBirth = !model.onboarded } }
             .onChange(of: model.isBorn) { _, born in if !born { inBirth = true } }
         }
     }
