@@ -1,6 +1,6 @@
 # 04 — The Growth Model
 
-**Status:** Part A ✅ approved 2026-09-30 (decisions 56, 58) · Part B revision 3 (after Codex round 4; blocking items fixed), 🔎 targeted Codex check · **Last updated:** 2026-09-30
+**Status:** Part A ✅ approved 2026-09-30 (decisions 56, 58) · Part B revision 4 (Codex round-5 items fixed; reference vectors V1–V13 pass), 🔎 targeted Codex check · **Last updated:** 2026-09-30
 **Based on:** decisions 13–15, 47, 51–55 · **Feeds:** chapter 03 (the Flame draws what this chapter calculates), 05, 10, 16 §B.3, 17
 
 Part A is for Mathis. Part B is for the builders (and goes to Codex review).
@@ -120,7 +120,7 @@ All functions live in `Domain.GrowthEngine`. They're pure and deterministic (16 
 ## B.2 Inputs per completed Action (after de-duplication and corrections, 17 §B.4, §B.7)
 
 - `pillarWeights` (Σ = 1; any listed pillar ≥ 0.1) and `d` are copied from the slot for S actions. For non-S actions they're set at completion time.
-- **Duplicates of one occurrence** (same `occurrenceKey`): the completion with the **highest** `d × edge` counts, with ties broken by the earliest `(occurredAt, id)`. So a duplicate can never replace a harder completion with an easier one, and adding a duplicate never lowers growth.
+- **Duplicates of one occurrence** (same `occurrenceKey`, rev 6): the occurrence contributes, **per pillar**, the maximum over its duplicates of `w_p × d × edge`. Adding a duplicate can never lower any pillar (vectors V12). **Accepted bound:** a duplicate with *different* weights can add credit to a pillar the original didn't favor. This only happens when the user re-logs the same occurrence with different weights, and the user can correct it (P2).
 - `isEdge` = spark **or** `d ≥ 1.2`.
 - Evidence is **ignored** by all growth formulas (decision 55). Growth reads P-class entries only.
 
@@ -153,27 +153,39 @@ G          = Π_{finalized D} (1 + 0.01 × completion(D)) × (1 + 0.01 × comple
 - **Vitality presence is separate from growth credit:** `presence(D) = 1` on a planned rest day regardless of `restGrowthCredit`.
 - A correction that voids surplus effort on a full day leaves completion at 1 (vector V8b).
 
-## B.5 Vitality
+## B.5 Vitality (rev 6)
+
+**Inputs:** `presence(D)` for finalized days (= completion(D); planned rest and pause = 1), plus `presence(today)` so far.
 
 ```
-presence(D)  = completion(D)                    // planned rest ⇒ 1
-window       = the last 14 finalized days, i = 1 (yesterday) … 14; missing days = 0
-w_i          = 0.8^(i−1) / Σ_{j=1..14} 0.8^(j−1)
-freeDay      : if any presence(i) > 0 for i ∈ 1…7, set the lowest presence among i ∈ 1…7 to 1.0
-               (ties → smallest i; the tie-break matters because weights differ, so it's normative)
-V_hist       = Σ w_i × presence_i
-V_live       = V_hist + (1 − V_hist) × 0.3 × presence(today)        // doing today's things brightens today
-V            = max(0.15, V_comeback)
+forgiven     = every absence day belonging to a run of ≥ 3 presence-0 days that is immediately followed
+               by ≥ 3 finalized days with presence > 0 (a COMPLETED comeback). Forgiveness is permanent.
+window       = the last 14 finalized calendar days, minus forgiven days; days before the first record count as 0
+w_r          = 0.8^r / Σ 0.8^r over the included days, r = 0 (most recent included day) …
+freeDay      : if any included day among the 7 most recent has presence > 0, set the lowest of those 7 to 1.0
+               (ties → most recent; the tie-break is normative)
+V_hist       = Σ w_r × presence_r
+V_live       = V_hist + (1 − V_hist) × 0.3 × presence(today)
 ```
-- **"Embers"** = `V ≤ 0.25`. After 14+ fully absent days, V = 0.15 (the floor); it stays there however long the absence lasts (vectors V6d, V6e are equal by design).
 
-**Comeback state machine** (over the sequence of finalized days plus today if its presence > 0):
-- Scan backward from the most recent day: `n` = the length of the trailing run of days with presence > 0; `absence` = the length of the run of presence-0 days immediately before it (planned rest days have presence 1, so they're never absence).
-- **Active** iff `absence ≥ 3` and `1 ≤ n ≤ 3`. Then `V_comeback = max(V_live, R(n))` with `R(1)=0.60, R(2)=0.80, R(3)=1.00`. These are **minimums**: if V_live is already higher, it stands.
-- Otherwise `V_comeback = V_live`.
-- A provisional today with presence 0 doesn't end a comeback. Only a finalized presence-0 day does, because it resets the trailing run.
-- **Forgiveness (Codex round 4, blocking #5): once a comeback completes (n ≥ 3), the absence before it is forgiven.** The window then includes only days from C onward, and the weights renormalize over the included days. So completing day 4 of a comeback can never dim the Flame (vectors V9a–c), and normal decay resumes only with a real new absence (V9d). This implements "welcomed home, never judged" (decision 52).
-- **The sensory event `comeback`** fires on the first completion of the day where n becomes 1. It's shown **at most once per installation**, and suppressed on any device once a synced `momentWitnessed { key: "comeback:{livedDay}" }` has arrived. Two devices used offline at the same moment may each show it once; that's an accepted limitation, since eventual sync can't promise global exactly-once.
+**Comeback state (from finalized days only):**
+```
+n_fin        = the number of trailing finalized days with presence > 0
+absence      = the length of the run of presence-0 days right before them
+inComeback   = absence ≥ 3  and  n_fin ≤ 3  and  (n_fin ≥ 1 or presence(today) > 0)
+n_eff        = min(3, n_fin + [presence(today) > 0])
+V            = max(0.15, inComeback ? max(V_live, R(n_eff)) : V_live)      R(1)=0.60, R(2)=0.80, R(3)=1.00
+```
+
+**Invariants** (each has vectors):
+1. **Within a lived day, completing more never lowers V.** All day-state comes from finalized days, and today can only add (V13: a property test over 2,000 random histories).
+2. **Day 4 of a comeback can't dim**, even after half-completed comeback days (V11a/b). The relight minimum holds through the day on which the third comeback day is behind you.
+3. **A completed comeback forgives the absence before it, permanently.** V then reflects only how you've lived since (V9). Partial days can still show honestly **overnight**, for example 0.80 on the morning of day 5 after three half days (V11c), but never at the moment of a completion.
+4. After 14+ fully absent days, V = 0.15 (the floor) for as long as the absence lasts (V6d/e).
+
+- **"Embers"** = `V ≤ 0.25`.
+- **The sensory event `comeback`** fires on the first completion of the day where `n_eff` becomes 1. It's shown **at most once per installation**, and suppressed on any device once a synced `momentWitnessed { key: "comeback:{livedDay}" }` has arrived. Two devices used offline at the same moment may each show it once; that's an accepted limitation, since eventual sync can't promise global exactly-once.
+- Vitality is a function of `asOf` (16 §B.3), so it changes without new entries.
 
 ## B.6 Level and difficulty (skill tracks)
 
@@ -224,6 +236,10 @@ V            = max(0.15, V_comeback)
 | V9a–c | comeback day 4 before acting / day 4 completed / day 5 | **1.0** / **1.0** / **1.0** (no dimming) |
 | V9d | after a completed comeback, 3 days absent | **0.6355744157043132** |
 | V10a / V10b | device A's contract completed / plus B's competing contract | **1.0** / **1.0** (never retracts) |
+| V11a / V11b | 14 days off, three half comeback days; day 4 morning / day 4 completed | **1.0** / **1.0** (completion never dims) |
+| V11c | …then the morning of day 5 | **0.8048780487804877** (an honest overnight dip, not on completion) |
+| V12a–c | an occurrence with weights body .9/heart .1 (d=1), plus a duplicate body .1/heart .9 (d=1.1) | body **0.9** → **0.9** (not lowered); heart **0.99** |
+| V13 | property: V(today=0) ≤ V(0.25) ≤ V(0.5) ≤ V(1) for 2,000 random histories | holds |
 
 **Moved to the implementation plan (decision 60):** full entry-level fixtures (raw entries → DerivedState, including corrections, permutations, materialized days, swaps, level transition rows, prompt hash) built on this reference. The reference arithmetic stays the oracle.
 
