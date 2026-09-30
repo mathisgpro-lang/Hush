@@ -79,7 +79,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 
 ## ▶ Where we left off: RESUME HERE (updated 2026-10-01, PLAN 2.0: building paused, decision 83)
 
-**Top priority now: Plan 2.0**, re-planning the whole universe before building further (decision 83). See the proposal in the conversation log, session 3, and the Plan 2.0 section below once drafted. Codex's art queue (character bible, world map, grove, sanctuary) is scheduled at 01:16 and feeds the bibles.
+**Next session starts Plan 2.0**, re-planning the whole universe (decision 83), beginning with part 1: **the integrated experience** (how real life, challenges, long-term goals, the world and the Flame blend into one). The seven parts: (1) integrated experience, (2) World Bible, (3) Character Bible, (4) technical architecture for a game-scale world and 3D character (engine research and spikes), (5) production (AI vs. human artists, cost), (6) phased roadmap to a polished vertical slice → MVP → V1, (7) rewriting chapters 03/05/12/23/28 around the universe. **Rule (Mathis): nothing gets built before it's planned out and approved, like the first slice.** See the proposal in the conversation log, session 3, and the Plan 2.0 section below once drafted. Codex's art queue (character bible, world map, grove, sanctuary) is scheduled at 01:16 and feeds the bibles.
 
 
 **Any new session: read this block first and continue exactly from it.** Standing rule (decision 63) applies, with its exceptions.

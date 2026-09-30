@@ -2,7 +2,11 @@
 
 A long-horizon self-growth app, built to last years and decades, and **the creation of a whole universe**. At its center is **the Flame**: a personified cartoon character (eyes, a mouth, expressions) that *is* the user and evolves over days, months and years as they genuinely grow. It lives in **an explorable world** (a map of realms and locations, lore) that opens only by living. See [docs/master-plan/29-the-universe.md](docs/master-plan/29-the-universe.md): **the heart of the project.** The app is both **tracker and Companion**: it hands you your day, builds the plan for any goal, makes each day's invisible 1% progress visible today, and turns growth into lasting, verifiable proof. The aesthetic is **cartoon / anime-like** (decision 79): warm, soft, expressive. Not photoreal, not pixel art. The ambition is millions of users and a profoundly good product.
 
-## Current phase: PLANNING the MVP. No code yet.
+## Current phase: PLAN 2.0, re-planning the universe (decision 83). Building is paused.
+
+The foundation is built (`app/`: the growth engine, the record, living slices on Mathis's iPhone). **Nothing new gets built before it's planned and approved by Mathis** ("like we did for the first slice"). Start with Plan 2.0 part 1: the integrated experience. See the RESUME HERE block in `docs/master-plan/00-index.md`.
+
+### Earlier phase notes
 
 MVP-first order (decision 46): 04 → 03 → 28 → 05 → 06 → 07 → 08 → 12 → 23. **When chapter 23 is approved, remind Mathis to install Xcode 27 and join the Apple Developer Program**, then start build plans.
 
