@@ -33,7 +33,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 ### Part II — The Experience
 | # | Chapter | Status | Notes |
 |---|---------|--------|-------|
-| 03 | The Flame: Depth, Vitality, visual anatomy, milestone transformations | ⬜ | Decisions 7, 10, 12, 13 |
+| 03 | [The Flame](03-the-flame.md): Depth, Vitality, visual anatomy, milestone transformations | 📝 (defaults) | Decisions 7, 10, 12, 13 |
 | 28 | **The Adventure:** the world, the journey, and real game depth (progression, discovery, mystery, meaningful choices) | ⬜ | Decision 40. Added 2026-09-30 |
 | 04 | [Growth model](04-growth-model.md): pillars, what "1%" means, difficulty matching, evidence | ✅ A / 🔎 B | Decisions 13–15; science research needed; settle where finances, adventure/play and home belong |
 | 05 | The daily loop: Paths, Spark, Ritual, the shape of a day | ⬜ | Decision 16; confirm Spark swap rule |
@@ -84,6 +84,19 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 - Codex round-4 (final) review outcome: `docs/reviews/2026-09-30-codex-r4.md` plus Claude's summary. Only blocking design-level items need Mathis.
 
 **Next up after that:** finish chapter 03 → **feel prototype on Mathis's iPhone (free, Xcode + cable)** → chapters 28, 05, 06, 07, 08, 12 → 23 (MVP) → build.
+
+## 📋 Decisions to review (made by default under decision 63; any can be reversed)
+
+| # | Decision | Where |
+|---|---|---|
+| 65 | A planned rest day counts as a full day (+1%, full Vitality) | ch. 04 |
+| 03-a | Every completed Action visibly adds to the vessel (a spark flies from the fire into the vessel and extends a motif) | ch. 03 §A.3 |
+| 03-b | Each Flame gets a unique seed at birth, so no two vessels are alike | ch. 03 §A.3 |
+| 03-c | Transformation thresholds: Metal ≈ 6 weeks (30 active days), Crystal ≈ 6 months (150), Light ≈ 2 years (500); stages 5+ unknown | ch. 03 §A.4 |
+| 03-d | Your next stage shows as a veiled silhouette; nothing beyond Light is shown until someone reaches it | ch. 03 §A.4 |
+| 03-e | MVP includes one earnable fire style (from the first Ritual) | ch. 03 §A.5 |
+| 03-f | Flame at the center of home; touch = heartbeat haptic; press and hold = your story | ch. 03 §A.6 |
+| 03-g | MVP art: Stone + Metal in full, Crystal + Light as silhouettes | ch. 03 §A.7 |
 
 ## Working order (updated 2026-09-30, decision 46: MVP first)
 

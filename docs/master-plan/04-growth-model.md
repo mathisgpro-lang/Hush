@@ -87,7 +87,7 @@ You start at **×1.00**. After a strong first year you might be at ×20 or ×30.
 
 All the numbers in Part B are **starting values**. We'll tune them by feel during the private beta. Every change applies from that day forward (rule 1).
 
-**One detail to confirm (proposed):** on a **planned rest day** (your plan says rest), resting counts as a **full day**: +1% and full Vitality. Rest is part of growth. Rest days are set by your plan, not by you on the spot, so this can't be used to skip days.
+**Decided (65):** on a **planned rest day** (your plan says rest), resting counts as a **full day**: +1% and full Vitality. Rest is part of growth. Rest days are set by your plan, not by you on the spot, so this can't be used to skip days.
 
 ---
 
@@ -138,7 +138,7 @@ C_S        = Σ_{completed slots} d(s)
 F          = Σ_{completed non-S actions} d(a)
 completion = min(1, (C_S + min(F, 0.5·T)) / T)          if S(D) non-empty
            = min(1, F / 2.0)                              if S(D) empty (early days, no plan)
-           = 1                                            if isPlannedRest (proposed, Part A §A.8)
+           = 1                                            if isPlannedRest (decision 65)
 G          = Π_{finalized D} (1 + 0.01 × completion(D)) × (1 + 0.01 × completion(today))
 ```
 - **Fill can cover at most half the day:** extra effort helps, but you can't earn a full day without your day (vector V7c).
