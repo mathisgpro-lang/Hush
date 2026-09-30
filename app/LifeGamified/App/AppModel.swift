@@ -62,6 +62,7 @@ final class AppModel {
             }
             if args.contains("-demoWitness"), let step = pendingUnlock { witnessUnlock(step) }
             if args.contains("-demoForged"), forgeReady { witnessForge() }
+            if args.contains("-demoWitness") { while let p = pendingPlace { celebratePlace(p) } }
         }
     }
 
@@ -325,6 +326,28 @@ final class AppModel {
 
     /// Ascent at the end of yesterday, for "Close the day".
     var ascentYesterday: Double { state.ascent / (1 + 0.01 * state.todayCompletion) }
+
+    // MARK: the world (chapter 29)
+
+    func isOpen(_ place: Place) -> Bool { World.isOpen(place.location, state: state, journeyStep: journeyStep) }
+
+    /// A place earned but not yet celebrated (a ceremony plays once, then it's owned forever).
+    var pendingPlace: Place? {
+        let newly = World.newlyOpened(WorldCatalog.places.map(\.location), state: state, journeyStep: journeyStep)
+            .filter { $0.id != "sanctuary" }
+        return newly.first.flatMap { WorldCatalog.place($0.id) }
+    }
+
+    func celebratePlace(_ place: Place) {
+        append(.momentWitnessed(key: World.openedKey(place.id)))
+        reload()
+    }
+
+    func visit(_ place: Place) {
+        guard !state.witnessed.contains(World.visitedKey(place.id)) else { return }
+        append(.momentWitnessed(key: World.visitedKey(place.id)))
+        reload()
+    }
 
     // MARK: your story (press and hold the Flame, chapter 03 §A.6)
 

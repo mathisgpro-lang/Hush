@@ -16,6 +16,7 @@ struct TodayView: View {
     @State private var showSettings = false
     @State private var showVoice = false
     @State private var showStory = false
+    @State private var showMap = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -50,9 +51,15 @@ struct TodayView: View {
         .sheet(isPresented: $showSettings) { SettingsSheet(model: model) }
         .sheet(isPresented: $showVoice) { VoiceSheet(model: model) }
         .sheet(isPresented: $showStory) { StorySheet(model: model).presentationDetents([.medium, .large]) }
+        .fullScreenCover(isPresented: $showMap) { WorldMapView(model: model, haptics: haptics) }
+        .overlay { if model.pendingUnlock == nil && !model.forgeReady, let place = model.pendingPlace {
+            PlaceOpened(place: place) { model.celebratePlace(place); haptics.comeback(); showMap = true } } }
         .overlay { if let step = model.pendingUnlock { UnlockMoment(step: step) { model.witnessUnlock(step); haptics.thrum(.spirit, intensity: 0.8) } } }
         .overlay { if model.forgeReady && model.pendingUnlock == nil { ForgeMoment(forging: $forging, haptics: haptics, synth: synth, stage: stage) { model.witnessForge() } } }
-        .onAppear { model.dealTodayIfNeeded(); synth.setAmbience(vitality: model.state.vitality) }
+        .onAppear {
+            model.dealTodayIfNeeded(); synth.setAmbience(vitality: model.state.vitality)
+            if ProcessInfo.processInfo.arguments.contains("-demoMap") { showMap = true }   // simulator testing only
+        }
         .onDisappear { synth.stopAmbience() }
         .onChange(of: model.state.vitality) { _, v in synth.setAmbience(vitality: v) }
         .onChange(of: scenePhase) { _, p in if p != .active { synth.stopAmbience() } else { synth.setAmbience(vitality: model.state.vitality) } }
@@ -125,6 +132,8 @@ struct TodayView: View {
                 }
             }
             Spacer()
+            Button { showMap = true } label: { Image(systemName: "map") }
+                .buttonStyle(.bordered).tint(Theme.dawn).accessibilityLabel("The World")
             if model.journeyStep >= 3 {
                 Button { showVoice = true } label: { Image(systemName: "text.bubble") }
                     .buttonStyle(.bordered).tint(Theme.dawn).accessibilityLabel("The Voice, your Companion")
@@ -471,5 +480,28 @@ struct PixelBar: View {
             }
         }
         .accessibilityValue("\(Int(value * 100)) percent")
+    }
+}
+
+/// A new place in the world has opened (chapter 29): a ceremony, once.
+struct PlaceOpened: View {
+    let place: Place
+    var onGo: () -> Void
+    @State private var shown = false
+    var body: some View {
+        ZStack {
+            Color.black.opacity(shown ? 0.72 : 0).ignoresSafeArea()
+            VStack(spacing: 14) {
+                Image(systemName: place.icon).font(.system(size: 54)).foregroundStyle(place.color)
+                    .shadow(color: place.color, radius: 16)
+                Text("A new place opens").font(Theme.ceremonial(18)).foregroundStyle(Theme.textSecondary)
+                Text(place.name).font(Theme.ceremonial(30)).foregroundStyle(Theme.text)
+                Text(place.blurb).font(Theme.ceremonial(17)).foregroundStyle(Theme.textSecondary)
+                    .multilineTextAlignment(.center).padding(.horizontal, 36)
+                Button("Travel there", action: onGo).buttonStyle(.bordered).tint(place.color).padding(.top, 16)
+            }
+            .opacity(shown ? 1 : 0).scaleEffect(shown ? 1 : 0.94)
+        }
+        .onAppear { withAnimation(.easeOut(duration: 1.0)) { shown = true } }
     }
 }
