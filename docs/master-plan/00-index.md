@@ -77,7 +77,10 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-01, Slice 1 in progress)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-01, PLAN 2.0: building paused, decision 83)
+
+**Top priority now: Plan 2.0**, re-planning the whole universe before building further (decision 83). See the proposal in the conversation log, session 3, and the Plan 2.0 section below once drafted. Codex's art queue (character bible, world map, grove, sanctuary) is scheduled at 01:16 and feeds the bibles.
+
 
 **Any new session: read this block first and continue exactly from it.** Standing rule (decision 63) applies, with its exceptions.
 
