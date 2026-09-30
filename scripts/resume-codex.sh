@@ -41,6 +41,5 @@ run_brief docs/reviews/briefs/mvp-chapters-review.md \
 run_brief docs/design/briefs/sanctuary-empty-pedestal.md \
   docs/design/sanctuary/stone-era-bright-empty.png docs/design/sanctuary/stone-era-embers-empty.png
 
-run_brief docs/design/briefs/stone-vessel-assets.md \
-  assets/flame/stone/vessel-body.png assets/flame/stone/vessel-rim-light.png assets/flame/stone/fire-core.png \
-  assets/flame/stone/ember-core.png assets/flame/stone/veins-body.png assets/flame/stone/veins-mind.png
+run_brief docs/design/briefs/vessel-bodies.md \
+  assets/flame/stone/vessel-body.png assets/flame/metal/vessel-body.png
