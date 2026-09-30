@@ -132,7 +132,7 @@ struct BirthFlow: View {
     private func fullBleed(_ name: String, caption: String?) -> some View {
         ZStack(alignment: .bottom) {
             if let img = UIImage(named: name) {
-                Image(uiImage: img).resizable().scaledToFill().ignoresSafeArea().transition(.opacity)
+                KenBurns(image: img).ignoresSafeArea().transition(.opacity)
             }
             if let caption {
                 Text(caption).font(Theme.ceremonial(20)).foregroundStyle(Theme.text)
@@ -214,5 +214,19 @@ struct BirthFlow: View {
             }
         }
         .coordinateSpace(name: "screen")
+    }
+}
+
+/// A slow cinematic push-in on a still frame (the carving, the dawn).
+private struct KenBurns: View {
+    let image: UIImage
+    @State private var zoom = 1.0
+    var body: some View {
+        GeometryReader { geo in
+            Image(uiImage: image).resizable().scaledToFill()
+                .frame(width: geo.size.width, height: geo.size.height)
+                .scaleEffect(zoom).clipped()
+                .onAppear { withAnimation(.easeOut(duration: 5)) { zoom = 1.12 } }
+        }
     }
 }

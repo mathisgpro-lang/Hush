@@ -72,34 +72,31 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-01, end of Mathis's movie break)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-01, Slice 1 in progress)
 
-**Any new session: read this block first and continue exactly from it.** Standing rule (decision 63): adopt Claude's recommendations by default, log them as [by default], add them to the review table below, and keep moving. Exceptions: spending money, sending anything outside, weakening trust or privacy, reversing Mathis's own decisions.
+**Any new session: read this block first and continue exactly from it.** Standing rule (decision 63) applies, with its exceptions.
 
-### 1. State
-- Foundation approved (66). MVP-track chapters are drafted with defaults (67).
-- The **M0 feel prototype** builds and runs (`prototypes/feel-v0/`, screenshots in `docs/design/prototype-v0/`).
-- The **M1a plan** is written and verified (35/35 tests pass in scratch): `docs/plans/2026-10-01-m1a-growth-engine-core.md`. **It waits for Mathis's review and choice of execution method** (the writing-plans handoff). Recommended: Native.
-- The Codex review of the MVP chapters is in (70). Its triage follows.
+### 1. State: building in living slices (decision 72)
+- **Real app:** `app/LifeGamified.xcodeproj` (iOS 26+, signing team SX845VA92A, bundle `com.mathis.lifegamified`) plus `app/Packages/Core` (targets `Domain` and `Storage` with GRDB; **52 tests pass** via `cd app/Packages/Core && swift test`).
+- **Slice 1 done:** birth flow (myth → hold the ember → carving → dawn → first Path → first spark → Ascent reveal), Today (Codex layout), Flame + Sanctuary (vitality crossfade), the tracking moment (hold, strike, spark flight, thrum, pillar voices), Spark from day 2 with swap, Undo (void correction), Close the day, journey marker I–II, dev menu (long-press the date: time travel, delete everything). Verified in the simulator (day 1, day 2, 14 days away).
+- **Install on Mathis's iPhone 15 (iOS 26.4):** press ▶ in Xcode with the phone connected (or "Connect via network"). The free signing expires every 7 days, so re-run then.
 
-### 2. Claude fixes by default, next (from `docs/reviews/2026-10-01-codex-mvp-chapters.md`)
-- **B1:** vessel motifs grow monotonically with *absolute* Depth; relative share affects emphasis only; no growth on zero-credit duplicates (chapter 03 + vectors).
-- **B2:** birth identity with three states (recovered / confirmed new / cloud unknown); a provisional local birth that attaches later; one canonical `flameBorn` per dataset; idempotent onboarding commands (chapters 08, 17).
-- **B3:** pause as bounded intervals with auto-end; quota from synced P events; **no reason stored in P** (privacy); pause freezes Vitality (doesn't count toward a comeback); paused slots aren't skips; extend the reference vectors (chapters 05, 04).
-- **B4, B5:** one scheduler for dealing and materialization; a validator for the **final combined daily prescription**; one engine owns targets; Hidden Sparks use the same safety schema (chapters 05, 07, 28).
-- **B6:** a safety outcome matrix; when screening is unknown, withhold personalized health guidance; a minimal H2 "health caution" restriction until cleared (chapter 07).
-- **B9, B10, B13:** move class-aware stores, backup exclusion and journals into M1; a bundled validated catalog and seed fixture at M1/M2; curated plan acceptance at M3; `path.adapt` in M4; entry kinds `flameBorn`, `pauseStarted`/`pauseEnded`, `chronicleWritten` into chapter 17 (chapters 23, 17, 28).
-- **B11:** durable success drives the landing; 900 ms is a target; Undo = a void correction (chapter 06).
-- **B12 (default):** only stage 2 (Metal) is enabled in the MVP; stages 3+ are evaluated once their art ships, granted retroactively if earned, never revoked (chapters 03, 23).
-- Deferrable D1–D10 go into the respective implementation plans.
-- Then a **targeted Codex re-check** of the fixed chapters.
+### 2. In flight
+- **Codex: Stone vessel layered assets** (`docs/design/briefs/stone-vessel-assets.md` → `assets/flame/stone/*.png`). When they arrive:
+  1. key out the black backgrounds (or keep screen blending for the emissive layers);
+  2. copy them into `app/LifeGamified/Resources/` named `vessel-body`, `vessel-rim-light`, `veins-body`, `veins-mind` (FlameView picks them up automatically when `vessel-body` exists);
+  3. check in the simulator;
+  4. commit.
 
-### 3. Needs Mathis (not decided by default)
-1. **Review the M1a plan** and choose the execution method (Native recommended).
-2. **B7/B8:** health, training and crisis texts need review by a **qualified person** before real use (cost or contacts). Also, faithful use of NHS Couch to 5K. **And:** keep all 8 launch Paths, or narrow them?
-3. **B10:** Private Cloud Compute requires the **$99 Apple Developer Program** (plus the Small Business Program). Authorize when ready; until then, the Companion runs on-device only.
-4. **Try the feel prototype on his iPhone** (`prototypes/feel-v0/README.md`), and answer chapter 06 §B.5.
-5. The app's name, the beta language(s), and his own current goals (user zero).
+### 3. Next slices (decision 72)
+- **Slice 2:** Paths screen (add up to 3 Paths), a Hidden Spark, a first real Ritual (local, no Relay count), the Chronicle (template) → First Journey steps III–V.
+- **Slice 3:** the Forge (the Stone → Metal ceremony) and Metal Era art.
+- **Before any health or training plans or Companion AI:** the chapter 07 safety fixes (decision 70, B5–B8) and Mathis's decisions on a qualified reviewer and the Path library.
+
+### 4. Needs Mathis
+- Live with Slice 1 on his phone; share what feels good or off.
+- From decision 70: a qualified reviewer for health and safety content; keep or narrow the 8-Path library; $99 before Private Cloud Compute.
+- The app's name; the beta language(s); his own goals (user zero).
 
 ## 📋 Decisions to review (made by default under decision 63; any can be reversed)
 
