@@ -22,12 +22,12 @@ struct TodayView: View {
         let s = model.state
         ZStack {
             SanctuaryView(vitality: s.vitality, era: model.era)
-            PixelFlameView(vitality: s.vitality, depth: s.depth, stage: stage, era: model.era, shake: forging ? 1 : 0)
+            FlameCharacter(vitality: s.vitality, totalDepth: s.totalDepth, stage: stage, era: model.era)
             // Touch your Flame: a heartbeat. Press and hold: your story (chapter 03 §A.6).
             GeometryReader { geo in
                 Color.clear.contentShape(Rectangle())
                     .frame(width: geo.size.height * 0.18, height: geo.size.height * 0.28)
-                    .position(x: geo.size.width / 2, y: geo.size.height * 0.43)
+                    .position(x: geo.size.width / 2, y: geo.size.height * 0.40)
                     .onTapGesture { haptics.heartbeat(); stage.flare(seconds: 0.6, strength: 0.4) }
                     .onLongPressGesture(minimumDuration: 0.6) { haptics.thrum(.spirit, intensity: 0.7); showStory = true }
                     .accessibilityLabel("Your Flame").accessibilityHint("Double-tap and hold to see your story")

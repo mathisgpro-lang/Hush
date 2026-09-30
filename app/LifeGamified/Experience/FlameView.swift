@@ -217,10 +217,10 @@ struct SanctuaryView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                layer(era >= 2 && UIImage(named: "sanctuary-pixel-metal") != nil ? "sanctuary-pixel-metal" : "sanctuary-pixel", geo)
+                layer(era >= 2 && UIImage(named: "sanctuary-cartoon-metal") != nil ? "sanctuary-cartoon-metal" : "sanctuary-cartoon", geo)
                 // Low Vitality: a calm blue dusk washes over the world (never dark).
                 Color(red: 0.10, green: 0.14, blue: 0.32).opacity(0.55 * max(0, min(1, (0.9 - vitality) / 0.75)))
-                if era >= 2 && UIImage(named: "sanctuary-pixel-metal") == nil {
+                if era >= 2 && UIImage(named: "sanctuary-cartoon-metal") == nil {
                     Color(red: 0.25, green: 0.45, blue: 0.7).opacity(0.12).blendMode(.overlay)   // placeholder Metal tint
                 }
                 LinearGradient(colors: [.black.opacity(0.35), .clear, .black.opacity(0.6)], startPoint: .top, endPoint: .bottom)
@@ -232,9 +232,9 @@ struct SanctuaryView: View {
 
     @ViewBuilder private func layer(_ name: String, _ geo: GeometryProxy) -> some View {
         if let img = UIImage(named: name) {
-            Image(uiImage: img).interpolation(.none).resizable().scaledToFill()   // crisp pixels, never smoothed
+            Image(uiImage: img).resizable().scaledToFill()
                 .frame(width: geo.size.width, height: geo.size.height)
-                .scaleEffect(1.08, anchor: .top)   // the art's painted pedestal sits behind the day cards
+                .scaleEffect(1.05, anchor: .top)   // the art's painted pedestal sits behind the day cards
                 .clipped()
         } else {
             Color(red: 0.23, green: 0.18, blue: 0.29)

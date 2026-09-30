@@ -210,7 +210,7 @@ struct BirthFlow: View {
     private var firstSparkView: some View {
         ZStack {
             SanctuaryView(vitality: model.state.vitality)
-            PixelFlameView(vitality: model.state.vitality, depth: model.state.depth, stage: stage)
+            FlameCharacter(vitality: model.state.vitality, totalDepth: model.state.totalDepth, stage: stage)
             VStack {
                 VStack(spacing: 6) {
                     Text(phase == .reveal ? "Ascent" : "One thing, right now.")
