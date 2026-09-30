@@ -1,7 +1,7 @@
 # 20 — Security, Privacy and Compliance
 
-**Status:** First pass (Phase B baseline): Part A ✅ approved 2026-09-30 · Part B 🔎 in Codex review · **Last updated:** 2026-09-30
-**Based on:** decisions 29, 30, 34, 37 · **Depends on:** chapters 16, 17
+**Status:** First pass (Phase B baseline): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B 🔎 revision 2, in Codex review · **Last updated:** 2026-09-30
+**Based on:** decisions 29, 30, 34, 37, 43, 48–50 · **Depends on:** chapters 16, 17
 
 ---
 
@@ -13,14 +13,20 @@
 |---|---|---|
 | The record, plans, Companion memory | The user (phone + private iCloud) | **No** |
 | Health data | Apple Health | **No** |
-| Companion conversations | Processed by Apple, or by a frontier AI via the Relay; not stored anywhere | **No** (passed through, never kept) |
-| Ritual counts | The Relay | Only anonymous totals ("41,209 joined") |
+| Companion conversations (MVP) | Processed by Apple only (on the phone or in Apple's private cloud); not stored anywhere | **No** |
+| Ritual participation | The Relay | It sees a **random anonymous device key** (to prove the request comes from the real app) and which Rituals that key joined. It never knows who you are. The link between key and Ritual is deleted about 10 days after each Ritual closes; only the total count is kept. |
 | Payments (later) | Apple | **No** |
 | Crash reports | Apple, and only if the user opted into sharing with developers | Anonymous technical reports |
 
+**Honesty rule (decision 48):** the privacy promise states the anonymous device key plainly. We never claim "we know nothing" when we know something, however small.
+
+**After the MVP:** if a frontier AI (like Claude) is added, some requests will *pass through* the Relay on their way to it. They won't be stored, but we won't pretend they're invisible either. This will come with a clear permission screen and wording like "passed through, never stored" (decision 49).
+
 ## A.2 The App Store privacy label
 
-Apple's definition says data processed only to serve a request, and not kept, doesn't count as "collected." With the design above, the **MVP aims for the label "Data Not Collected"**, the strongest possible. From V1, if users opt into anonymous statistics (decision 37), the label becomes **"Data Not Linked to You."** The exact label gets confirmed at App Store submission.
+The label appears at public release (V1), not during the private beta.
+- **Our honest expectation: "Data Not Linked to You."** This is the second-strongest label. It's there because the anonymous device key used for Rituals counts as an identifier, even though it can't be traced to a person.
+- **"Data Not Collected"** is only possible if Rituals work without the Relay. We'll look at that trade-off again in chapter 11. We won't bend the definition to get the better label.
 
 ## A.3 What's protected, and how
 
@@ -28,12 +34,13 @@ Apple's definition says data processed only to serve a request, and not kept, do
 - **No spy code.** No advertising, tracking or analytics kits inside the app, ever, in the MVP.
 - **Encrypted everywhere.** On the phone, in iCloud (fully end-to-end for users with Apple's Advanced Data Protection), and in transit.
 - **Safety in the Companion.** Hard limits are enforced by code, not just by instructions to the AI. Sensitive areas refer the user to a professional.
+- **Deletion really deletes.** An old phone coming back online can never bring deleted data back.
 
 ## A.4 What you still need to do (not now; before the private beta or V1)
 
-1. **A privacy policy**, short and honest. It's easy to write when you hold nothing.
-2. **Ask Apple App Review in writing** about the health-data-in-iCloud rule (chapter 16, §A.2).
-3. **Apply for Apple's Private Cloud Compute access**, which requires joining the App Store Small Business Program (free, and it also cuts Apple's commission to 15%).
+1. **A privacy policy**, short and honest. It covers what the Relay sees, and how Apple processes Companion requests.
+2. **Ask Apple App Review in writing** about the health-data rule, **before the health features are built** (decision 50). I'll draft the question.
+3. **Join Apple's Small Business Program** (free, and it cuts Apple's commission to 15%), then **apply for Private Cloud Compute access**.
 4. **Health disclaimers**, for example "not medical advice." Wording goes in chapter 15.
 5. **Before V1:** one review by a human security and privacy professional (decision 20).
 
@@ -45,35 +52,51 @@ Apple's definition says data processed only to serve a request, and not kept, do
 
 | Threat | Mitigation |
 |---|---|
-| Stolen or lost phone | iOS data protection (the local DB uses `completeUntilFirstUserAuthentication`, which background sync requires), a device passcode, and the Keychain for secrets |
-| Someone abusing the Relay (AI cost, fake Ritual counts) | App Attest assertion on every request; per-key rate limits; daily AI budget caps; de-duplication tokens (16 §B.7) |
-| Relay compromise | The Relay holds no personal data, keeps no content logs, and stores secrets only in the platform's secret store; provider keys can be rotated |
-| Leaks from the AI provider | Minimal context per request; zero-retention agreements with the provider; PCC before third parties |
-| Supply chain (dependencies) | Minimal dependencies. Each one needs a written justification in `docs/dependencies.md`, pinned versions, and review on update |
-| Prompt injection via user text or imported content | Model outputs never directly trigger destructive or record-writing actions without deterministic validation; plans are validated by safety code (16 §B.4) |
-| Self-reported cheating for public status | Out of scope for the MVP (no public status). Chapter 09 designs verification |
+| Stolen or lost phone | iOS data protection (`completeUntilFirstUserAuthentication` for the databases, which background sync requires); the Keychain for secrets |
+| Relay abuse (fake Ritual counts) | App Attest registration plus an assertion on every request, with a counter that strictly increases; per-key rate limits; de-duplication per key and window (16 §B.7) |
+| Relay compromise | Holds only key registrations and short-lived de-dup hashes plus counts; no content, no IP addresses; secrets only in the platform's secret store |
+| Data leaking to AI | MVP: Apple tiers only (on-device, and PCC, which stores no prompts). Tier 3 is post-MVP with a consent gate (16 §B.4) |
+| Supply chain | Minimal dependencies (`docs/dependencies.md`: a justification for each, pinned versions, review on every update) |
+| Prompt injection | Model outputs never directly trigger record writes or destructive actions; all structured outputs go through deterministic validators; source IDs must resolve to supplied sources (16 §B.4) |
+| Import of hostile files | Bounded, validated import into a temporary database (17 §B.9) |
+| Deleted data resurrecting | Deletion protocol with dataset generations (16 §B.9) |
+| Account mixing | Namespacing by iCloud account; never upload across accounts (16 §B.8) |
+| Self-reported cheating for public status | No public status in the MVP. Chapter 09 designs verification |
 
 ## B.2 Data classification
 
-| Class | Examples | Rules |
-|---|---|---|
-| **H — Health** | HealthKit samples, derived health observations | Never stored by the app outside HealthKit or a device-local store. Never synced to iCloud. Never sent to tier-3 AI without explicit per-feature consent. |
-| **P — Personal** | Record entries, plans, memory, notes | Device + private CloudKit (encrypted fields). Sent to AI only as the minimal context a task needs. |
-| **A — Anonymous** | Ritual joins, counts | The Relay only, per 16 §B.7. |
-| **S — Secrets** | App Attest keys, install secret, relay tokens | Keychain only. |
+The P / H1 / H2 classes are defined in chapter 16 §B.5. Two more:
+- **A (Anonymous, Relay):** key registration `{keyIdHash, publicKey, counter, registeredAt, lastSeenAt}`, de-dup hashes, counts.
+- **S (Secrets):** the App Attest key ID, the deletion intent, the install ID. Keychain only. The App Attest private key is held by the Secure Enclave, and the app stores only its identifier.
 
-## B.3 Hard rules (enforced in code review and CI)
-1. No analytics, ads, attribution or crash SDKs from third parties (Apple's built-in crash reporting only).
-2. Network allowlist: Apple services and the Relay domain only. Anything else fails the build (a static check on URL literals plus a review item).
-3. No logging of Class H or P data. Logs are stripped in release builds (`os.Logger` with `.private` interpolation by default).
-4. No health measurements in record payloads (a test validates payload schemas).
-5. The Relay has no body logging, stores no IP addresses, and has a documented data-retention table (currently: Ritual counters until the window closes plus 30 days, and aggregate counts kept).
+**Relay retention table:**
+
+| Data | Retention |
+|---|---|
+| Key registrations | Deleted after 90 days unused |
+| De-dup hashes | Deleted at acceptance deadline (window close + 72 h) + 7 days |
+| Aggregate counts | Kept (anonymous) |
+| Request logs | Status code and latency only; no bodies, IP addresses or key identifiers |
+
+## B.3 Hard rules (enforced in code review, tests and runtime)
+
+1. No third-party analytics, ads, attribution or crash SDKs (Apple's built-in crash reporting only).
+2. **Network egress:** all app-controlled networking goes through one `NetworkGate`. It checks each destination against an allowlist (Apple services plus the Relay domain) at runtime, and rejects redirects to other hosts. Adapter tests check that nothing leaks out through other paths. A lint check for URL literals is an *extra* check, not the security boundary.
+3. **Logging:**
+   - structured diagnostics only, with a fixed set of approved non-personal fields (event codes, counts, durations);
+   - never log prompts, payloads, free text, error bodies or identifiers;
+   - `os.Logger` `.private` interpolation is *redaction*, not removal, so personal values are simply never passed to loggers;
+   - release logging configuration is verified.
+4. **No H1 data in the app's own storage.** H2 goes to its designated store per mode (16 §B.5), and backup exclusion is tested after every migration.
+5. **Relay:** no body logging, no IP storage, the retention table above, and Worker observability limited and verified.
+6. **Consent (post-MVP tier 3):** no personal context goes to a third-party AI without an explicit, informed permission. Changing provider requires fresh consent. Queued requests respect the consent that was in effect when they were queued.
 
 ## B.4 Compliance checklist (tracked to V1)
-- [ ] Privacy policy published (chapter 15).
-- [ ] App Privacy details completed in App Store Connect.
-- [ ] Written App Review answer on 5.1.3(ii).
-- [ ] Small Business Program enrollment and PCC entitlement.
-- [ ] HealthKit usage descriptions (`NSHealthShareUsageDescription`, `NSHealthUpdateUsageDescription`) written in the app's voice.
-- [ ] GDPR/CCPA review. With no personal data held, obligations are minimal, but the AI processing flows (PCC, tier 3) must be described in the policy.
+
+- [ ] Privacy policy published (chapter 15), covering Relay pseudonymous keys, Apple PCC processing, and (later) tier-3 pass-through.
+- [ ] App Privacy details in App Store Connect, answered honestly (expected: Identifiers → Device ID, Not Linked to You, used for app functionality).
+- [ ] Written App Review answer on 5.1.3(ii); `HealthFactSyncMode` set accordingly.
+- [ ] Small Business Program enrollment and PCC entitlement; both eligibility conditions monitored.
+- [ ] HealthKit usage descriptions written in the app's voice.
+- [ ] GDPR/CCPA review. Transmitting personal data for processing (to Apple PCC, or later a tier-3 AI) is itself processing under GDPR, even when nothing is retained. The policy and records of processing reflect that.
 - [ ] Human security review before V1.

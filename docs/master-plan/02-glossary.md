@@ -31,10 +31,10 @@ The official vocabulary of the project. Every document, every line of code and e
 | **Mind** | Learning, reading, focus, thinking clearly, knowledge |
 | **Heart** | Relationships: family, friends, partner, kindness, connection |
 | **Spirit** | Inner life: presence, meaning, gratitude, values, emotional resilience, courage |
-| **Craft** | Work, skills, creativity, mastery, career |
+| **Craft** | Work, skills and building your life: career, mastery, creativity, money |
 | **World** | Contribution beyond yourself: helping others, community, the planet |
 
-> **Open → chapter 04:** some life areas have no obvious home yet, such as **money/finances**, **adventure and play**, and **home and environment**. Do they fit inside the pillars above (for example finances in Craft, adventure in Spirit), or does the model need adjusting? To be settled in chapter 04.
+> **Settled (47):** money → Craft; home → World; **adventure and play are the spirit of the whole game, with the Spark as the adventure engine across all six pillars.**
 
 ## The daily loop
 

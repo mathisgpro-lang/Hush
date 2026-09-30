@@ -72,26 +72,13 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## Working order
+## Working order (updated 2026-09-30, decision 46: MVP first)
 
-**Phase A: Foundation.** 01 → 02
-**Phase B: Architecture foundations** (decision 23). A first pass of 16, 17, 20 and 22 that fixes the base everything else stands on:
-- platform and tech stack;
-- managed backend;
-- the core data backbone (a permanent, append-only history of every action, which is what makes decades of proof possible);
-- identity and accounts;
-- security and privacy baseline;
-- the theme engine hook;
-- source attribution;
-- the AI layer boundary;
-- how AI agents build and review the code.
+**Done:** Phase A (01, 02 ✅) · Phase B foundations (16, 17, 20, 22: Part A ✅, Part B in Codex review)
 
-These are designed against the *full* vision's requirements, which are already known well enough. Experience details can then change without reworking the foundation.
+**Now: MVP planning track**
+04 growth model → 03 the Flame → 28 the Adventure (MVP slice) → 05 daily loop → 06 tracking moment → 07 Companion (lean) → 08 the Flame's birth → 12 identity (MVP slice) → **23 MVP definition**
 
-**Phase C: Experience.** 04 → 03 → 28 → 05 → 07 → 06 → 08 → 10 → 09 → 11 → 12
-**Phase D: Ecosystem and business.** 14 → 15 → 13
-**Phase E: MVP definition.** 23
-**Phase F: Technical completion.** Finish 16–22 against the defined MVP (18, 19, 21 in full; 16, 17, 20, 22 refined).
-**Phase G: Beyond.** 24 → 25 → 26 → 27
+**🔔 Checkpoint when 23 is approved:** remind Mathis to install **Xcode 27** (Mac App Store, free, large) and join the **Apple Developer Program** ($99/yr, approval can take 1–2 days). Then: build plans → coding.
 
-Why this order: the foundation is locked early because it's the most expensive thing to change later. It's designed against the whole vision's needs, not the MVP's, so nothing we build early blocks what comes later.
+**After the MVP:** 09 (beyond HealthKit), 10 (full reward economy), 11, 13, 14, 15, 18/19/21 in full, 24–27.

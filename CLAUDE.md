@@ -2,7 +2,10 @@
 
 A long-horizon self-growth app, built to last years and decades. At its center is **the Flame**, a living representation of the user's soul that deepens as they genuinely grow (like the gem in Opal). The app is both **tracker and Companion**: it hands you your day, builds the plan for any goal, makes each day's invisible 1% progress visible today, and turns growth into lasting, verifiable proof. The aesthetic is Iron Man cockpit × Dune × nature sanctuary. The ambition is millions of users and a profoundly good product.
 
-## Current phase: PLANNING. No code yet.
+## Current phase: PLANNING the MVP. No code yet.
+
+MVP-first order (decision 46): 04 → 03 → 28 → 05 → 06 → 07 → 08 → 12 → 23. **When chapter 23 is approved, remind Mathis to install Xcode 27 and join the Apple Developer Program**, then start build plans.
+
 
 We are writing the **master plan** before building anything. **Do not write product code, scaffold projects or install dependencies** until the master plan chapters an MVP feature depends on are approved by Mathis. See [docs/master-plan/00-index.md](docs/master-plan/00-index.md) for chapter status and working order.
 
