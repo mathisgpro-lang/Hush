@@ -40,6 +40,8 @@ Ten years from now, millions of people carry a Flame that holds the real story o
 
 Every week, a large part of the world does the same small, good thing together, like calling someone they love, planting something, or taking the cold shower. They feel the belonging of being part of something that matters.
 
+Every user remembers the moment their Flame was born: it felt like the beginning of an adventure, like anything was possible.
+
 The app has become an ecosystem: trusted experts, brands and partner apps plug into it, because it's where people go to actually become better. It has lasted because it's profoundly good. It made its users stronger, kinder, smarter and more alive, and it helped the people and the planet around them.
 
 ---
@@ -137,6 +139,14 @@ The rules that decide every trade-off. Each one says what it means in practice a
 ### P14 — The user is the customer, never the product *[Approved 2026-09-30]*
 - **In practice:** No selling personal data, and no advertising built on it. Partnerships add value for the user, they don't exploit their attention.
 - **Violation:** Monetizing users' health and life data.
+
+### P15 — It begins as an adventure *[Settled, decision 40]*
+- **In practice:** From the very first second, the app feels like the start of something exciting: a breath of fresh air, the birth of something new, the sense that everything in this life is possible. The first launch *is* the birth of your Flame, and every return keeps a little of that feeling of setting out.
+- **Violation:** A setup wizard, permission screens first, or a dashboard of empty charts waiting to be filled.
+
+### P16 — Real game depth *[Settled, decision 40]*
+- **In practice:** Your Flame and soul develop *through* the adventure, and the game has real depth, like a real game: layered systems you discover and master over years, mystery, meaningful choices, and new horizons that open as you grow. Depth comes from how systems interlock, not from piling on features.
+- **Violation:** "Gamification" as points, badges and streaks painted onto a checklist.
 
 ---
 

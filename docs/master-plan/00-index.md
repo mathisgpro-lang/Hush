@@ -34,11 +34,12 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | # | Chapter | Status | Notes |
 |---|---------|--------|-------|
 | 03 | The Flame: Depth, Vitality, visual anatomy, milestone transformations | ⬜ | Decisions 7, 10, 12, 13 |
+| 28 | **The Adventure:** the world, the journey, and real game depth (progression, discovery, mystery, meaningful choices) | ⬜ | Decision 40. Added 2026-09-30 |
 | 04 | Growth model: pillars, what "1%" means, difficulty matching, evidence | ⬜ | Decisions 13–15; science research needed; settle where finances, adventure/play and home belong |
 | 05 | The daily loop: Paths, Spark, Ritual, the shape of a day | ⬜ | Decision 16; confirm Spark swap rule |
 | 06 | The tracking moment: sensory design (haptics, sound, motion, completion) | ⬜ | Decision 14; prototype needed |
 | 07 | The Companion: personality, voice, knowledge, plan building, safety limits, cited sources | ⬜ | Decisions 17–19; needs Mathis's own goals |
-| 08 | Getting to know you: onboarding without questionnaires | ⬜ | Decision 5; research pass needed |
+| 08 | Getting to know you: onboarding without questionnaires | ⬜ | Decisions 5, 40: **the first launch is the birth of your Flame, the start of the adventure**; research pass needed |
 | 09 | Verification: private vs. verified progress, integrations | ⬜ | Decision 3 |
 | 10 | Rewards and milestones: two tiers, titles, icons, big transformations, scarcity rules | ⬜ | Decisions 6, 10; rewards psychology research needed |
 | 11 | Community: the Ritual, collective presence, profiles, friends, sharing | ⬜ | Decisions 6, 9 |
@@ -54,13 +55,13 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 ### Part IV — Technical
 | # | Chapter | Status | Notes |
 |---|---------|--------|-------|
-| 16 | System architecture: app, backend, AI, data | ⬜ | Decisions 20, 23. **Foundations first (Phase B).** Native iOS/Swift chosen (28) |
-| 17 | Data model | ⬜ | **Core backbone in Phase B** |
+| 16 | [System architecture](16-system-architecture.md): app, backend, AI, data | 📝 | Decisions 20, 23. **Foundations first (Phase B).** Native iOS/Swift chosen (28) |
+| 17 | [Data model](17-data-model.md) | 📝 | **Core backbone in Phase B** |
 | 18 | AI systems: Companion, recommendation engine, difficulty matching, cost per user | ⬜ | |
 | 19 | The theme engine | ⬜ | Decision 11 |
-| 20 | Security and compliance | ⬜ | **Baseline in Phase B.** Health data |
+| 20 | [Security, privacy and compliance](20-security-privacy.md) | 📝 | **Baseline in Phase B.** Health data |
 | 21 | Quality and testing strategy | ⬜ | |
-| 22 | Building with AI agents: the Claude Code + Codex workflow | ⬜ | Decision 20. **Phase B** |
+| 22 | [Building with AI agents](22-build-workflow.md): the Claude Code + Codex workflow | 📝 | Decision 20. **Phase B** |
 
 ### Part V — Roadmap
 | # | Chapter | Status | Notes |
@@ -87,7 +88,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 
 These are designed against the *full* vision's requirements, which are already known well enough. Experience details can then change without reworking the foundation.
 
-**Phase C: Experience.** 04 → 03 → 05 → 07 → 06 → 08 → 10 → 09 → 11 → 12
+**Phase C: Experience.** 04 → 03 → 28 → 05 → 07 → 06 → 08 → 10 → 09 → 11 → 12
 **Phase D: Ecosystem and business.** 14 → 15 → 13
 **Phase E: MVP definition.** 23
 **Phase F: Technical completion.** Finish 16–22 against the defined MVP (18, 19, 21 in full; 16, 17, 20, 22 refined).
