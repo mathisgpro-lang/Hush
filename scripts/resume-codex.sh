@@ -34,3 +34,6 @@ run_brief docs/design/briefs/home-screen.md \
 
 run_brief docs/design/briefs/tracking-moment.md \
   docs/design/tracking/storyboard.png
+
+run_brief docs/reviews/briefs/mvp-chapters-review.md \
+  docs/reviews/2026-10-01-codex-mvp-chapters.md
