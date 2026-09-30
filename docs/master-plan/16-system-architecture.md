@@ -1,6 +1,6 @@
 # 16 — System Architecture
 
-**Status:** First pass (Phase B foundations): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B 🔎 revision 3, in Codex review · **Last updated:** 2026-09-30
+**Status:** First pass (Phase B foundations): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B 🔎 revision 4 (final design pass, decision 60), in Codex review · **Last updated:** 2026-09-30
 **Based on:** decisions 20, 23, 28–50 · **Reviews:** [Codex round 1](../reviews/2026-09-30-codex-phaseB.md) · **Research:** §B.12
 
 This chapter has two layers:
@@ -144,7 +144,7 @@ GrowthEngine.compute(entries: [Entry], asOf: Instant, settings: EngineSettings, 
 - The `rewardGranted` entry carries `entitlementKey`. The projection treats the **set of entitlement keys** as ownership. Duplicate grants of the same key from different offline devices collapse to the earliest by `(recordedAt, id)`. The duplicates stay in the append-only record but are ignored.
 - `GrantService` runs after each projection refresh, and emits `rewardGranted` for eligible keys not yet owned, in its own transaction.
 - **Ownership ≠ presentation.** `milestoneWitnessed` records that the user *saw* the moment (so it isn't celebrated twice). Ownership never depends on having witnessed it.
-- **Depth under formula changes and corrections:** defined in chapter 04 §B.2 (decision 56). `depthAcknowledged` entries carry per-pillar legacy offsets; they're P-class and synced.
+- **Formula changes (decision 58): each day is scored by the rules of its time.** Every lived day carries its `rulesVersion` (via its `dayPlanned` entry, chapter 04 §B.1), and the engine keeps every published rule set forever. There are no legacy offsets. History changes only through user corrections.
 - An owned Transformation constrains the displayed theme to at least that stage. The **MVP** mapping is defined in **chapter 03** (on the MVP planning track); chapter 10 extends it later.
 
 ## B.4 AI routing (`Companion`)
@@ -176,22 +176,25 @@ GrowthEngine.compute(entries: [Entry], asOf: Instant, settings: EngineSettings, 
 
 **Build-time mode:** `HealthFactSyncMode = .allowed | .phoneOnly`, set by Apple's written answer. **The default until then is `.phoneOnly`.**
 
-**Classes:**
+**Rule of thumb (decision 59): structure and numbers are P; words and health readings are H2.**
 
-| Class | What | `.allowed` | `.phoneOnly` |
+Every record entry is a **P envelope** (it always syncs) that may have **H2 attachments** (a separate table keyed by `entryId`, stored per mode):
+
+| Class | Contents | `.allowed` | `.phoneOnly` |
 |---|---|---|---|
-| **H1 Measurements** | Values read from HealthKit (distance, heart rate, sleep duration, weight, nutrition quantities) | Never stored by the app | Same |
-| **H2 Health-derived and private text** | (a) `evidenceAssessed` entries and anything computed from HealthKit samples (HealthKit-derived levels/L0, health-derived observations); (b) all free text written by the user or generated about the user: notes, Companion memory text, drafts, queued AI requests; (c) `PlanRevision`s for Body health tracks (training, nutrition, sleep) | Synced | `health-local.sqlite` only: excluded from backup, never synced |
-| **P Personal** | Everything else, **including every `actionCompleted` entry (all pillars)**, corrections, Path/Spark/Ritual entries, grants, `depthAcknowledged`, non-Body plan revisions, settings, and difficulty `d` stored in completion payloads | Synced | Synced |
+| **H1 Measurements** | Values read from HealthKit | Never stored by the app | Same |
+| **H2 attachments** | All words: Path goal wording, generated Spark text, plan revisions (all pillars, since they're prose), notes, Companion memory text, drafts, queued AI requests. All health readings: `evidenceAssessed`, `levelSeeded` (HealthKit-derived L0) | Synced | `health-local.sqlite`, backup-excluded, never synced |
+| **P envelopes** | IDs, kinds, instants, `livedDay`, `occurrenceKey`, catalog references, pillar weights, `d` (explicitly allowed, decision 59), `isEdge`, rest flags, `dayPlanned` slots, grants, corrections, `feedbackGiven`, `momentWitnessed` | Synced | Synced |
 
-**Propagation rules:**
-- A value's class is the **highest class of its inputs**. For example, a level computed from HealthKit history is H2; `d` is computed at completion time from the current level and stored in the P entry as a single scalar. This is an accepted, minimal disclosure: a number, not a measurement.
-- **Growth projections are P:** growth formulas ignore evidence (decision 55) and read only P entries. H2 never feeds `GrowthEngine`, so losing H2 never changes Depth, G or grants.
-- Temporary files, caches, queues and export staging inherit the class of their contents and live in the matching store's directory (H2 → the backup-excluded directory).
-- Free text is H2 in every structure. H1 values must never be written into free text by the app itself (for example the Companion must not echo measurements into memory; this is enforced by a validator on memory writes).
-- P entries may **reference** H2 records by ID (for example `noteRef`, `planRevisionId`). A missing H2 target after a device loss renders as "not available on this device," never as an error or a loss of growth.
+**Rules:**
+- A P envelope never contains free text, HealthKit sample references or evidence. Catalog-sourced text is referenced by `catalogRef` (the words live in the public catalog, not in user data).
+- A value's class is the highest class of its inputs, except for `d`, which is a P scalar by explicit decision (59).
+- Temporary files, caches, queues and export staging inherit the class of their contents (H2 → the backup-excluded directory).
+- H1 values must never be written into H2 text by the app (for example, a validator on Companion memory writes).
+- A missing H2 attachment after device loss renders as "not available on this device," never as an error or a loss of growth.
+- **Growth reads P only.** `GrowthEngine` consumes P envelopes (completions, `dayPlanned`, corrections, feedback). So Depth, G, Vitality, levels-after-seed and grants are fully reconstructible from synced data.
 
-**Recovery (`.phoneOnly`, new device):** all P data syncs back, so Depth, G, grants and Vitality are fully reconstructed. H2 evidence is re-assessed from HealthKit where the samples are available (a new `evidenceAssessed` entry with `provenance: reassessed`). Otherwise the Action shows as self-reported. Body plans are regenerated by the Companion from the Path's goal on request.
+**Recovery (`.phoneOnly`, new device):** all P data syncs back, including every `dayPlanned` (scoring sets, difficulties, rest flags). So **Depth, G, Vitality and grants are reconstructed exactly**, including days with zero completions. H2 evidence is re-assessed from HealthKit where the samples are available (a new `evidenceAssessed` attachment with `provenance: reassessed`); otherwise the Action shows as self-reported. Level seeds are re-derived from HealthKit, or from the Companion if HealthKit is unavailable. Adaptation events are P, so levels converge. Plan wording is regenerated by the Companion on request.
 
 **Backup exclusion** is verified by a test after every schema migration.
 
@@ -257,7 +260,19 @@ GrowthEngine.compute(entries: [Entry], asOf: Instant, settings: EngineSettings, 
 
 ## B.9 Deletion protocol ("delete everything"), with generation fencing
 
-**Fencing principle:** data is written only into zones named for the *current* generation. A deleted generation's zones are gone, so any stale write to them fails with `zoneNotFound`. **A client must never create a zone for a generation other than `Meta.currentGeneration`, and never for a generation listed in `retiredGenerations`.** Before creating any zone, a client re-fetches `Meta`.
+**Fencing principle:** data is written only into zones named for the *current* generation. A deleted generation's zones are gone, so any stale write to them fails with `zoneNotFound`.
+
+**Zone creation happens only inside the generation-creation procedure, and only for a brand-new random generation ID.** Ordinary sync never creates zones. On `zoneNotFound`, a client never recreates the zone: it re-fetches `Meta` and follows the stale-device path (step 6). Because a generation ID is used for creation only once, by the device that minted it, a delayed zone-creation operation can only ever create zones for a generation that device itself proposed. Such zones are removed by the sweep below if they didn't become current.
+
+**Generation-creation procedure** (first launch on an account, or step 5 of deletion):
+- mint `newGen`;
+- create `Record-{newGen}` and `Working-{newGen}`;
+- save `Meta` with the server change tag (`currentGeneration = newGen`);
+- if the Meta save loses a race: delete the zones just created, and adopt the winner's generation.
+
+**Sweep (garbage collection):** on each launch, a client lists the zones in the private database and deletes any `Record-*` / `Working-*` zone whose generation ≠ `Meta.currentGeneration`. This cleans up orphans from lost races and delayed operations. The platform guarantee relied on (zone deletion removes the zone's records; saves into a missing zone fail rather than creating it) must be verified by real-CloudKit scenario tests (chapter 22).
+
+**Concurrent deletions:** two devices deleting at once both attempt the change-tagged Meta update. The loser re-fetches. If its `generationToRetire` is already in `retiredGenerations`, its intent is satisfied: it clears the intent and adopts the current generation. It never retires the winner's new generation.
 
 1. Persist a `DeletionIntent {generationToRetire, startedAt}` in the Keychain (it survives a local wipe) and stop all outgoing sync.
 2. Wipe local data immediately (both stores), so the user sees an instant reset.

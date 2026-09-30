@@ -1,6 +1,6 @@
 # 22 — Building with AI Agents
 
-**Status:** First pass (Phase B): Part A ✅ approved 2026-09-30 · Part B 🔎 revision 3, in Codex review · **Last updated:** 2026-09-30
+**Status:** First pass (Phase B): Part A ✅ approved 2026-09-30 · Part B 🔎 revision 4 (final design pass, decision 60), in Codex review · **Last updated:** 2026-09-30
 **Based on:** decisions 20, 38, 39, 46
 
 ---
@@ -83,8 +83,8 @@ Your part is steps 1 and 7: deciding *what* it should be, and judging *how it fe
 |---|---|
 | Sync | Reordered arrival; a duplicate ID with the same and with different content; late arrival before the projection checkpoint; a crash between the local write and the outbox (must be impossible: same transaction); a crash mid-upload; CKSyncEngine state restore |
 | Accounts | iCloud sign-out and sign-in to a different account; no-iCloud → iCloud attach; quota exceeded |
-| Deletion | Delete-everything while offline; interrupted deletion then relaunch; a stale second device reconnecting after deletion (must not resurrect); **the Codex round-2 interleaving: B fetches the generation, A deletes, B uploads, then B must fail with zoneNotFound and not recreate the zone (real CloudKit)**; a concurrent Meta update (change-tag retry); memory tombstone versus a concurrent edit |
-| Grants | Two offline devices granting the same entitlement; grant during a rules change; a correction after a grant (the grant stays) |
+| Deletion | Delete-everything while offline; interrupted deletion then relaunch; a stale second device reconnecting after deletion (must not resurrect); **the Codex round-2 interleaving: B fetches the generation, A deletes, B uploads, then B must fail with zoneNotFound and not recreate the zone (real CloudKit)**; a concurrent Meta update (change-tag retry); **a delayed zone-creation operation for a losing generation (the sweep removes it); two devices deleting at once; crash → deletion → relaunch with a pending import journal (the journal is discarded, nothing restored)**; memory tombstone versus a concurrent edit |
+| Grants and scoring | Two offline devices granting the same entitlement; a correction after a grant (the grant stays); **two offline `dayPlanned` for one day; concurrent Spark swaps; days scored under different rulesVersions; device loss in `.phoneOnly` mode reproducing Depth, G and Vitality exactly, including zero-completion days** |
 | Time | Lived-day v2 DST vectors (gap and repeated hour, including a 02:30 boundary); travel across time zones; backdating; Vitality decay with no new entries (`asOf`) |
 | Health | Each `HealthFactSyncMode`; **device loss in `.phoneOnly` mode → Depth, G and grants identical after restore**; HealthKit denied, unavailable or sample deleted → `unknown`, never failure; untrusted-source samples stay `selfReported`; app-written samples stay `selfReported`; orphan reconciliation of HealthKit writes; backup exclusion after migration; the memory validator rejects H1 values |
 | Import | Old-schema import; conflicting IDs; oversized or malicious archive; a retired-generation manifest; export → import → sync round trip with **no quarantine** (hash preserved); crash between the P and H2 commits (journal resume); both modes × H2 opt-in on and off |

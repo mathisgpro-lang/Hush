@@ -1,6 +1,6 @@
 # 17 — Data Model
 
-**Status:** First pass (Phase B core backbone): Part A ✅ approved 2026-09-30 (small revisions after Codex review) · Part B 🔎 revision 3, in Codex review · **Last updated:** 2026-09-30
+**Status:** First pass (Phase B core backbone): Part A ✅ approved 2026-09-30 (small revisions after Codex review) · Part B 🔎 revision 4 (final design pass, decision 60), in Codex review · **Last updated:** 2026-09-30
 **Based on:** decisions 30–33, 35–37, 43–44, 48–50 · **Depends on:** [16-system-architecture.md](16-system-architecture.md)
 
 The two layers work as in chapter 16: Part A is for Mathis, and Part B is for the builders.
@@ -69,7 +69,8 @@ Entry {
   dayBoundary:     LocalTime         // boundary applied (e.g. 04:00)
   dayRuleVersion:  Int               // LivedDay algorithm version applied
   deviceId:        UUID              // per-install random id; stays in the user's own storage
-  healthClass:     P | H2            // actionCompleted is always P (decision 57); evidenceAssessed is always H2
+  // every entry is a P envelope (16 §B.5); words and health readings live in H2 attachments:
+  // attachments(entryId, kind, healthClass: H2, payload) stored per HealthFactSyncMode
   payload:         JSON (kind-specific, versioned)
 }
 ```
@@ -79,20 +80,23 @@ Entry {
 - No H1 data in any payload (a schema test for known fields). Free-text fields are always H2 (16 §B.5).
 - **Canonical content hash** = SHA-256 of the canonical JSON of **all immutable fields, including `recordedAt`** (it drives correction and duplicate-grant precedence). Local metadata such as receipt time, sync state and import provenance lives in **separate tables**, never in the entry. Used for duplicate-ID comparison (16 §B.8).
 
-## B.3 Entry kinds (first pass; chapters 04, 05, 07, 10 will extend)
+## B.3 Entry kinds (P envelopes) and their H2 attachments
 
-| Kind | Payload (summary) |
-|---|---|
-| `actionCompleted` | `occurrenceKey` (B.4), `actionRef {catalogId or planRevisionId, itemId, version}`, source (`path` / `spark` / `ritual` / `free`), pillarWeights {pillar: 0–1}, difficulty (calibrated), evidence (B.5), noteRef? (the note lives in H2 storage) |
-| `correction` | `targetId`, `action` (`void` \| `amend`), `reason` (`loggedByMistake`, `wrongDay`, `wrongAction`, …), amended fields? (for `amend`) |
-| `pathStarted` / `pathRevised` / `pathEnded` | pathId, goal, `planRevisionId` (immutable, B.8), reason |
-| `sparkDealt` | sparkId, `catalogRef {catalogId, version}`, pillar, difficulty, prompt text |
-| `sparkSwapped` | `swappedSparkDealtId` |
-| `ritualJoined` | `ritualWindowId`, evidence |
-| `evidenceAssessed` | `targetEntryId`, `{criterionId, criterionVersion, outcome: met \| notMet \| unknown, assessedAt, provenance}`. Always H2. Can be re-emitted on a new device in `.phoneOnly` mode |
-| `rewardGranted` | `entitlementKey`, rewardId, tier (`transformation` / `collectible`), window?, rulesVersion |
-| `milestoneWitnessed` | `entitlementKey`: presentation acknowledgement only |
-| `depthAcknowledged` | {pillar: value}, rulesVersion: the floor input (16 §B.3); the policy comes from chapter 04 |
+| Kind | P envelope (structure and numbers only) | H2 attachment (words and health readings) |
+|---|---|---|
+| `dayPlanned` | livedDay, rulesVersion, isPlannedRest, slots[{slotId, occurrenceKey, kind, pillarWeights, d, isEdge}] (chapter 04 §B.1) | — |
+| `actionCompleted` | `occurrenceKey`, `actionRef {catalogRef or planRevisionId, slotId, version}`, source (`path`/`spark`/`ritual`/`free`), pillarWeights, `d`, isEdge | note (optional); `evidenceAssessed` (optional) |
+| `correction` | `targetId`, action (`void` \| `amend`), reason code, amended fields (only `occurredAt`/`livedDay`, `pillarWeights`, `occurrenceKey`) | — |
+| `pathStarted` / `pathRevised` / `pathEnded` | pathId, pillar(s), `goalCatalogRef?`, `planRevisionId`, reason code | goal wording |
+| `sparkDealt` | sparkId, `catalogRef?`, pillar, `d` | generated Spark text (if not from the catalog) |
+| `sparkSwapped` | `replacedSlotId`, replacement slot (chapter 04 §B.1) | — |
+| `ritualJoined` | `ritualWindowId` | evidence (optional) |
+| `feedbackGiven` | occurrenceKey, rating (`easy`/`right`/`hard`) | — |
+| `rewardGranted` | `entitlementKey`, rewardId, tier, window?, rulesVersion | — |
+| `milestoneWitnessed` / `momentWitnessed` | `entitlementKey` or moment key (e.g. `comeback:{livedDay}`) | — |
+| `levelSeeded` | trackId (P) | seed value and its source (H2: HealthKit-derived or Companion-estimated) |
+
+(`depthAcknowledged` is removed: decision 58 replaces legacy offsets.)
 
 ## B.4 Occurrences and de-duplication
 
@@ -135,16 +139,29 @@ livedDay(t) = the latest date X such that B(X) ≤ t
 
 ## B.7 Corrections
 
-- A `correction` targets exactly one entry (`targetId`). `void` removes the target from growth. `amend` replaces the listed fields for growth purposes.
-- **Creation rule:** a correction may target only an entry that exists locally when it's created, so its `recordedAt` is later than its target's. **Cycles are therefore impossible.**
-- **Several corrections to the same target:** the latest by `(recordedAt, id)` wins. `recordedAt` is part of the hash (B.2), so every device picks the same winner.
-- **Undo** = a `void` correction targeting a correction. The corrected target is evaluated using the winning correction at the end of the chain.
+- A `correction` targets exactly one entry (`targetId`). `void` removes the target from growth. `amend` replaces only the allowed fields (B.3) for growth purposes.
+- **The correction graph must be acyclic.** A correction may be created only for a target already present in the local store. **Every ingestion path** (local, sync, import) validates this: a correction whose chain would form a cycle, or that targets a correction of a different entry lineage, is quarantined.
+- **Winner selection** (recursive, deterministic):
+  ```
+  effectiveCorrections(X) = { c targeting X : c is not voided by an effective void targeting c }
+  winner(X)              = the latest of effectiveCorrections(X) by (recordedAt, id), or none
+  ```
+  So voiding the newest amendment makes the **previous** non-voided amendment the winner again (earlier amendments revive). Voiding every correction restores the original. Ordering uses `(recordedAt, id)`, which is deterministic even if device clocks roll back. `recordedAt` is part of the hash (B.2), so every device agrees.
 - **A correction that arrives before its target** (sync order): it's held and applied when the target arrives. The projection ignores corrections with missing targets.
-- Corrections lower growth that came from *mistakes* (honest numbers). Legacy offsets from formula changes don't absorb corrections (chapter 04 §B.2).
+- **Golden vectors (for the implementation plan):** amend → amend → void(second) ⇒ the first amend wins; void → void(void) ⇒ the original counts; a clock-rollback pair; a missing target; a cycle rejected on import.
 
 ## B.8 Working data
 
-- **`PlanRevision`**: immutable. It holds the full structured plan (`@Generable`-compatible), `sources[]` (registry IDs), `createdAt`, `parentRevisionId`, and `slots[]` (stable slot IDs, B.4). Health class: **H2 for Body health tracks** (training, nutrition, sleep), otherwise P (chapter 16 §B.5).
+- **`PlanRevision`**: immutable. The full structured plan (`@Generable`-compatible), `sources[]` (registry IDs), `createdAt`, `parentRevisionId`, `slots[]` (stable slot IDs, B.4). **H2 in all pillars** (it's prose, decision 59). The numbers that growth needs are copied into each day's P `dayPlanned` entry when the day is dealt.
+- **Cross-store commands** (anything writing both an H2 record and a P entry, e.g. a plan revision plus `pathRevised`, or import):
+  1. write `CommandJournal {commandId, accountHash, generation, steps, state}`;
+  2. write the H2 part;
+  3. write the P part (which references the H2 ID);
+  4. mark the journal done.
+  - On relaunch, unfinished journals for the *current* account and generation are resumed idempotently. Journals for another account or a retired generation are discarded along with their staging files.
+  - Until done, P rows from the command carry `pendingCommandId`: projections ignore them and the outbox doesn't release them.
+  - **Deletion** cancels all journals and removes staging files first (16 §B.9, step 1).
+  - Orphan H2 records with no P reference are garbage-collected after 7 days.
 - **`ActivePlan`**: a pointer `{pathId → planRevisionId}`, last-writer-wins (16 §B.8). A revision and its `pathRevised` entry are committed in one transaction.
 - **`CompanionMemory`**: `{id, text, createdAt, origin, healthClass}`. Create-only plus tombstones. The user can view and delete them. The text is free text, so it's always H2.
 - **`Setting`**: key/value, last-writer-wins. Includes `dayBoundary` and `healthFactSyncMode` (read-only, from the build config).
@@ -171,7 +188,7 @@ livedDay(t) = the latest date X such that B(X) ≤ t
 2. Supported format versions only; otherwise refuse, with a clear message.
 3. **Stage** into temporary databases (one per class destination) and validate every row (schema, references, invariants, hashes). Nothing touches the live stores until validation passes.
 4. **Merge semantics** (never replace): union by ID. Same ID + same hash → skip. Same ID + different hash → quarantine. Entries are inserted **byte-identical** to the export (the hash is preserved); provenance goes to `import_provenance` (B.5).
-5. **Atomic commit across two stores:** write an `ImportJournal {importId, stage, files}` first, commit the P store, then the H2 store, then mark the journal done. On relaunch, an unfinished journal is resumed idempotently (the ID union makes re-applying safe).
+5. **Atomic commit across two stores** uses the cross-store command protocol (B.8): H2 first, then P, with P rows hidden (`pendingCommandId`) and unsynced until done. The journal is bound to the account and generation. An account switch or deletion discards it.
 6. **Generations:** if the manifest's `datasetGeneration` is in this account's `retiredGenerations`, import requires explicit user confirmation ("restore data you previously deleted?"). Imported rows are re-tagged to the current generation for upload. Tombstones in the import are honored.
 
 ## B.10 Size budget
