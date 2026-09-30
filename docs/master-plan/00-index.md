@@ -27,14 +27,14 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 ### Part I — Foundation
 | # | Chapter | Status | Notes |
 |---|---------|--------|-------|
-| 01 | Vision, mission and principles: why, for whom, what it must never be | ⬜ | Mostly defined by decisions 1–21 |
-| 02 | Glossary: Flame, Depth, Vitality, Pillars, Paths, Spark, Ritual, Companion… | ⬜ | Mostly defined |
+| 01 | [Vision, mission and principles](01-vision-mission-principles.md): why, for whom, what it must never be | ✅ | Approved 2026-09-30 |
+| 02 | [Glossary](02-glossary.md): Flame, Depth, Vitality, Pillars, Paths, Spark, Ritual, Companion… | ✅ | Approved 2026-09-30 |
 
 ### Part II — The Experience
 | # | Chapter | Status | Notes |
 |---|---------|--------|-------|
 | 03 | The Flame: Depth, Vitality, visual anatomy, milestone transformations | ⬜ | Decisions 7, 10, 12, 13 |
-| 04 | Growth model: pillars, what "1%" means, difficulty matching, evidence | ⬜ | Decisions 13–15; science research needed |
+| 04 | Growth model: pillars, what "1%" means, difficulty matching, evidence | ⬜ | Decisions 13–15; science research needed; settle where finances, adventure/play and home belong |
 | 05 | The daily loop: Paths, Spark, Ritual, the shape of a day | ⬜ | Decision 16; confirm Spark swap rule |
 | 06 | The tracking moment: sensory design (haptics, sound, motion, completion) | ⬜ | Decision 14; prototype needed |
 | 07 | The Companion: personality, voice, knowledge, plan building, safety limits, cited sources | ⬜ | Decisions 17–19; needs Mathis's own goals |

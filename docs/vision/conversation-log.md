@@ -122,3 +122,15 @@ Mid-turn, **Mathis added:** for a project this big, the backend foundations must
 - Mathis's personal current goals (for the MVP Companion).
 - Platform (iPhone first vs. iPhone + Android) and weekly time available.
 - Confirming one Spark swap per day.
+
+---
+
+## Session 1 (continued) — 2026-09-30 — Chapters 01 and 02
+
+- Git repository created locally. GitHub is deferred until after the MVP (decision 24).
+- Claude drafted chapters 01 and 02. **Mathis asked to see documents directly in the chat rather than opening files**, and this is now standard practice.
+- **Mission:** Mathis agreed with the proposed direction and added that it must be fun, gamified and about personal growth over time. Final wording is decision 25.
+- **Chapter 01:** Mathis kept the vision (§4) and the promise (§6) as written, explicitly confirmed P5 "decide for them, never trap them," and approved everything else as written (decision 26).
+- **Chapter 02:** approved as written (decision 27).
+- Carried forward: pillar gaps → ch. 04; selling cosmetics → ch. 14; V1 audience → ch. 24.
+- Next: **Phase B, architecture foundations.**

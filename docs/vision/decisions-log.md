@@ -34,15 +34,21 @@ Running record of what we've agreed during the planning conversation. The full s
 | 21 | **Full master plan before any code.** One complete plan covering the entire vision at its most ambitious (length doesn't matter), with nothing left to guess. It includes the MVP and V1 as defined slices of that vision. The MVP is explicitly not the end product. | 2026-09-30 |
 | 22 | **Master plan structure:** 27 chapters in 5 parts (see `docs/master-plan/00-index.md`), one document per chapter, with different levels of detail (MVP exact, V1 detailed, full vision as intent + principles + architectural hooks). | 2026-09-30 |
 | 23 | **Architecture foundations come early.** Backend and architecture foundations must be right from the start. Right after Part I, a dedicated phase fixes the platform, stack, backend, data backbone, identity, security baseline, theme engine hook, source attribution, AI layer boundary, and the AI-agent build workflow. It is designed against the full vision's requirements, not just the MVP's. | 2026-09-30 |
+| 24 | **GitHub later.** The project is a local git repository (started 2026-09-30). A private GitHub copy gets set up after the MVP is built. | 2026-09-30 |
+| 25 | **Mission:** "Make everyone's growth visible, turning personal development into a lifelong game, so no one gives up before becoming who they could be." Fun and gamified, centered on personal growth over time. | 2026-09-30 |
+| 26 | **Chapter 01 approved.** Vision, the promise to users, principles P1–P14 (including P5 "decide for them, never trap them," P7 "earned, not bought," P14 "the user is never the product"), what it must never be (including "not a distraction": the goal is time living well, not time in the app), ethical guardrails, and success criteria. | 2026-09-30 |
+| 27 | **Chapter 02 approved.** Official vocabulary, including **Action** (the single unit of doing), **Spark swap = once a day**, and **the record** (the permanent, append-only history of every Action). | 2026-09-30 |
 
 **Vocabulary:** the AI is **the Companion**. Never "coach."
 
 ## Open questions
 
-- Spark swap rule: confirm one swap per day.
 - v1 cut: the smallest version that proves the core loop, sized for a solo builder working with AI.
 - Which Paths the Companion must handle deeply at launch (start from Mathis's own goals).
 - Business model: how the app makes money without betraying "no bullshit, no scam."
-- Platform (iPhone first vs both) and weekly time available.
+- Platform (iPhone first vs both) and weekly time available. *(Phase B)*
+- Where finances, adventure/play and home fit in the pillars. *(chapter 04)*
+- Can purely cosmetic, non-status items ever be sold? *(chapter 14)*
+- First public audience for V1. *(chapter 24)*
 - Sensitive data: health data privacy, security, app store rules.
 - Onboarding design (research pass needed).
