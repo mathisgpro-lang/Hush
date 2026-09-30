@@ -66,6 +66,12 @@ We are writing the **master plan** before building anything. **Do not write prod
 - **Theme engine:** nothing hard-codes its look; everything flows from the Flame's state. The Flame = artist-made pieces assembled live.
 - **Analytics:** none in the MVP; later only opt-in, anonymous, privacy-preserving.
 
+## Who does what (decisions 39, 62)
+
+- **Design work** (concept art, Flame art direction, imagery, UI mockups, icons, visual identity): **Codex, primarily.** Claude writes the brief from the approved chapter and shows Mathis the result in chat. Save images under `docs/design/`.
+- **Codex CLI:** `/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex exec` (`-s read-only` for reviews, `-s workspace-write` for image generation). Save review reports in `docs/reviews/`.
+- **Specs, planning, building:** Claude Code. **Independent review:** Codex.
+
 ## Build workflow (when building starts)
 
 approved chapter → build plan → Claude Code builds with automated tests → runs in the iOS Simulator and checks screenshots → Codex reviews independently → fixes → **Mathis tries it on his iPhone (TestFlight)** → done only when it *feels* right. Mathis has 1–2 hours a day. Prefer well-documented tech that AI agents build reliably, and small, well-bounded modules; Mathis can't read code, so the code must prove itself.
