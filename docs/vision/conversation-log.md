@@ -174,3 +174,34 @@ Phase B conversation complete. Next: draft chapters 16, 17, 20 and 22 (first pas
 - Drafted chapters 03, 05, 06, 07, 08, 12, 23 and 28 with defaults. Research pass for onboarding (Duolingo delayed sign-up, Opal chat onboarding, Finch hatching).
 - **Codex design output:** Flame concepts, pillar renders, Sanctuary eras, birth storyboard, home screen, tracking-moment storyboard. Mathis asked that **design work go to Codex** (62).
 - Mathis asked for about 2 hours of uninterrupted work while he watched a movie. Claude built the **M0 feel prototype** (68) and verified it in the simulator: the tracking moment works end to end (×1.000 → ×1.003).
+
+---
+
+## Session 3 — 2026-10-01 (evening into night) — From the plan to a living app, and the universe
+
+- **"It's hard to feel much because it's just so basic."** Mathis found the M0 test rig too bare. Claude proposed switching to **living slices of the real app** (72); Mathis: "Yes absolutely."
+- **Built, in order:**
+  - Slice 1: the birth, Today, the tracking moment, the real engine and record.
+  - Slices 2–3: the Ritual, Paths, the Chronicle, Hidden Sparks, the Forge.
+  - The Voice v1: curated, cited guidance.
+  - Settings: the morning notification, backup export, delete everything.
+  - The fire ambience; touching the Flame; Your Story.
+  - The world map v1.
+
+  Codex reviewed the code, and all 9 findings were fixed (engine and record: 63 tests).
+- **Installing on the iPhone 15** (iOS 26.4, no Apple Intelligence):
+  - the prototype was lowered to iOS 26 (73);
+  - Mathis's Xcode had the old prototype open, so Claude installed the real app directly;
+  - wireless pairing now works;
+  - the keychain prompt needs "Always Allow."
+- **iCloud sync needs the $99 program** (tested, 78).
+- **Codex image generation:** long multi-image briefs stalled. One image per call with a short prompt works (saved in memory). Codex then hit its usage limit (resets 01:15); the art queue is scheduled for 01:16.
+- **Art direction changed three times in one evening:**
+  - realistic → "not 4K cinematic, more pixelized or cartoonish" (75);
+  - style test: Mathis picked **pixel** (77), and Claude built a live pixel-fire Flame;
+  - then **cartoon/anime**, with reference images of cute flame characters (79).
+- **The biggest shift, the universe** (80–82):
+  - the Flame becomes a **personified character** (eyes, mouth, moods, evolution over days to years);
+  - it lives in **a whole explorable world** (map, realms, locations unlocked by living, lore).
+
+  Mathis: "this is how ambitious this project is… the creation of this universe." Chapter 29 was written as the heart of the plan, and CLAUDE.md and memory were updated. Built: the character v1/v1b (placeholder) and the world map v1. **The final character should be much nicer and 3D** (82), at a later stage.
