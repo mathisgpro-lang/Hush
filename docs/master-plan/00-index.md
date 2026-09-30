@@ -66,7 +66,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 ### Part V — Roadmap
 | # | Chapter | Status | Notes |
 |---|---------|--------|-------|
-| 23 | **MVP:** Mathis and a small circle on a private beta, proving the core loop | ⬜ | |
+| 23 | [**MVP**](23-mvp.md): Mathis and a small circle on a private beta, proving the core loop | 📝 (defaults) | |
 | 24 | **V1:** first public App Store release | ⬜ | |
 | 25 | Beyond V1: the decade roadmap | ⬜ | |
 | 26 | Success metrics | ⬜ | |
@@ -126,6 +126,10 @@ A free, throwaway spike on Mathis's own iPhone (Xcode 27 + cable + Developer Mod
 | 12-c | Pillar colors and Era palettes (starting hex values) | ch. 12 §A.4 |
 | 12-d | Voice rules: sparse, no exclamation marks, banned guilt words (streak, fail, missed, lost…) | ch. 12 §A.6 |
 | 12-e | The app icon follows your Era (alternate icons, opt-out possible) | ch. 12 §A.7 |
+| 23-a | Three stages: feel prototype (free) → user zero (free) → private beta with 5–15 adults you choose (TestFlight, $99) | ch. 23 §A.2 |
+| 23-b | The MVP scope list, and **8 launch Paths** (running, strength, sleep, reading, meditation, relationships, deep work, nature) plus your own goals | ch. 23 §A.3 |
+| 23-c | Milestones M0–M8, each ending with something you try on your phone; roughly 2–3 months to the private beta | ch. 23 §A.4 |
+| 23-d | Success: you use it daily for 30 days and love the tracking moment; ≥ 60% of testers active at week 4; zero data loss, privacy or safety incidents | ch. 23 §A.5 |
 | ❓ | **Needs Mathis:** the app's final name (candidates: Ignis, Hearth, Sanctum, Vessel, Emberlight); the beta language(s) | ch. 12 §A.2, §A.6 |
 | 28-a | The world is **your Sanctuary**: Dune-like ruins reclaimed by nature, with traces of future tech; it changes with each Transformation era and breathes with Vitality | ch. 28 §A.2 |
 | 28-b | The myth paragraph: *"Every person carries a flame…"*, the seed of the app's voice (mythic, sparse, never cheesy) | ch. 28 §A.3 |
