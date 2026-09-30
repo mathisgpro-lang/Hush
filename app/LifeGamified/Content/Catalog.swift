@@ -59,6 +59,45 @@ enum Catalog {
     static func spark(_ id: String) -> SparkContent? { sparks.first { $0.id == id } }
     static var sparkCandidates: [SparkCandidate] { sparks.map { SparkCandidate(id: $0.id, pillar: $0.pillar) } }
 
+    /// Weekly Rituals (chapter 05 §A.4): the same for everyone, the same week. Rotates by ISO week.
+    static let rituals: [SparkContent] = [
+        SparkContent(id: "r-call", pillar: .heart, text: "Call someone you love"),
+        SparkContent(id: "r-sky", pillar: .spirit, text: "Watch a sunrise or a sunset"),
+        SparkContent(id: "r-kind", pillar: .world, text: "Do one kind thing for a stranger"),
+        SparkContent(id: "r-walk", pillar: .body, text: "Take a long walk without your phone"),
+        SparkContent(id: "r-letter", pillar: .heart, text: "Write a thank-you note to someone who shaped you"),
+        SparkContent(id: "r-make", pillar: .craft, text: "Make something with your hands and give it away"),
+        SparkContent(id: "r-learn", pillar: .mind, text: "Learn something from someone twice your age"),
+        SparkContent(id: "r-green", pillar: .world, text: "Plant something, or care for something that grows"),
+    ]
+
+    static func ritual(forWeek week: String) -> SparkContent {
+        rituals[Int(Dealer.fnv1a("ritual|" + week) % UInt64(rituals.count))]
+    }
+
+    /// Hidden Sparks (chapter 28 §A.5): appear only once a pillar is deep enough. Never listed in the app.
+    static let hiddenSparks: [(spark: SparkContent, minDepth: Double)] = [
+        (SparkContent(id: "x-body", pillar: .body, text: "Swim, run or walk somewhere you have never been"), 12),
+        (SparkContent(id: "x-mind", pillar: .mind, text: "Spend one full evening learning something difficult, for no reason"), 12),
+        (SparkContent(id: "x-heart", pillar: .heart, text: "Tell someone what they truly mean to you, face to face"), 12),
+        (SparkContent(id: "x-spirit", pillar: .spirit, text: "Watch the sunrise in complete silence"), 12),
+        (SparkContent(id: "x-craft", pillar: .craft, text: "Show your work to someone whose opinion scares you"), 12),
+        (SparkContent(id: "x-world", pillar: .world, text: "Give an afternoon to someone who needs help"), 12),
+    ]
+
+    static func anySpark(_ id: String) -> SparkContent? {
+        spark(id) ?? hiddenSparks.first { $0.spark.id == id }?.spark
+    }
+
+    static let journeyUnlocks = [
+        "Your Flame is born.",
+        "Something new waits for you each morning: your Spark.",
+        "You are not alone. Each week, everyone shares one Ritual.",
+        "Your journey widens. You can walk more than one Path now.",
+        "Your story begins to be written. Read your first Chronicle.",
+        "The stone has cracked. Your vessel is forged.",
+    ]
+
     static let firstSpark = (title: "Three slow breaths", detail: "Close your eyes. Breathe in, and out, three times.")
     static let firstSparkKey = "first-spark"
 

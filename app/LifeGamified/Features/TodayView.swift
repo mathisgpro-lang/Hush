@@ -11,6 +11,7 @@ struct TodayView: View {
     @State private var undoable: (UUID, Date)?
     @State private var showCloseDay = false
     @State private var showDev = false
+    @State private var showJourney = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -21,6 +22,7 @@ struct TodayView: View {
             VStack(spacing: 0) {
                 header(s)
                 JourneyMarker(step: model.journeyStep).padding(.top, 6)
+                    .contentShape(Rectangle()).onTapGesture { showJourney = true }
                 Spacer()
                 cards
                 footer
@@ -31,6 +33,8 @@ struct TodayView: View {
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showCloseDay) { CloseDaySheet(model: model).presentationDetents([.medium]) }
         .sheet(isPresented: $showDev) { DevMenu(model: model).presentationDetents([.medium]) }
+        .sheet(isPresented: $showJourney) { JourneySheet(model: model).presentationDetents([.large]) }
+        .overlay { if let step = model.pendingUnlock { UnlockMoment(step: step) { model.witnessUnlock(step); haptics.thrum(.spirit, intensity: 0.8) } } }
         .onAppear { model.dealTodayIfNeeded() }
         .onChange(of: scenePhase) { _, p in if p == .active { model.dealTodayIfNeeded() } }
     }
@@ -68,6 +72,12 @@ struct TodayView: View {
                     complete(card, from: point, deliberate: deliberate)
                 }
             }
+            if let ritual = model.ritualCard {
+                ActionCard(card: ritual, haptics: haptics, synth: synth) { point, deliberate in
+                    guard let outcome = model.completeRitual() else { return }
+                    land(outcome, card: ritual, from: point)
+                }
+            }
             if model.sparkUnlocked == false {
                 Text("Tomorrow, something new waits for you.")
                     .font(Theme.ceremonial(14)).foregroundStyle(Theme.textSecondary).padding(.top, 4)
@@ -96,6 +106,10 @@ struct TodayView: View {
 
     private func complete(_ card: DayCard, from point: CGPoint, deliberate: Bool) {
         guard let outcome = model.complete(card) else { return }
+        land(outcome, card: card, from: point)
+    }
+
+    private func land(_ outcome: CompletionOutcome, card: DayCard, from point: CGPoint) {
         undoable = (outcome.entryId, .now)
         stage.launch(from: point, pillar: card.pillar, big: card.isSpark || outcome.comeback)
         Task { @MainActor in
@@ -245,5 +259,80 @@ struct DevMenu: View {
                             model.state.activeDays, model.state.daysSinceBirth))
             }
         }
+    }
+}
+
+/// A new step of the First Journey opens: a ceremonial moment, once (chapter 28 §A.8).
+struct UnlockMoment: View {
+    let step: Int
+    var onContinue: () -> Void
+    @State private var shown = false
+    var body: some View {
+        ZStack {
+            Color.black.opacity(shown ? 0.72 : 0).ignoresSafeArea()
+            VStack(spacing: 16) {
+                Text(Catalog.roman[step]).font(Theme.ceremonial(56)).foregroundStyle(Theme.dawn)
+                Text(Catalog.journey[step]).font(Theme.ceremonial(30)).foregroundStyle(Theme.text)
+                Text(Catalog.journeyUnlocks[step]).font(Theme.ceremonial(18)).foregroundStyle(Theme.textSecondary)
+                    .multilineTextAlignment(.center).padding(.horizontal, 36)
+                Button("Continue", action: onContinue).buttonStyle(.bordered).tint(Theme.dawn).padding(.top, 20)
+            }
+            .opacity(shown ? 1 : 0).scaleEffect(shown ? 1 : 0.94)
+        }
+        .onAppear { withAnimation(.easeOut(duration: 1.0)) { shown = true } }
+    }
+}
+
+/// Your journey: the steps behind you, the next one veiled; your Paths; your Chronicle.
+struct JourneySheet: View {
+    let model: AppModel
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("The First Journey") {
+                    ForEach(0..<Catalog.journey.count, id: \.self) { i in
+                        HStack(spacing: 12) {
+                            Text(Catalog.roman[i]).font(Theme.ceremonial(18)).frame(width: 34)
+                                .foregroundStyle(i <= model.journeyStep ? Theme.dawn : .secondary)
+                            if i <= model.journeyStep {
+                                VStack(alignment: .leading) {
+                                    Text(Catalog.journey[i]).font(Theme.ceremonial(17))
+                                    Text(Catalog.journeyUnlocks[i]).font(.caption).foregroundStyle(.secondary)
+                                }
+                            } else if i == model.journeyStep + 1 {
+                                Text("Veiled. Keep living, and it will open.").font(Theme.ceremonial(15)).foregroundStyle(.secondary)
+                            } else {
+                                Text("···").foregroundStyle(.tertiary)
+                            }
+                        }
+                    }
+                }
+                if let chronicle = model.chronicle() {
+                    Section("The Chronicle") {
+                        Text(chronicle).font(Theme.ceremonial(16))
+                    }
+                }
+                Section("Your Paths") {
+                    ForEach(model.activePaths, id: \.pathId) { p in
+                        if let t = Catalog.path(p.templateId) {
+                            VStack(alignment: .leading) {
+                                Text(t.name).font(Theme.ceremonial(17))
+                                Text("\(p.pillar.name) · \(t.stepTitle)").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    if model.canAddPath {
+                        Menu("Add a Path (starts tomorrow)") {
+                            ForEach(model.availablePaths) { t in Button("\(t.pillar.name) · \(t.name)") { model.addPath(t) } }
+                        }
+                    } else if model.journeyStep < 3 {
+                        Text("More Paths open at step IV, The Voice.").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("Your journey")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .preferredColorScheme(.dark)
     }
 }

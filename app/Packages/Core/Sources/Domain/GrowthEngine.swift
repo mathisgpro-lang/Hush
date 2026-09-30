@@ -23,6 +23,8 @@ public struct DerivedState: Sendable, Equatable {
     public var todayCompletion: Double
     public var todayPlan: [PlannedSlot]
     public var completedToday: Set<String>
+    /// Every non-voided completed occurrence key, all time (e.g. this week's Ritual).
+    public var completedEver: Set<String>
     public var witnessed: Set<String>
 
     public var isEmbers: Bool { Vitality.isEmbers(vitality) }
@@ -42,7 +44,7 @@ public enum GrowthEngine {
 
         var state = DerivedState(today: today, bornDay: bornDay, daysSinceBirth: 0, ascent: 1, vitality: 1,
                                  comebackActive: false, depth: [:], recentMix: [:], activeDays: 0,
-                                 todayCompletion: 0, todayPlan: [], completedToday: [], witnessed: [])
+                                 todayCompletion: 0, todayPlan: [], completedToday: [], completedEver: [], witnessed: [])
         state.witnessed = Set(live.compactMap { if case .momentWitnessed(let k) = $0.payload { k } else { nil } })
         guard let born = bornDay else { return state }
         let dayCount = born.days(to: today) + 1
@@ -95,6 +97,7 @@ public enum GrowthEngine {
         if sum > 0 { for p in Pillar.allCases where mixTotal[p.rawValue] > 0 { state.recentMix[p] = mixTotal[p.rawValue] / sum } }
         state.todayPlan = (contracts[today] ?? []).last ?? []    // the latest contract (after a swap) is what Today shows
         state.completedToday = Set((actions[today] ?? []).map(\.occurrenceKey))
+        state.completedEver = Set(actions.values.flatMap { $0.map(\.occurrenceKey) })
         return state
     }
 

@@ -45,14 +45,35 @@ final class AppModel {
         }
         let args = ProcessInfo.processInfo.arguments
         if let i = args.firstIndex(of: "-demoAdvance"), i + 1 < args.count, let n = Int(args[i + 1]) { devAdvance(days: n) }
+        // Simulator testing only: `-demoLive N` lives N more days, completing every card each day.
+        if let i = args.firstIndex(of: "-demoLive"), i + 1 < args.count, let n = Int(args[i + 1]) {
+            for _ in 0..<n {
+                devAdvance(days: 1)
+                for card in cards where !card.done { _ = complete(card) }
+            }
+        }
     }
 
     var now: Date { Date().addingTimeInterval(devOffset) }
     var settings: EngineSettings { EngineSettings(timeZone: .current) }
     var isBorn: Bool { entries.contains { if case .flameBorn = $0.payload { true } else { false } } }
     var seed: String { entries.compactMap { if case .flameBorn(let s) = $0.payload { s } else { nil } }.first ?? "seed" }
-    var sparkUnlocked: Bool { state.daysSinceBirth >= 1 }
-    var journeyStep: Int { sparkUnlocked ? 1 : 0 }          // index into Catalog.journey
+    var sparkUnlocked: Bool { journeyStep >= 1 }
+    var ownsMetal: Bool { state.witnessed.contains("milestone:stage-2") }
+    /// First Journey step (index into Catalog.journey); opens by living (Domain.Journey).
+    var journeyStep: Int {
+        Journey.step(daysSinceBirth: state.daysSinceBirth, activeDays: state.activeDays, ownsMetal: ownsMetal)
+    }
+    /// The newest step not yet celebrated, if any.
+    var pendingUnlock: Int? {
+        let step = journeyStep
+        guard step > 0, !state.witnessed.contains("journey:\(step)") else { return nil }
+        return step
+    }
+    func witnessUnlock(_ step: Int) {
+        for s in 1...step where !state.witnessed.contains("journey:\(s)") { append(.momentWitnessed(key: "journey:\(s)")) }
+        reload()
+    }
 
     // MARK: record
 
@@ -98,14 +119,28 @@ final class AppModel {
             if case .dayPlanned = $0.payload { $0.livedDay == today } else { false }
         }
         guard !alreadyDealt else { return }
-        let slots = Dealer.plan(day: today, paths: activePaths, sparks: Catalog.sparkCandidates, seed: seed,
+        var slots = Dealer.plan(day: today, paths: activePaths, sparks: Catalog.sparkCandidates, seed: seed,
                                 sparkUnlocked: sparkUnlocked, recentlyDealt: recentlyDealtSparks())
+        if sparkUnlocked, let hidden = eligibleHiddenSpark(on: today) {
+            slots.removeAll(where: \.isSpark)
+            slots.append(PlannedSlot(occurrenceKey: Dealer.sparkKey(hidden.id, today), pillarWeights: [hidden.pillar: 1],
+                                     d: Dealer.sparkStretch, isSpark: true))
+        }
         append(.dayPlanned(isPlannedRest: false, slots: slots))
         reload()
     }
 
-    private func recentlyDealtSparks() -> Set<String> {
-        let horizon = state.today.adding(days: -30)
+    /// A Hidden Spark arrives about once a week when a pillar is deep enough, and never twice (chapter 28 §B.1).
+    private func eligibleHiddenSpark(on day: LocalDate) -> SparkContent? {
+        guard Dealer.fnv1a("\(seed)|hidden|\(day)") % 7 == 0 else { return nil }
+        let everDealt = recentlyDealtSparks(allTime: true)
+        return Catalog.hiddenSparks.first { (state.depth[$0.spark.pillar] ?? 0) >= $0.minDepth && !everDealt.contains($0.spark.id) }?.spark
+    }
+
+    func isHidden(_ card: DayCard) -> Bool { card.id.contains(":x-") }
+
+    private func recentlyDealtSparks(allTime: Bool) -> Set<String> {
+        let horizon = allTime ? LocalDate(year: 1, month: 1, day: 1) : state.today.adding(days: -30)
         var ids = Set<String>()
         for e in entries where e.livedDay >= horizon {
             if case .dayPlanned(_, let slots) = e.payload {
@@ -114,6 +149,8 @@ final class AppModel {
         }
         return ids
     }
+
+    private func recentlyDealtSparks() -> Set<String> { recentlyDealtSparks(allTime: false) }
 
     var cards: [DayCard] {
         state.todayPlan.map { slot in
@@ -126,8 +163,9 @@ final class AppModel {
             if slot.isSpark {
                 let id = String(slot.occurrenceKey.split(separator: ":").last ?? "")
                 let text = Catalog.spark(id)?.text ?? "Today's Spark"
-                return DayCard(id: slot.occurrenceKey, pillar: pillar, label: "Spark · \(pillar.name)", title: text,
-                               detail: "Your edge today", isSpark: true, done: done)
+                let hidden = id.hasPrefix("x-")
+                return DayCard(id: slot.occurrenceKey, pillar: pillar, label: hidden ? "Hidden Spark · \(pillar.name)" : "Spark · \(pillar.name)",
+                               title: text, detail: hidden ? "It appeared because you've grown" : "Your edge today", isSpark: true, done: done)
             }
             let pathId = slot.occurrenceKey.split(separator: ":").dropFirst().first.map(String.init) ?? ""
             let template = activePaths.first { $0.pathId == pathId }.flatMap { Catalog.path($0.templateId) }
@@ -166,6 +204,66 @@ final class AppModel {
                                  gainPercent: (state.ascent / before.ascent - 1) * 100,
                                  dayComplete: before.todayCompletion < 1 && state.todayCompletion >= 1,
                                  comeback: comeback, isSpark: slot.isSpark)
+    }
+
+    // MARK: the Ritual (step III)
+
+    var week: String { Journey.isoWeek(state.today) }
+    var ritual: SparkContent { Catalog.ritual(forWeek: week) }
+    var ritualKey: String { "ritual:\(week)" }
+    var ritualDone: Bool { state.completedEver.contains(ritualKey) }
+    var ritualCard: DayCard? {
+        guard journeyStep >= 2 else { return nil }
+        return DayCard(id: ritualKey, pillar: ritual.pillar, label: "Ritual · Week \(week.suffix(2))",
+                       title: ritual.text, detail: "Everyone, this week", isSpark: false, done: ritualDone)
+    }
+
+    func completeRitual() -> CompletionOutcome? {
+        guard !ritualDone else { return nil }
+        let before = state
+        let e = append(.actionCompleted(occurrenceKey: ritualKey, pillarWeights: [ritual.pillar: 1], d: 1, isSpark: false))
+        reload()
+        return CompletionOutcome(entryId: e.id, pillar: ritual.pillar, gainPercent: (state.ascent / before.ascent - 1) * 100,
+                                 dayComplete: before.todayCompletion < 1 && state.todayCompletion >= 1,
+                                 comeback: false, isSpark: false)
+    }
+
+    // MARK: Paths (step IV)
+
+    var canAddPath: Bool { journeyStep >= 3 && activePaths.count < Dealer.maxPaths }
+    var availablePaths: [PathTemplate] {
+        let active = Set(activePaths.map(\.templateId))
+        return Catalog.paths.filter { !active.contains($0.id) }
+    }
+    /// A new Path starts tomorrow: today's contract never changes (decision 58).
+    func addPath(_ template: PathTemplate) {
+        guard canAddPath else { return }
+        append(.pathStarted(pathId: "path-\(template.id)", templateId: template.id, pillar: template.pillar))
+        reload()
+    }
+
+    // MARK: the Chronicle (step V), derived from the record, written in the Sanctuary's voice
+
+    func chronicle(weeksAgo: Int = 1) -> String? {
+        guard journeyStep >= 4 else { return nil }
+        let end = state.today.adding(days: -7 * (weeksAgo - 1) - 1)
+        let start = end.adding(days: -6)
+        let weekEntries = entries.filter { $0.livedDay >= start && $0.livedDay <= end }
+        var perPillar: [Pillar: Int] = [:]
+        var days = Set<LocalDate>()
+        for e in weekEntries {
+            if case .actionCompleted(_, let w, _, _) = e.payload {
+                days.insert(e.livedDay)
+                if let p = w.max(by: { $0.value < $1.value })?.key { perPillar[p, default: 0] += 1 }
+            }
+        }
+        let week = Journey.isoWeek(end).replacingOccurrences(of: "-W", with: ", week ")
+        guard !days.isEmpty else { return "\(week). The embers held, waiting. The fire remembers." }
+        let top = perPillar.sorted { $0.value > $1.value }
+        let lines = top.prefix(3).map { p, n in "\(p.name): \(n) \(n == 1 ? "spark" : "sparks")" }
+        let mood = days.count >= 6 ? "You showed up almost every day." : days.count >= 3 ? "You kept the fire fed." : "A few sparks, and they count."
+        let lead = top.first.map { "Your vessel carries new lines of \($0.key.name.lowercased())." } ?? ""
+        return "\(week). \(mood) \(lines.joined(separator: " · ")). \(lead)"
     }
 
     func undo(_ entryId: UUID) {
