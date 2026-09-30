@@ -93,7 +93,7 @@ public enum GrowthEngine {
         let mixTotal = Pillar.allCases.map { p in recent.reduce(0) { $0 + $1.contribution(to: p) } }
         let sum = mixTotal.reduce(0, +)
         if sum > 0 { for p in Pillar.allCases where mixTotal[p.rawValue] > 0 { state.recentMix[p] = mixTotal[p.rawValue] / sum } }
-        state.todayPlan = (contracts[today] ?? []).first ?? []
+        state.todayPlan = (contracts[today] ?? []).last ?? []    // the latest contract (after a swap) is what Today shows
         state.completedToday = Set((actions[today] ?? []).map(\.occurrenceKey))
         return state
     }
