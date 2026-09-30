@@ -91,13 +91,12 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 - **Demo launch arguments (simulator only):** `-demoBirth`, `-demoAdvance N`, `-demoLive N`, `-demoWitness`, `-demoForged`.
 - **Install on Mathis's iPhone:** open `app/LifeGamified.xcodeproj`, pick "Mathis's iPhone", press ▶. The free signing expires every 7 days.
 
-### 2. In flight
-- **Codex: vessel bodies** (`docs/design/briefs/vessel-bodies.md` → `assets/flame/stone/vessel-body.png`, `assets/flame/metal/vessel-body.png`). When they arrive:
-  1. `swift scripts/key-black.swift <in> <out>` to make black transparent;
-  2. copy to `app/LifeGamified/Resources/vessel-body.png` and `vessel-body-metal.png`;
-  3. check the framing in the simulator;
-  4. commit.
-- **Still needed from Codex later:** Metal-era Sanctuary with an empty pedestal (`sanctuary-metal.png`, `sanctuary-metal-embers.png`).
+### 2. In flight (Codex's usage limit hit on 2026-09-30, resets 2026-10-01 01:15)
+- `scripts/style-tests.sh` (run by `scripts/resume-codex.sh`) still has to produce:
+  - `docs/design/style-tests/C-pixel-flame-character.png` and `D-cartoon-flame-character.png`: sketches of the future personified Flame (decision 76);
+  - `docs/design/pixel/sanctuary-stone-empty.png`: the pixel Sanctuary with an empty pedestal. Then copy it to `app/LifeGamified/Resources/sanctuary-pixel.png`, and in `SanctuaryView` return to anchoring at the bottom so the Flame sits on the pedestal;
+  - `docs/design/pixel/sanctuary-metal-empty.png`: the Metal Era. Copy it to `Resources/sanctuary-pixel-metal.png`; `SanctuaryView` picks it up automatically.
+- **Art direction is pixel art (decision 77).** The live Flame is `Experience/PixelFlameView.swift` (pixel-fire simulation, pixel vessel). The birth carving is pixelated. The old realistic assets (`FlameView`, `vessel-body*.png`) are unused, kept only as a fallback.
 
 ### 3. Next
 - Real sound design (the current sounds are synthesized placeholders).

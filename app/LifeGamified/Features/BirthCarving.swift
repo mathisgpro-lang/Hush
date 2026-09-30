@@ -42,9 +42,9 @@ struct BirthCarving: View {
             let y = r.midY + h * 0.15 - ph * h * (0.1 + 0.35 * p)
             let s = w * 0.22 * (1 - ph) * (0.4 + 0.6 * p)
             let col = ph < 0.2 ? Color(red: 1, green: 0.93, blue: 0.7) : Color(red: 1, green: 0.55, blue: 0.18)
-            fire.fill(Path(ellipseIn: CGRect(x: x - s / 2, y: y - s * 0.75, width: s, height: s * 1.5)),
-                      with: .radialGradient(Gradient(colors: [col.opacity(0.8 * (1 - ph)), .clear]),
-                                            center: CGPoint(x: x, y: y), startRadius: 0, endRadius: s * 0.75))
+            let px = 6.0, side = max(px, (s * 0.6 / px).rounded() * px)
+            fire.fill(Path(CGRect(x: (x / px).rounded() * px - side / 2, y: (y / px).rounded() * px - side / 2, width: side, height: side)),
+                      with: .color(col.opacity(0.75 * (1 - ph))))
         }
 
         // Shards fly in from the dark and land on the vessel's outline, staggered.
@@ -58,31 +58,25 @@ struct BirthCarving: View {
             let q = max(0, min(1, (p - delay) / 0.4))
             let e = 1 - pow(1 - q, 3)
             let pos = CGPoint(x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e)
-            let s = 7.0 * (1.4 - 0.4 * e)
-            var shard = Path()
-            let rot = angle + t * (1 - e) * 3
-            for k in 0..<3 {
-                let a = rot + Double(k) * 2.1
-                let pt = CGPoint(x: pos.x + cos(a) * s, y: pos.y + sin(a) * s)
-                k == 0 ? shard.move(to: pt) : shard.addLine(to: pt)
-            }
-            shard.closeSubpath()
-            ctx.fill(shard, with: .color(stone.opacity(0.35 + 0.65 * q)))
+            let px = 6.0                                        // pixel size (decision 77: pixel art)
+            let snapped = CGPoint(x: (pos.x / px).rounded() * px, y: (pos.y / px).rounded() * px)
+            let s = px * (e < 0.99 ? 2 : 1.5)
+            ctx.fill(Path(CGRect(x: snapped.x - s / 2, y: snapped.y - s / 2, width: s, height: s)),
+                     with: .color(stone.opacity(0.35 + 0.65 * q)))
         }
 
         // The outline is carved as the shards settle.
         var outline = Path()
         outline.move(to: top); outline.addLine(to: right); outline.addLine(to: bottom); outline.addLine(to: left); outline.closeSubpath()
         let carve = max(0, min(1, (p - 0.35) / 0.6))
-        ctx.stroke(outline.trimmedPath(from: 0, to: carve), with: .color(stone), style: StrokeStyle(lineWidth: 5, lineCap: .round))
-        ctx.stroke(outline.trimmedPath(from: 0, to: carve), with: .color(.white.opacity(0.35)), style: StrokeStyle(lineWidth: 1.2))
+        ctx.stroke(outline.trimmedPath(from: 0, to: carve), with: .color(stone), style: StrokeStyle(lineWidth: 6, lineCap: .square))
 
         // Drifting stone dust.
         for i in 0..<40 {
             let ph = (t * 0.15 + Double(i) * 0.37).truncatingRemainder(dividingBy: 1)
             let x = r.midX + (Double((i * 53) % 100) - 50) / 50 * w * 1.6
             let y = r.maxY - ph * h * 1.6
-            ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: 2, height: 2)), with: .color(stone.opacity(0.5 * (1 - ph) * p)))
+            ctx.fill(Path(CGRect(x: (x / 3).rounded() * 3, y: (y / 3).rounded() * 3, width: 3, height: 3)), with: .color(stone.opacity(0.5 * (1 - ph) * p)))
         }
     }
 }
