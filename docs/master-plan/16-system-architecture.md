@@ -283,7 +283,7 @@ Every record entry is a **P envelope** (it always syncs) that may have **H2 atta
 5. Once deletion is confirmed, clear the intent.
 6. **Stale device B** (the interleaving from Codex round 2): B's prepared upload to `Record-{old}` fails with `zoneNotFound` once step 4 completes. If it lands *before* step 4, those records are deleted with the zone. B then re-fetches `Meta`, sees its generation is `retired`, discards its outbox and local data for that account, and informs the user. **Nothing ever recreates a zone for an existing generation ID, so resurrection is impossible.**
 7. **HealthKit samples written by the app:** the user is offered a choice to delete them too.
-8. **Exports the user saved** are the user's files and aren't touched. The confirmation screen says so. An export's manifest records its generation, and import honors `retiredGenerations` (chapter 17 §B.9).
+8. **Exports the user saved** are the user's files and aren't touched. The confirmation screen says so. An export's manifest records its generation, and import honors the generation lifecycle (retired generations) (chapter 17 §B.9).
 9. **Single memory deletion** = tombstone (§B.8).
 10. **Verification requirement:** the scenario tests (chapter 22 §B.4) must confirm on real CloudKit that saves into a deleted zone fail with `zoneNotFound` and don't recreate the zone implicitly. This is the platform behavior the fencing relies on.
 

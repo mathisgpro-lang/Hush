@@ -172,7 +172,7 @@ livedDay(t) = the latest date X such that B(X) ≤ t
 
 | File | Contents | Included |
 |---|---|---|
-| `manifest.json` | format version, counts per file, rulesVersion, `datasetGeneration`, `retiredGenerations`, `healthFactSyncMode`, whether H2 was included | Always |
+| `manifest.json` | format version, counts per file, rulesVersion, `datasetGeneration`, the list of retired generations, `healthFactSyncMode`, whether H2 was included | Always |
 | `entries.jsonl` | all P entries (including every `actionCompleted`) | Always |
 | `plan-revisions.jsonl` | P plan revisions | Always |
 | `settings.json`, `tombstones.jsonl` | settings; memory tombstones | Always |
@@ -189,7 +189,7 @@ livedDay(t) = the latest date X such that B(X) ≤ t
 3. **Stage** into temporary databases (one per class destination) and validate every row (schema, references, invariants, hashes). Nothing touches the live stores until validation passes.
 4. **Merge semantics** (never replace): union by ID. Same ID + same hash → skip. Same ID + different hash → quarantine. Entries are inserted **byte-identical** to the export (the hash is preserved); provenance goes to `import_provenance` (B.5).
 5. **Atomic commit across two stores** uses the cross-store command protocol (B.8): H2 first, then P, with P rows hidden (`pendingCommandId`) and unsynced until done. The journal is bound to the account and generation. An account switch or deletion discards it.
-6. **Generations:** if the manifest's `datasetGeneration` is in this account's `retiredGenerations`, import requires explicit user confirmation ("restore data you previously deleted?"). Imported rows are re-tagged to the current generation for upload. Tombstones in the import are honored.
+6. **Generations:** if the manifest's `datasetGeneration` is `retired` in this account's Meta generation lifecycle, import requires explicit user confirmation ("restore data you previously deleted?"). Imported rows are re-tagged to the current generation for upload. Tombstones in the import are honored.
 
 ## B.10 Size budget
 - Roughly 200 bytes to 1 KB per entry. 365k entries ≈ 70–365 MB worst case over 50 years, within limits for SQLite and CloudKit. Projections keep UI reads fast.
