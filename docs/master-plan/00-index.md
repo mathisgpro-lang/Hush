@@ -39,7 +39,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 05 | The daily loop: Paths, Spark, Ritual, the shape of a day | ⬜ | Decision 16; confirm Spark swap rule |
 | 06 | [The tracking moment](06-tracking-moment.md): sensory design (haptics, sound, motion, completion) | 📝 (defaults) | Decision 14; prototype needed |
 | 07 | [The Companion](07-companion.md): personality, voice, knowledge, plan building, safety limits, cited sources | 📝 (defaults) | Decisions 17–19; needs Mathis's own goals |
-| 08 | Getting to know you: onboarding without questionnaires | ⬜ | Decisions 5, 40: **the first launch is the birth of your Flame, the start of the adventure**; research pass needed |
+| 08 | [The birth of your Flame](08-the-birth.md): onboarding without questionnaires | 📝 (defaults) | Decisions 5, 40: **the first launch is the birth of your Flame, the start of the adventure**; research pass needed |
 | 09 | Verification: private vs. verified progress, integrations | ⬜ | Decision 3 |
 | 10 | Rewards and milestones: two tiers, titles, icons, big transformations, scarcity rules | ⬜ | Decisions 6, 10; rewards psychology research needed |
 | 11 | Community: the Ritual, collective presence, profiles, friends, sharing | ⬜ | Decisions 6, 9 |
@@ -118,6 +118,9 @@ A free, throwaway spike on Mathis's own iPhone (Xcode 27 + cable + Developer Mod
 | 07-d | No diets, calorie targets or weight-loss plans; no investment advice | ch. 07 §A.4 |
 | 07-e | Fixed, human-written referral texts for warning signs; a crisis screen for self-harm, never AI-generated | ch. 07 §A.5 |
 | 07-f | The MVP is for adults (18+) | ch. 07 §A.5 |
+| 08-a | The birth: darkness → the myth lines → touch the ember → stone carved around your fire → a first conversation (≤4 exchanges) → first Path → optional Apple Health → **a first real Action within ~3 minutes** → home | ch. 08 §A.2 |
+| 08-b | No account, no questionnaire, no upfront permissions, no feature tour; the Flame isn't named (it's you) | ch. 08 §A.3 |
+| 08-c | New phone = a reunion ("Welcome back"), never a rebirth | ch. 08 §A.4 |
 | 28-a | The world is **your Sanctuary**: Dune-like ruins reclaimed by nature, with traces of future tech; it changes with each Transformation era and breathes with Vitality | ch. 28 §A.2 |
 | 28-b | The myth paragraph: *"Every person carries a flame…"*, the seed of the app's voice (mythic, sparse, never cheesy) | ch. 28 §A.3 |
 | 28-c | **Hidden Sparks**: rare challenges that appear only when a pillar is deep enough (six in the MVP) | ch. 28 §A.5 |
