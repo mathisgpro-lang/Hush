@@ -115,7 +115,7 @@ def vitality(history, today=0.0):
     forgiven = forgiven_days(history)
     idx = [t for t in range(len(history) - 1, max(-1, len(history) - 1 - WINDOW), -1) if t not in forgiven]
     missing = WINDOW - len([t for t in range(len(history) - 1, max(-1, len(history) - 1 - WINDOW), -1)])
-    past = [history[t] for t in idx] + [0.0] * missing        # days before the record = absent
+    past = [history[t] for t in idx] + [1.0] * missing        # days before birth count as full: the Flame is born bright (rev 7)
     weights = [DECAY ** r for r in range(len(past))]
     total = sum(weights)
     weights = [w / total for w in weights] if total else []
@@ -149,6 +149,7 @@ def check(name, got, want, tol=1e-9):
 if __name__ == "__main__":
     V9D = 0.6355744157043132     # computed; honest dimming after a real new absence
     V11C = 0.8048780487804877    # computed; overnight (not on completion) after half-days
+    V14C = 0.8326394031074023    # computed; like an established user with 2 days off
     one = lambda d=1.0, spark=False, w=None: {"w": w or {"body": 1.0}, "d": d, "spark": spark}
 
     # V1 consistency ramps to 1.5 on day 28 (27 prior active days)
@@ -220,6 +221,10 @@ if __name__ == "__main__":
         vals = [vitality(h, t) for t in (0.0, 0.25, 0.5, 1.0)]
         assert all(a <= b + 1e-12 for a, b in zip(vals, vals[1:])), (h, vals)
     print("PASS  V13 within-day monotonicity over 2000 random histories")
+    # V14 the Flame is born bright (rev 7)
+    check("V14a newborn, no finalized day yet", vitality([]), 1.0)
+    check("V14b born yesterday, full day", vitality([1.0]), 1.0)
+    check("V14c born 2 days ago, both absent", vitality([0.0, 0.0]), V14C)
     # V10 competing contracts never retract earned growth (Codex r4 blocking #3)
     a_only = completion_multi([[("a1", 1.0)]], {"a1"}, 0.0)
     both = completion_multi([[("a1", 1.0)], [("b1", 1.0)]], {"a1"}, 0.0)

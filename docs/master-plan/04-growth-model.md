@@ -160,7 +160,8 @@ G          = Π_{finalized D} (1 + 0.01 × completion(D)) × (1 + 0.01 × comple
 ```
 forgiven     = every absence day belonging to a run of ≥ 3 presence-0 days that is immediately followed
                by ≥ 3 finalized days with presence > 0 (a COMPLETED comeback). Forgiveness is permanent.
-window       = the last 14 finalized calendar days, minus forgiven days; days before the first record count as 0
+window       = the last 14 finalized calendar days, minus forgiven days; days before the Flame's birth count as 1.0
+               (rev 7: the Flame is born bright, never starts in embers)
 w_r          = 0.8^r / Σ 0.8^r over the included days, r = 0 (most recent included day) …
 freeDay      : if any included day among the 7 most recent has presence > 0, set the lowest of those 7 to 1.0
                (ties → most recent; the tie-break is normative)
@@ -239,6 +240,7 @@ V            = max(0.15, inComeback ? max(V_live, R(n_eff)) : V_live)      R(1)=
 | V11a / V11b | 14 days off, three half comeback days; day 4 morning / day 4 completed | **1.0** / **1.0** (completion never dims) |
 | V11c | …then the morning of day 5 | **0.8048780487804877** (an honest overnight dip, not on completion) |
 | V12a–c | an occurrence with weights body .9/heart .1 (d=1), plus a duplicate body .1/heart .9 (d=1.1) | body **0.9** → **0.9** (not lowered); heart **0.99** |
+| V14a–c | no finalized day yet / born yesterday (full) / born 2 days ago, both absent | **1.0** / **1.0** / **0.8326394031074023** |
 | V13 | property: V(today=0) ≤ V(0.25) ≤ V(0.5) ≤ V(1) for 2,000 random histories | holds |
 
 **Moved to the implementation plan (decision 60):** full entry-level fixtures (raw entries → DerivedState, including corrections, permutations, materialized days, swaps, level transition rows, prompt hash) built on this reference. The reference arithmetic stays the oracle.
