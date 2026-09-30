@@ -1,0 +1,124 @@
+# Conversation Log
+
+A record of every planning session: what was discussed, what was pushed back on, and what was decided. It captures the *reasoning* behind decisions. The decisions themselves live in [decisions-log.md](decisions-log.md). Add a new session section each time we meet.
+
+---
+
+## Session 1 — 2026-09-30 — Vision alignment
+
+Participants: Mathis (founder, user zero), Claude (planning partner).
+
+### 1. The brief and the first read-back
+Mathis shared the founding brief ([original-brief.md](original-brief.md)) and asked for a partner-style conversation to refine the plan before building.
+
+Claude classified the project as **architectural** and very large: it's really several products in one (tracking loop, living flame, AI companion, personalization engine, reward economy, social layer, partner ecosystem). Each needs its own design → spec → plan cycle.
+
+Claude raised five tensions to resolve before planning:
+1. **Honesty vs. prestige.** Valuable, showable rewards create an incentive to fake check-ins.
+2. **"The app knows what you need" vs. day one.** At first, the app knows nothing about you.
+3. **FOMO vs. timeless and good.** Limited-time rewards can turn into manipulation.
+4. **A flame that only grows means nothing; a flame that dies makes people ashamed and they quit.**
+5. **Planning vs. feel.** Whether tracking feels satisfying can only be tested with prototypes.
+
+**Mathis's answers:**
+- v1 excludes brand partnerships and a full social network.
+- Shareable progress must be verifiably completed.
+- The app is an intelligent engine that learns and grows non-linearly, different for every person.
+- Getting to know the user must be revolutionary: **no questionnaire**, inspired by the best apps ever made.
+- On FOMO: the answer is time-horizon tracking plus **shared community**, with people doing the same challenge in the same week (the *Fight Club* sense of belonging).
+- **The flame is about depth and complexity, not size.** The whole app's look changes with it, like Opal.
+- **Mathis is user zero.** The end goal is everyone who wants to feel better, be better and be a force for good.
+
+→ Decisions 1–8.
+
+### 2. Community model and flame rules
+Claude proposed:
+- **the Wordle model** for community: the same challenge for everyone, a shareable result, presence without a social network;
+- that the flame should drive the whole app's theme, which needs a **theme engine built in from day one**.
+
+It also shared onboarding principles from successful apps: learn from behavior (TikTok), the first action happens inside onboarding (Duolingo), readable signals with permission (Apple Health, Screen Time), and a short conversation instead of a form.
+
+Claude asked how the flame handles lapses and proposed two layers: **Depth** (permanent) and **Vitality** (recent, dims but never dies).
+
+**Mathis:**
+- Wordle is right in principle but must be completely rebuilt for this app.
+- Big flame and app transformations are reserved for **big milestones only**; smaller rewards don't restyle the app.
+- Get the theme engine right from the start; it's a key feature.
+- Chose the **two layers**: people must never feel they've lost it all.
+
+→ Decisions 9–12.
+
+### 3. What the flame is made of
+Claude offered three options: fixed pillars, fully emergent, or a hybrid. It recommended the hybrid: six universal pillars (**Body, Mind, Heart, Spirit, Craft, World**) with fully personal paths inside each, and the pillars as the flame's visual anatomy.
+
+**Mathis:** fixed pillars covering life's main dimensions; the six proposed work for now; hybrid, because personalization is central.
+
+→ Decision 13.
+
+### 4. What "1%" means
+Claude offered three options: a symbolic compounding number, only real measurements, or both in layers. It recommended the layered version, with difficulty matched to each person so 1% means real effort at your own level.
+
+**Mathis** agreed and clarified the real meaning: people going to the gym or reading have no way to see daily progress. Results appear only after months or years. **The app's job is to make that 1% visible today.**
+
+Claude named this the core purpose: *close the gap between effort and visible results*. The design consequence: **checking something off and getting the reward are the same moment.**
+
+→ Decisions 14–15.
+
+### 5. The daily loop
+Claude offered three options: the app deals your day, you build your own routine, or three layers. It recommended three layers: **Paths** (long arcs), **the Spark** (one daily surprise challenge), **the Ritual** (the shared challenge).
+
+**Mathis:** the three layers are perfect. He added a major principle: **the user should never feel blocked**. The app must provide the knowledge and build the plan (nutrition guidance, a workout program, a night routine, a sub-4 marathon plan). He called this "singularity" and the main part of the app.
+
+Open detail: whether the Spark can be swapped. Claude's default is one swap per day; not yet confirmed.
+
+→ Decisions 16–17.
+
+### 6. Trust and sources
+Claude flagged that wrong advice hurts people. It offered three options: pure AI, an expert-written library, or AI working within expert frameworks and hard safety limits, and recommended the third.
+
+**Mathis:**
+- It's **both a tracker and a companion**, and it must be called **"the Companion", never "coach."**
+- Where information comes from, and how it's delivered, is extremely important. The app must be a source of trust, and people must know the information comes from the right place.
+- Long term: expert, brand and nutrition partnerships.
+
+Claude flagged the tension with "no partnerships in v1" and proposed public evidence-based sources, always cited, in v1, with an architecture ready for partners. **Mathis agreed.**
+
+→ Decisions 18–19.
+
+### 7. Builder profile
+**Mathis:** solo, not a developer, and will rely entirely on Claude Code and Codex.
+
+Claude outlined what that means:
+- The plan *is* the engineering team.
+- Boring, popular tech.
+- A managed backend.
+- Small modules with automated tests.
+- One AI builds, the other reviews.
+- Humans are probably needed for a security/privacy review, possibly a flame artist, and legal basics.
+- v1 must be much smaller than the vision.
+
+Claude asked about Mathis's own current goals (to shape the MVP's Companion). This was **not answered yet** and is deferred to chapters 7 and 23.
+
+→ Decision 20.
+
+### 8. The master plan
+**Mathis:** before building anything, create the whole plan for the entire vision at its most complex. It might take 50 pages; that doesn't matter as long as nothing is left to guess. The MVP and V1 are included within it.
+
+Claude proposed:
+- different levels of detail (MVP exact, V1 detailed, long-term vision as intent, principles and architectural hooks);
+- a folder of chapter documents with an index, so AI agents can load only the chapters they need;
+- a 27-chapter, 5-part structure.
+
+**Mathis approved** and asked for:
+- a CLAUDE.md so sessions don't lose time re-explaining;
+- this conversation and every decision saved;
+- the plan written into a document before taking the first steps.
+
+Mid-turn, **Mathis added:** for a project this big, the backend foundations must be right from the get-go, and getting the architecture right must be one of the first steps. Claude added a Phase B, "Architecture foundations," right after Part I, designed against the full vision's requirements.
+
+→ Decisions 21–23. Created: `CLAUDE.md`, `AGENTS.md`, this log, `original-brief.md`, `docs/master-plan/00-index.md`.
+
+### Still unanswered from session 1
+- Mathis's personal current goals (for the MVP Companion).
+- Platform (iPhone first vs. iPhone + Android) and weekly time available.
+- Confirming one Spark swap per day.
