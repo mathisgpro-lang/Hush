@@ -93,7 +93,7 @@ enum Catalog {
         "Your Flame is born.",
         "Something new waits for you each morning: your Spark.",
         "You are not alone. Each week, everyone shares one Ritual.",
-        "Your journey widens. You can walk more than one Path now.",
+        "Your Companion speaks: guidance for each of your Paths, with its sources. And you can walk more than one Path now.",
         "Your story begins to be written. Read your first Chronicle.",
         "The stone has cracked. Your vessel is forged.",
     ]

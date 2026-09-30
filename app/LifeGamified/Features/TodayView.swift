@@ -14,6 +14,7 @@ struct TodayView: View {
     @State private var showJourney = false
     @State private var forging = false
     @State private var showSettings = false
+    @State private var showVoice = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -37,6 +38,7 @@ struct TodayView: View {
         .sheet(isPresented: $showDev) { DevMenu(model: model).presentationDetents([.medium]) }
         .sheet(isPresented: $showJourney) { JourneySheet(model: model).presentationDetents([.large]) }
         .sheet(isPresented: $showSettings) { SettingsSheet(model: model) }
+        .sheet(isPresented: $showVoice) { VoiceSheet(model: model) }
         .overlay { if let step = model.pendingUnlock { UnlockMoment(step: step) { model.witnessUnlock(step); haptics.thrum(.spirit, intensity: 0.8) } } }
         .overlay { if model.forgeReady && model.pendingUnlock == nil { ForgeMoment(forging: $forging, haptics: haptics, synth: synth, stage: stage) { model.witnessForge() } } }
         .onAppear { model.dealTodayIfNeeded(); synth.setAmbience(vitality: model.state.vitality) }
@@ -112,6 +114,10 @@ struct TodayView: View {
                 }
             }
             Spacer()
+            if model.journeyStep >= 3 {
+                Button { showVoice = true } label: { Image(systemName: "text.bubble") }
+                    .buttonStyle(.bordered).tint(Theme.dawn).accessibilityLabel("The Voice, your Companion")
+            }
             Button { showSettings = true } label: { Image(systemName: "gearshape") }
                 .buttonStyle(.bordered).tint(.white.opacity(0.7)).accessibilityLabel("Settings")
             Button { showCloseDay = true } label: {
