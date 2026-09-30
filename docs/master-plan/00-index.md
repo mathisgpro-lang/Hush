@@ -35,7 +35,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 |---|---------|--------|-------|
 | 03 | The Flame: Depth, Vitality, visual anatomy, milestone transformations | ⬜ | Decisions 7, 10, 12, 13 |
 | 28 | **The Adventure:** the world, the journey, and real game depth (progression, discovery, mystery, meaningful choices) | ⬜ | Decision 40. Added 2026-09-30 |
-| 04 | [Growth model](04-growth-model.md): pillars, what "1%" means, difficulty matching, evidence | 📝 | Decisions 13–15; science research needed; settle where finances, adventure/play and home belong |
+| 04 | [Growth model](04-growth-model.md): pillars, what "1%" means, difficulty matching, evidence | ✅ A / 🔎 B | Decisions 13–15; science research needed; settle where finances, adventure/play and home belong |
 | 05 | The daily loop: Paths, Spark, Ritual, the shape of a day | ⬜ | Decision 16; confirm Spark swap rule |
 | 06 | The tracking moment: sensory design (haptics, sound, motion, completion) | ⬜ | Decision 14; prototype needed |
 | 07 | The Companion: personality, voice, knowledge, plan building, safety limits, cited sources | ⬜ | Decisions 17–19; needs Mathis's own goals |

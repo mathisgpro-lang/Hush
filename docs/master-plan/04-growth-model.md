@@ -1,6 +1,6 @@
 # 04 — The Growth Model
 
-**Status:** 📝 Drafted, awaiting Mathis's review · **Last updated:** 2026-09-30
+**Status:** Part A ✅ approved 2026-09-30 (decision 56) · Part B 🔎 in Codex review · **Last updated:** 2026-09-30
 **Based on:** decisions 13–15, 47, 51–55 · **Feeds:** chapter 03 (the Flame draws what this chapter calculates), 05, 10, 16 §B.3, 17
 
 Part A is for Mathis. Part B is for the builders (and goes to Codex review).
@@ -68,7 +68,7 @@ You start at **×1.00**. After a strong first year you might be at ×20 or ×30.
 - **Occasional one-tap feedback:** *"Too easy · Just right · Too hard."* It's rare and never mandatory.
 - **Sparks aim a little above your level.**
 
-## A.7 Two rules I propose (new; need your approval)
+## A.7 Two rules *[Approved, 56]*
 
 **1. Improving the formulas can never lower your Flame.** Over the years we'll improve how Depth is calculated. When we do, if the new formula would give you *less* Depth than you had, you keep what you had and grow from there. Nobody ever opens the app to find their Flame shrank because of our changes. **Correcting your own mistakes, though, is honest:** if you remove something logged by mistake, its Depth goes with it.
 
@@ -113,7 +113,7 @@ Depth_computed(p) = Σ contributions over all lived days ≤ asOf.livedDay
 ```
 `activeDays(p, range)` = the number of lived days in the range with at least one contribution to p.
 
-**Formula-change floor (Part A §A.7, rule 1, proposed):**
+**Formula-change floor (Part A §A.7, rule 1, decision 56):**
 - When `rulesVersion` changes, compute under old and new rules at the change instant.
 - For each pillar, `legacyOffset(p) = max(0, Depth_old(p) − Depth_new(p))`. Write a `depthAcknowledged` entry carrying the offsets and the new `rulesVersion`.
 - `Depth_displayed(p) = Depth_computed_new(p) + legacyOffset(p)`. Offsets accumulate across successive rule changes.
@@ -166,7 +166,7 @@ G(D)  = G(D−1) × (1 + 0.01 × completion(D))          G before the first day 
 - Levels are local P-class state (stored as `levelUpdated` working data, synced), never H1. A level *derived from HealthKit* is H2 (16 §B.5).
 
 ## B.6 Balance
-- No balance term in any formula (Part A §A.7, rule 2, proposed). The pillar Depth vector goes to chapter 03 unchanged.
+- No balance term in any formula (Part A §A.7, rule 2, decision 56). The pillar Depth vector goes to chapter 03 unchanged.
 - **Companion nudge rule (for chapter 07):** a pillar with no contribution for 21+ days *and* a Depth share < 10% may be suggested at most once per 14 days, and never during a comeback.
 
 ## B.7 Golden vectors required (minimum set)

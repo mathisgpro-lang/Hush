@@ -1,6 +1,6 @@
 # 22 — Building with AI Agents
 
-**Status:** First pass (Phase B): Part A ✅ approved 2026-09-30 · Part B 🔎 revision 2, in Codex review · **Last updated:** 2026-09-30
+**Status:** First pass (Phase B): Part A ✅ approved 2026-09-30 · Part B 🔎 revision 3, in Codex review · **Last updated:** 2026-09-30
 **Based on:** decisions 20, 38, 39, 46
 
 ---
@@ -63,7 +63,11 @@ Your part is steps 1 and 7: deciding *what* it should be, and judging *how it fe
 2. Unit tests pass. `Domain` changes include new or updated golden vectors, plus permutation tests (the same entries in any order give the same result).
 3. The **required scenario tests** (B.4) relevant to the feature pass.
 4. UI is verified in the iOS Simulator, with screenshots attached to the plan's verification section.
-5. **Real-device check** where platform behavior matters (sync, HealthKit, App Attest, haptics), in isolated test environments: the CloudKit development environment and a Relay staging deployment. Never production.
+5. **Real-device check** where platform behavior matters (sync, HealthKit, App Attest, haptics). "Production *environment*" and "real user *data*" are different things:
+   - **Development builds:** the CloudKit development environment plus Relay staging.
+   - **TestFlight integration tests:** TestFlight always uses CloudKit's **production environment** and production App Attest. So integration tests run in a **separate test app ID and CloudKit container** (e.g. `iCloud.<bundle>.test`) with its own deployed production schema, plus Relay staging, using test accounts only.
+   - **Mathis's feel review (step 7)** uses the real app's TestFlight build. During the private beta, that's real user data by design.
+   - **Never** run destructive tests against the real container.
 6. An independent Codex review is done and every finding is resolved, or waived under B.3.
 7. Mathis approves the feel on device (TestFlight).
 8. The decisions log and chapter are updated if anything changed.
@@ -79,11 +83,11 @@ Your part is steps 1 and 7: deciding *what* it should be, and judging *how it fe
 |---|---|
 | Sync | Reordered arrival; a duplicate ID with the same and with different content; late arrival before the projection checkpoint; a crash between the local write and the outbox (must be impossible: same transaction); a crash mid-upload; CKSyncEngine state restore |
 | Accounts | iCloud sign-out and sign-in to a different account; no-iCloud → iCloud attach; quota exceeded |
-| Deletion | Delete-everything while offline; interrupted deletion then relaunch; a stale second device reconnecting after deletion (must not resurrect); memory tombstone versus a concurrent edit |
+| Deletion | Delete-everything while offline; interrupted deletion then relaunch; a stale second device reconnecting after deletion (must not resurrect); **the Codex round-2 interleaving: B fetches the generation, A deletes, B uploads, then B must fail with zoneNotFound and not recreate the zone (real CloudKit)**; a concurrent Meta update (change-tag retry); memory tombstone versus a concurrent edit |
 | Grants | Two offline devices granting the same entitlement; grant during a rules change; a correction after a grant (the grant stays) |
-| Time | Lived-day DST vectors; travel across time zones; backdating; Vitality decay with no new entries (`asOf`) |
-| Health | Each `HealthFactSyncMode`; HealthKit denied, unavailable or sample deleted → `unknown`, never failure; app-written samples stay `selfReported`; orphan reconciliation of HealthKit writes; backup exclusion after migration |
-| Import | Old-schema import; conflicting IDs; oversized or malicious archive; a deleted-generation manifest |
+| Time | Lived-day v2 DST vectors (gap and repeated hour, including a 02:30 boundary); travel across time zones; backdating; Vitality decay with no new entries (`asOf`) |
+| Health | Each `HealthFactSyncMode`; **device loss in `.phoneOnly` mode → Depth, G and grants identical after restore**; HealthKit denied, unavailable or sample deleted → `unknown`, never failure; untrusted-source samples stay `selfReported`; app-written samples stay `selfReported`; orphan reconciliation of HealthKit writes; backup exclusion after migration; the memory validator rejects H1 values |
+| Import | Old-schema import; conflicting IDs; oversized or malicious archive; a retired-generation manifest; export → import → sync round trip with **no quarantine** (hash preserved); crash between the P and H2 commits (journal resume); both modes × H2 opt-in on and off |
 | Relay | Assertion replay (counter reuse); a join after the acceptance deadline; duplicate joins; the kill switch; Relay down (queued joins sent later) |
 | AI | Each row of the per-task outcome matrix (16 §B.4); invented source IDs rejected; validator fail-closed |
 | Privacy | The `NetworkGate` blocks non-allowlisted hosts and redirects; no personal fields in diagnostics |

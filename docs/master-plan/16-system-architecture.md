@@ -1,6 +1,6 @@
 # 16 — System Architecture
 
-**Status:** First pass (Phase B foundations): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B 🔎 revision 2, in Codex review · **Last updated:** 2026-09-30
+**Status:** First pass (Phase B foundations): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B 🔎 revision 3, in Codex review · **Last updated:** 2026-09-30
 **Based on:** decisions 20, 23, 28–50 · **Reviews:** [Codex round 1](../reviews/2026-09-30-codex-phaseB.md) · **Research:** §B.12
 
 This chapter has two layers:
@@ -58,9 +58,10 @@ The MVP uses the first two only (decision 49).
 
 **3. Designed for both of Apple's possible answers on health data** (decision 50). Apple's rules say apps *"may not store personal health information in iCloud,"* and it's unclear how strictly that applies to our case. So the app is designed to work either way:
 - **Health measurements** (distance, heart rate, sleep hours) **always stay in Apple Health.** Our app never stores them.
-- **Health-related facts** (like "went for a run, verified by Apple Health"):
-  - **If Apple says OK:** they sync with your record like everything else.
-  - **If Apple says no:** they stay in a separate, phone-only store that's never uploaded, even to backups. On a new phone they're rebuilt from Apple Health. **Anything that can't be rebuilt is never counted as a failure, and your Flame never shrinks because of it.**
+- **The fact that you did something** (like "went for a run") is always part of your synced record, **never lost** (decision 57).
+- **Things read from Apple Health, your private notes, and Body health plans:**
+  - **If Apple says OK:** they sync like everything else.
+  - **If Apple says no:** they stay in a separate, phone-only store that's never uploaded, even to backups. On a new phone, verification is rebuilt from Apple Health where possible, and the Companion can rebuild plans. **Losing a phone never lowers your Depth, growth number or rewards.** At worst you lose some "verified" badges and your private notes.
 
 We ask Apple in writing before building the health features. I'll draft the question, and you'll send it from your developer account.
 
@@ -143,8 +144,8 @@ GrowthEngine.compute(entries: [Entry], asOf: Instant, settings: EngineSettings, 
 - The `rewardGranted` entry carries `entitlementKey`. The projection treats the **set of entitlement keys** as ownership. Duplicate grants of the same key from different offline devices collapse to the earliest by `(recordedAt, id)`. The duplicates stay in the append-only record but are ignored.
 - `GrantService` runs after each projection refresh, and emits `rewardGranted` for eligible keys not yet owned, in its own transaction.
 - **Ownership ≠ presentation.** `milestoneWitnessed` records that the user *saw* the moment (so it isn't celebrated twice). Ownership never depends on having witnessed it.
-- **Depth under formula changes and corrections:** the policy is set in **chapter 04**. The requirement on the architecture is that the engine must support a *floor* input (previously acknowledged Depth per pillar, recorded as entries), so a formula change can never lower displayed Depth, if chapter 04 so decides.
-- An owned Transformation constrains the displayed theme to at least that stage (chapter 10 defines the exact mapping).
+- **Depth under formula changes and corrections:** defined in chapter 04 §B.2 (decision 56). `depthAcknowledged` entries carry per-pillar legacy offsets; they're P-class and synced.
+- An owned Transformation constrains the displayed theme to at least that stage. The **MVP** mapping is defined in **chapter 03** (on the MVP planning track); chapter 10 extends it later.
 
 ## B.4 AI routing (`Companion`)
 
@@ -171,31 +172,37 @@ GrowthEngine.compute(entries: [Entry], asOf: Instant, settings: EngineSettings, 
 - Unsupported domains (medical, eating disorders, mental-health crisis) get fixed, reviewed referral responses, never generated ones.
 - **Chapter 07 defines** the exact task list, validators, referral texts and adversarial evals. **Plan generation can't ship until chapter 07 is approved.**
 
-## B.5 Health data (decision 50)
+## B.5 Health data (decisions 50, 57)
 
 **Build-time mode:** `HealthFactSyncMode = .allowed | .phoneOnly`, set by Apple's written answer. **The default until then is `.phoneOnly`.**
 
-**Data classification per field and destination** (applies to entries, plans, memory, notes, drafts, queue, export):
+**Classes:**
 
-| Class | Examples | `.allowed` mode | `.phoneOnly` mode |
+| Class | What | `.allowed` | `.phoneOnly` |
 |---|---|---|---|
-| **H1 Measurements** | distance, heart rate, sleep duration, weight, nutrition quantities | Never stored by the app; stay in HealthKit | Same |
-| **H2 Health-related facts** | evidence assessments for HealthKit-backed Actions; Body-pillar health Actions; health-derived Companion memory; free-text notes and drafts; Body-pillar plan revisions | Synced record/working data | `HealthLocalStore`: a separate SQLite file, `isExcludedFromBackup = true`, never synced, exported in a separate `health-local.jsonl` only if the user opts in |
-| **P Personal** | all other entries, non-Body plans, memory, settings | Synced | Synced |
+| **H1 Measurements** | Values read from HealthKit (distance, heart rate, sleep duration, weight, nutrition quantities) | Never stored by the app | Same |
+| **H2 Health-derived and private text** | (a) `evidenceAssessed` entries and anything computed from HealthKit samples (HealthKit-derived levels/L0, health-derived observations); (b) all free text written by the user or generated about the user: notes, Companion memory text, drafts, queued AI requests; (c) `PlanRevision`s for Body health tracks (training, nutrition, sleep) | Synced | `health-local.sqlite` only: excluded from backup, never synced |
+| **P Personal** | Everything else, **including every `actionCompleted` entry (all pillars)**, corrections, Path/Spark/Ritual entries, grants, `depthAcknowledged`, non-Body plan revisions, settings, and difficulty `d` stored in completion payloads | Synced | Synced |
 
-- **Free text is always treated as H2**, since no schema check can prove text contains no health information.
-- **Evidence assessment** (immutable replay input): `{criterionId, criterionVersion, outcome: met | notMet | unknown, assessedAt, provenance}`.
-  - `unknown` covers HealthKit being unavailable, denied or deleted. HealthKit deliberately hides the difference between "denied" and "no data."
-  - **`unknown` is never treated as failure:** the Action keeps its self-reported standing.
-- **Cross-device reconstruction** in `.phoneOnly` mode: on a new device, H2 evidence is re-assessed from HealthKit where samples are available. Whatever can't be re-assessed stays `unknown`. Displayed Depth is protected by the floor mechanism (§B.3). This is an accepted, documented limitation of `.phoneOnly` mode.
-- **Backup exclusion** is verified by a test after every schema migration.
+**Propagation rules:**
+- A value's class is the **highest class of its inputs**. For example, a level computed from HealthKit history is H2; `d` is computed at completion time from the current level and stored in the P entry as a single scalar. This is an accepted, minimal disclosure: a number, not a measurement.
+- **Growth projections are P:** growth formulas ignore evidence (decision 55) and read only P entries. H2 never feeds `GrowthEngine`, so losing H2 never changes Depth, G or grants.
+- Temporary files, caches, queues and export staging inherit the class of their contents and live in the matching store's directory (H2 → the backup-excluded directory).
+- Free text is H2 in every structure. H1 values must never be written into free text by the app itself (for example the Companion must not echo measurements into memory; this is enforced by a validator on memory writes).
+- P entries may **reference** H2 records by ID (for example `noteRef`, `planRevisionId`). A missing H2 target after a device loss renders as "not available on this device," never as an error or a loss of growth.
+
+**Recovery (`.phoneOnly`, new device):** all P data syncs back, so Depth, G, grants and Vitality are fully reconstructed. H2 evidence is re-assessed from HealthKit where the samples are available (a new `evidenceAssessed` entry with `provenance: reassessed`). Otherwise the Action shows as self-reported. Body plans are regenerated by the Companion from the Path's goal on request.
+
+**Backup exclusion** is verified by a test after every schema migration.
 
 ## B.6 Evidence provenance and HealthKit writes
 
 - **`deviceVerified`** requires all of the following:
-  - a HealthKit sample **not written by this app** (source bundle ≠ ours);
+  - a HealthKit sample **not written by this app**;
   - `HKMetadataKeyWasUserEntered` absent or false;
+  - the sample's `sourceRevision.source.bundleIdentifier` is in the **trusted-source allowlist** (Apple's own sources, such as the iPhone and Apple Watch, in the MVP; partner apps are added in chapter 09);
   - the sample meets the criterion.
+  - Samples from any other source can support completion but stay `selfReported`.
 - App-written samples (health-type self-reports) remain **`selfReported`**.
 - **HealthKit write protocol:**
   1. persist an `operationId`;
@@ -203,12 +210,13 @@ GrowthEngine.compute(entries: [Entry], asOf: Instant, settings: EngineSettings, 
   3. write the entry referencing the operationId;
   4. on launch, reconcile orphans in both directions.
 - If a write is denied, the type is unsupported, or HealthKit is unavailable, the Action is still completed (self-reported, private). Completion **never** depends on HealthKit (P4).
-- **Evidence de-duplication:** a HealthKit `sampleUUID` can support at most one completion per `occurrenceKey`, and one occurrence per sample (chapter 17 §B.4).
+- **Evidence de-duplication:** a HealthKit `sampleUUID` can be evidence for at most one occurrence. Completions *created from* a HealthKit sample (auto-detected workouts) use `occurrenceKey = hk:{sampleUUID}`, so one sample can never produce two completions (chapter 17 §B.4).
 
 ## B.7 The Relay (MVP: Rituals only)
 
 - **Runtime (proposed):** Cloudflare Workers (TypeScript) + Durable Objects. Confirmed when built.
 - **Endpoints (MVP):**
+  - `GET /catalog/{version}` (public, unauthenticated, signed content, §B.10)
   - `POST /attest/challenge`
   - `POST /attest/register`
   - `POST /ritual/{ritualWindowId}/join`
@@ -233,12 +241,12 @@ GrowthEngine.compute(entries: [Entry], asOf: Instant, settings: EngineSettings, 
 
 ## B.8 Sync (`Data/Sync`, CKSyncEngine, private database)
 
-- **Zones:** `Record` (immutable entries), `Working` (plans, memory, settings), and `Meta` (a `DatasetGeneration` record, §B.9).
-- **Outbox:** every local write inserts its outbox row **in the same transaction**. CKSyncEngine's `nextRecordZoneChangeBatch` reads from the outbox, and rows are removed only after a confirmed save.
+- **Zones are generation-named:** `Record-{gen}`, `Working-{gen}` (gen = the current `DatasetGeneration` ID), plus a permanent `Meta` zone holding `{currentGeneration, retiredGenerations[]}`. Generation IDs are random and carry no personal data (§B.9).
+- **Outbox:** every local write inserts its outbox row **in the same transaction**. Each row is tagged with the generation it was created under. CKSyncEngine's `nextRecordZoneChangeBatch` reads from the outbox, and rows are removed only after a confirmed save. Rows tagged with a retired generation are discarded, never sent.
 - **Engine state:** `stateSerialization` is persisted in the database on every `stateUpdate` event. CKRecord system fields are stored in a separate metadata table.
 - **Errors:** handled per `CKError` category (retry with backoff, zone-not-found → recreate within the current generation, quota exceeded → the decision-32 UI, partial failures handled per record).
 - **Conflicts:**
-  - Entries are immutable. Same ID + same canonical content hash = no-op. Same ID + different content = **quarantine** both, plus a non-personal diagnostic, and the projection uses neither until resolved.
+  - Entries are immutable. Same ID + same canonical content hash (which covers **every immutable field, including `recordedAt`**; chapter 17 §B.2) = no-op. Same ID + different content = **quarantine** both, plus a non-personal diagnostic, and the projection uses neither until resolved.
   - `PlanRevision` records are immutable. The `ActivePlan` pointer and `Setting`s are last-writer-wins by `modifiedAt`, with deterministic tiebreak by device ID.
   - Memory: create-only plus **tombstones** for deletion; a tombstone always wins.
 - **Account isolation:**
@@ -247,20 +255,24 @@ GrowthEngine.compute(entries: [Entry], asOf: Instant, settings: EngineSettings, 
   - No-iCloud mode uses a `local` namespace. When iCloud becomes available, the user explicitly chooses to attach it.
 - **Offline-first:** the tracking-moment code path contains no network calls. A test enforces it.
 
-## B.9 Deletion protocol ("delete everything")
+## B.9 Deletion protocol ("delete everything"), with generation fencing
+
+**Fencing principle:** data is written only into zones named for the *current* generation. A deleted generation's zones are gone, so any stale write to them fails with `zoneNotFound`. **A client must never create a zone for a generation other than `Meta.currentGeneration`, and never for a generation listed in `retiredGenerations`.** Before creating any zone, a client re-fetches `Meta`.
 
 1. Persist a `DeletionIntent {generationToRetire, startedAt}` in the Keychain (it survives a local wipe) and stop all outgoing sync.
 2. Wipe local data immediately (both stores), so the user sees an instant reset.
-3. Delete the `Record`, `Working` and `Meta` zones. Retry until confirmed; the intent survives relaunches.
-4. Create a new `Meta` zone with a new `DatasetGeneration` ID. Clear the intent.
-5. **Stale devices:** before any upload, a client fetches `DatasetGeneration`. If it doesn't match its own, it stops uploading, discards its local data for that account, and informs the user. A stale device can never resurrect deleted data.
-6. **HealthKit samples written by the app:** the user is offered a choice to delete them too (HealthKit allows deleting our own samples).
-7. **Exports the user saved** are the user's files and aren't touched. The confirmation screen says so.
-8. **Single memory deletion** = tombstone (§B.8).
+3. Update `Meta`: append `generationToRetire` to `retiredGenerations` and set `currentGeneration = newGen`. Save with the server change tag, so a concurrent Meta change forces a re-fetch and retry.
+4. Delete zones `Record-{old}` and `Working-{old}`. Retry until confirmed; the intent survives relaunches.
+5. Create `Record-{newGen}` and `Working-{newGen}`. Clear the intent.
+6. **Stale device B** (the interleaving from Codex round 2): B's prepared upload to `Record-{old}` fails with `zoneNotFound` once step 4 completes. If it lands *before* step 4, those records are deleted with the zone. B then re-fetches `Meta`, sees its generation is retired, discards its outbox and local data for that account, and informs the user. **The retired generation is never recreated, so resurrection is impossible.**
+7. **HealthKit samples written by the app:** the user is offered a choice to delete them too.
+8. **Exports the user saved** are the user's files and aren't touched. The confirmation screen says so. An export's manifest records its generation, and import honors `retiredGenerations` (chapter 17 §B.9).
+9. **Single memory deletion** = tombstone (§B.8).
+10. **Verification requirement:** the scenario tests (chapter 22 §B.4) must confirm on real CloudKit that saves into a deleted zone fail with `zoneNotFound` and don't recreate the zone implicitly. This is the platform behavior the fencing relies on.
 
 ## B.10 Content catalog (hook for chapter 28)
 
-A public, read-only, versioned bundle (Sparks, Ritual definitions, source registry, plan templates, milestone definitions, story/world content). It's signed, served from a CDN, cached on device, and falls back to the bundled version. It contains no user data. The format is defined with chapter 28.
+A public, read-only, versioned bundle (Sparks, Ritual definitions, source registry, plan templates, milestone definitions, story/world content). It's signed (the signature is verified on device) and **served from the Relay domain at `/catalog/{version}`** with edge caching, so no extra host is allowlisted. It's cached on device, falls back to the bundled version, and contains no user data. The format is defined with chapter 28.
 
 ## B.11 Non-goals for the foundations
 - No custom backend database. No user accounts. No analytics SDKs. No third-party UI frameworks. No cross-platform frameworks. No frontier AI in the MVP.

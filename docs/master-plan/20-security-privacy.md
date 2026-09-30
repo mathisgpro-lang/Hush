@@ -1,6 +1,6 @@
 # 20 — Security, Privacy and Compliance
 
-**Status:** First pass (Phase B baseline): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B 🔎 revision 2, in Codex review · **Last updated:** 2026-09-30
+**Status:** First pass (Phase B baseline): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B 🔎 revision 3, in Codex review · **Last updated:** 2026-09-30
 **Based on:** decisions 29, 30, 34, 37, 43, 48–50 · **Depends on:** chapters 16, 17
 
 ---
@@ -25,8 +25,8 @@
 ## A.2 The App Store privacy label
 
 The label appears at public release (V1), not during the private beta.
-- **Our honest expectation: "Data Not Linked to You."** This is the second-strongest label. It's there because the anonymous device key used for Rituals counts as an identifier, even though it can't be traced to a person.
-- **"Data Not Collected"** is only possible if Rituals work without the Relay. We'll look at that trade-off again in chapter 11. We won't bend the definition to get the better label.
+- **Honestly: to be determined.** Because the Relay briefly remembers which anonymous device joined which Ritual (to avoid counting twice), Apple may consider that data *linked to the device*. The label could therefore be **"Data Linked to You: Device ID,"** even though nobody can know who you are.
+- **Chapter 11** will look at ways to count Rituals without keeping that link. If one works, the label improves. We won't bend any definition to get a better label (decision 48).
 
 ## A.3 What's protected, and how
 
@@ -54,7 +54,7 @@ The label appears at public release (V1), not during the private beta.
 |---|---|
 | Stolen or lost phone | iOS data protection (`completeUntilFirstUserAuthentication` for the databases, which background sync requires); the Keychain for secrets |
 | Relay abuse (fake Ritual counts) | App Attest registration plus an assertion on every request, with a counter that strictly increases; per-key rate limits; de-duplication per key and window (16 §B.7) |
-| Relay compromise | Holds only key registrations and short-lived de-dup hashes plus counts; no content, no IP addresses; secrets only in the platform's secret store |
+| Relay compromise | Holds only pseudonymous key registrations, short-lived de-dup hashes and counts; no content, no IP addresses; secrets only in the platform's secret store; the catalog signing key is kept **offline**, never on the Relay |
 | Data leaking to AI | MVP: Apple tiers only (on-device, and PCC, which stores no prompts). Tier 3 is post-MVP with a consent gate (16 §B.4) |
 | Supply chain | Minimal dependencies (`docs/dependencies.md`: a justification for each, pinned versions, review on every update) |
 | Prompt injection | Model outputs never directly trigger record writes or destructive actions; all structured outputs go through deterministic validators; source IDs must resolve to supplied sources (16 §B.4) |
@@ -66,7 +66,8 @@ The label appears at public release (V1), not during the private beta.
 ## B.2 Data classification
 
 The P / H1 / H2 classes are defined in chapter 16 §B.5. Two more:
-- **A (Anonymous, Relay):** key registration `{keyIdHash, publicKey, counter, registeredAt, lastSeenAt}`, de-dup hashes, counts.
+- **Ps (Pseudonymous, Relay):** key registrations `{keyIdHash, publicKey, counter, registeredAt, lastSeenAt}` and de-dup hashes linking a device key to Ritual participation. They're persistent per device, so they are **not** anonymous.
+- **A (Anonymous, Relay):** aggregate counts only.
 - **S (Secrets):** the App Attest key ID, the deletion intent, the install ID. Keychain only. The App Attest private key is held by the Secure Enclave, and the app stores only its identifier.
 
 **Relay retention table:**
@@ -81,7 +82,7 @@ The P / H1 / H2 classes are defined in chapter 16 §B.5. Two more:
 ## B.3 Hard rules (enforced in code review, tests and runtime)
 
 1. No third-party analytics, ads, attribution or crash SDKs (Apple's built-in crash reporting only).
-2. **Network egress:** all app-controlled networking goes through one `NetworkGate`. It checks each destination against an allowlist (Apple services plus the Relay domain) at runtime, and rejects redirects to other hosts. Adapter tests check that nothing leaks out through other paths. A lint check for URL literals is an *extra* check, not the security boundary.
+2. **Network egress:** all app-controlled networking goes through one `NetworkGate`. It checks each destination against an allowlist (Apple services plus the Relay domain, which also serves the content catalog, 16 §B.10) at runtime, and rejects redirects to other hosts. Adapter tests check that nothing leaks out through other paths. A lint check for URL literals is an *extra* check, not the security boundary.
 3. **Logging:**
    - structured diagnostics only, with a fixed set of approved non-personal fields (event codes, counts, durations);
    - never log prompts, payloads, free text, error bodies or identifiers;
@@ -94,7 +95,7 @@ The P / H1 / H2 classes are defined in chapter 16 §B.5. Two more:
 ## B.4 Compliance checklist (tracked to V1)
 
 - [ ] Privacy policy published (chapter 15), covering Relay pseudonymous keys, Apple PCC processing, and (later) tier-3 pass-through.
-- [ ] App Privacy details in App Store Connect, answered honestly (expected: Identifiers → Device ID, Not Linked to You, used for app functionality).
+- [ ] App Privacy details in App Store Connect, **determined from the actually retained relationships** (currently: device key ↔ Ritual participation for up to ~10 days after the window, and key registrations for up to 90 days unused). No expected answer is presumed; if in doubt, declare the stricter category. Ref: https://developer.apple.com/app-store/app-privacy-details/
 - [ ] Written App Review answer on 5.1.3(ii); `HealthFactSyncMode` set accordingly.
 - [ ] Small Business Program enrollment and PCC entitlement; both eligibility conditions monitored.
 - [ ] HealthKit usage descriptions written in the app's voice.
