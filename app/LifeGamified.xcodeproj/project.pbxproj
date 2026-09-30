@@ -179,7 +179,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = SX845VA92A;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SX845VA92A;
 				ENABLE_PREVIEWS = YES;
@@ -209,7 +208,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = SX845VA92A;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SX845VA92A;
 				ENABLE_PREVIEWS = YES;

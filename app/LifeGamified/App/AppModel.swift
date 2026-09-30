@@ -326,6 +326,27 @@ final class AppModel {
     /// Ascent at the end of yesterday, for "Close the day".
     var ascentYesterday: Double { state.ascent / (1 + 0.01 * state.todayCompletion) }
 
+    // MARK: your record (chapter 17 §B.9: export in an open format; delete everything)
+
+    /// An open, documented JSON export of the whole record (format v1).
+    func exportRecord() -> Data {
+        struct Export: Encodable { let format: String; let formatVersion: Int; let exportedAt: Date; let entries: [Entry] }
+        let e = JSONEncoder()
+        e.outputFormatting = [.prettyPrinted, .sortedKeys]
+        e.dateEncodingStrategy = .iso8601
+        // The whole append-only record as-is (corrections included), so it can be fully restored later.
+        return (try? e.encode(Export(format: "life-gamified-record", formatVersion: 1, exportedAt: .now,
+                                     entries: entries))) ?? Data()
+    }
+
+    func deleteEverythingForReal() {
+        sandbox = nil
+        devOffset = 0
+        try? realStore?.deleteEverything()
+        DaylightNotifier.cancel()
+        reload()
+    }
+
     // MARK: developer tools (time travel, reset), hidden behind a long press on the date
 
     func devAdvance(days: Int) {
