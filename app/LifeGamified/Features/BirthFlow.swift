@@ -79,13 +79,28 @@ struct BirthFlow: View {
         }
     }
 
+    /// A pixel ember (decision 77): concentric pixel squares that breathe.
     private func ember(size: CGFloat) -> some View {
         TimelineView(.animation) { tl in
             let pulse = 1 + 0.15 * sin(tl.date.timeIntervalSinceReferenceDate * 2.2)
-            Circle()
-                .fill(RadialGradient(colors: [Color(red: 1, green: 0.85, blue: 0.5), .orange, .red.opacity(0.4), .clear],
-                                     center: .center, startRadius: 0, endRadius: size * 2.5))
-                .frame(width: size * 5 * pulse, height: size * 5 * pulse)
+            Canvas { ctx, sz in
+                let px: CGFloat = 6
+                let c = CGPoint(x: sz.width / 2, y: sz.height / 2)
+                let radius = size * 1.6 * pulse
+                let colors: [Color] = [Color(red: 1, green: 0.95, blue: 0.75), Color(red: 1, green: 0.75, blue: 0.3),
+                                       .orange, Color(red: 0.8, green: 0.25, blue: 0.1), Color(red: 0.4, green: 0.08, blue: 0.05)]
+                let cells = Int(radius / px) + 2
+                for gx in -cells...cells {
+                    for gy in -cells...cells {
+                        let d = sqrt(Double(gx * gx + gy * gy)) * Double(px) / Double(radius)
+                        guard d < 1 else { continue }
+                        let col = colors[min(colors.count - 1, Int(d * Double(colors.count)))]
+                        ctx.fill(Path(CGRect(x: c.x + CGFloat(gx) * px - px / 2, y: c.y + CGFloat(gy) * px - px / 2, width: px, height: px)),
+                                 with: .color(col.opacity(1 - d * 0.5)))
+                    }
+                }
+            }
+            .frame(width: size * 5, height: size * 5)
         }
     }
 
@@ -179,7 +194,8 @@ struct BirthFlow: View {
                                 Spacer()
                             }
                             .padding(14)
-                            .background(RoundedRectangle(cornerRadius: 14).fill(.ultraThinMaterial))
+                            .background(Rectangle().fill(Color(red: 0.06, green: 0.05, blue: 0.08).opacity(0.75))
+                                .overlay(Rectangle().strokeBorder(t.pillar.color.opacity(0.5), lineWidth: 2)))
                         }
                         .buttonStyle(.plain)
                     }

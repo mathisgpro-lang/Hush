@@ -205,9 +205,11 @@ struct ActionCard: View {
             .padding(12)
             .frame(width: geo.size.width, height: geo.size.height)
             .background(
-                RoundedRectangle(cornerRadius: 14).fill(.ultraThinMaterial)
-                    .overlay(RoundedRectangle(cornerRadius: 14).fill(card.pillar.color.opacity(card.done ? 0.16 : 0.25 * charge)))
-                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(card.pillar.color.opacity(card.done ? 0.6 : 0.2), lineWidth: 1))
+                // Pixel card (decision 77): square corners, a dark translucent plate, a 2-pixel border.
+                Rectangle().fill(Color(red: 0.06, green: 0.05, blue: 0.08).opacity(0.72))
+                    .overlay(Rectangle().fill(card.pillar.color.opacity(card.done ? 0.16 : 0.25 * charge)))
+                    .overlay(Rectangle().strokeBorder(card.pillar.color.opacity(card.done ? 0.8 : 0.35), lineWidth: 2))
+                    .overlay(alignment: .topLeading) { Rectangle().fill(card.pillar.color).frame(width: 6, height: 6) }
             )
             .scaleEffect(1 - 0.04 * charge)
             .opacity(card.done ? 0.75 : 1)
@@ -248,7 +250,7 @@ struct JourneyMarker: View {
     var body: some View {
         HStack(spacing: 6) {
             ForEach(0..<Catalog.journey.count, id: \.self) { i in
-                Circle().fill(i <= step ? Theme.dawn : .white.opacity(0.25)).frame(width: 5, height: 5)
+                Rectangle().fill(i <= step ? Theme.dawn : .white.opacity(0.25)).frame(width: 6, height: 6)
             }
             Text("\(Catalog.roman[step]) · \(Catalog.journey[step])").font(Theme.ceremonial(12)).foregroundStyle(Theme.textSecondary)
             Text("·  next: ···").font(Theme.ceremonial(12)).foregroundStyle(.white.opacity(0.35))
