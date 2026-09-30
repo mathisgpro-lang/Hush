@@ -73,54 +73,65 @@ struct FlameCharacter: View {
                  with: .radialGradient(Gradient(colors: [Color.orange.opacity(0.35 * (sleepy ? 0.4 : 1)), .clear]),
                                        center: gc, startRadius: 0, endRadius: glowR))
 
-        // Feet and arms (little rounded nubs).
+        // Stubby legs and arms (plush nubs), drawn behind the body.
         let limb = deep
         for side in [-1.0, 1.0] {
-            ctx.fill(Path(roundedRect: CGRect(x: size.width / 2 + side * bodyW * 0.16 - bodyW * 0.07, y: footY - hop - h * 0.06,
-                                              width: bodyW * 0.14, height: h * 0.10), cornerRadius: bodyW * 0.05), with: .color(limb))
-            let armUp = m == .joyful ? -0.9 : m == .happy ? -0.2 + sin(t * 2) * 0.1 : 0.35
+            let legW = bodyW * 0.2, legH = h * 0.16
+            ctx.fill(Path(roundedRect: CGRect(x: size.width / 2 + side * bodyW * 0.17 - legW / 2, y: footY - hop - legH,
+                                              width: legW, height: legH), cornerRadius: legW * 0.45),
+                     with: .linearGradient(Gradient(colors: [bright, limb]), startPoint: CGPoint(x: 0, y: footY - hop - legH),
+                                           endPoint: CGPoint(x: 0, y: footY - hop)))
+            let armUp = m == .joyful ? -1.0 : m == .happy ? -0.15 + sin(t * 2) * 0.12 : 0.4
+            let shoulder = P(0.5 + side * 0.40, 0.66)
+            let hand = CGPoint(x: shoulder.x + side * bodyW * 0.2, y: shoulder.y + bodyH * 0.16 * armUp)
             var arm = Path()
-            let shoulder = P(0.5 + side * 0.42, 0.62)
-            arm.move(to: shoulder)
-            arm.addLine(to: CGPoint(x: shoulder.x + side * bodyW * 0.18, y: shoulder.y + bodyH * 0.18 * armUp))
-            ctx.stroke(arm, with: .color(limb), style: StrokeStyle(lineWidth: bodyW * 0.1, lineCap: .round))
+            arm.move(to: shoulder); arm.addLine(to: hand)
+            ctx.stroke(arm, with: .color(limb), style: StrokeStyle(lineWidth: bodyW * 0.16, lineCap: .round))
         }
 
-        // The body: a rounded flame with flickering tips.
+        // The body: a round, plush blob with a fluffy edge and flame "hair" dancing on top.
+        let cx = size.width / 2, cy = origin.y + bodyH * 0.62
+        let rx = bodyW * 0.5, ry = bodyH * 0.40
+        let hairTips = Double(tips + 2)
         var body = Path()
-        body.move(to: P(0.5, 1.0))
-        body.addCurve(to: P(0.02, 0.62), control1: P(0.18, 1.0), control2: P(0.0, 0.85))
-        let n = tips
-        var prev = P(0.02, 0.62)
-        for i in 0..<n {
-            let f = (Double(i) + 0.5) / Double(n)
-            let isCenter = abs(f - 0.5) < 0.15
-            let tipH = isCenter ? 0.0 : 0.18 + 0.08 * abs(f - 0.5) * 2
-            let wob = sin(t * 5 + Double(i) * 1.7) * 0.03
-            let tip = P(0.1 + 0.8 * f + wob, tipH + sin(t * 4 + Double(i)) * 0.02)
-            let dipX = 0.1 + 0.8 * (Double(i) + 1) / Double(n)
-            body.addQuadCurve(to: tip, control: CGPoint(x: (prev.x + tip.x) / 2 - bodyW * 0.04, y: tip.y + bodyH * 0.18))
-            let dip = i < n - 1 ? P(dipX, 0.34) : P(0.98, 0.62)
-            body.addQuadCurve(to: dip, control: CGPoint(x: (tip.x + dip.x) / 2 + bodyW * 0.03, y: tip.y + bodyH * 0.12))
-            prev = dip
+        let steps = 160
+        for i in 0...steps {
+            let a = -Double.pi / 2 + Double(i) / Double(steps) * 2 * .pi       // start at the top, go around
+            var r = 1.0 + 0.018 * sin(a * 38 + t * 3)                          // fluffy fur edge
+            // Signed angle from the top (0 = straight up, negative = left).
+            let signed = atan2(sin(a + .pi / 2), cos(a + .pi / 2))
+            if abs(signed) < 1.35 {                                            // flame hair on the upper part
+                let n = Int(hairTips)
+                var peak = 0.0
+                for k in 0..<n {
+                    let pos = (Double(k) / Double(n - 1) - 0.5) * 2.1           // tongues spread across the head
+                    let height = 1.0 - 0.55 * abs(pos) / 1.05                   // tallest in the center
+                    let sway = sin(t * 3.1 + Double(k) * 1.9) * 0.06
+                    let d = (signed - pos - sway) / 0.16
+                    peak = max(peak, height * exp(-d * d))
+                }
+                let fade = pow(cos(signed / 1.35 * .pi / 2), 0.8)
+                r += fade * (0.12 + 1.1 * peak) * (sleepy ? 0.4 : 1) * (1 + 0.08 * sin(t * 4))
+            }
+            let pt = CGPoint(x: cx + rx * r * cos(a), y: cy + ry * r * sin(a))
+            i == 0 ? body.move(to: pt) : body.addLine(to: pt)
         }
-        body.addCurve(to: P(0.5, 1.0), control1: P(1.0, 0.85), control2: P(0.82, 1.0))
         body.closeSubpath()
-        ctx.fill(body, with: .linearGradient(Gradient(colors: [bright, deep]),
-                                             startPoint: P(0.5, 0.1), endPoint: P(0.5, 1.0)))
-        // Inner core highlight.
-        ctx.fill(Path(ellipseIn: CGRect(x: origin.x + bodyW * 0.28, y: origin.y + bodyH * 0.5, width: bodyW * 0.44, height: bodyH * 0.42)),
-                 with: .radialGradient(Gradient(colors: [core.opacity(sleepy ? 0.3 : 0.7), .clear]),
-                                       center: P(0.5, 0.72), startRadius: 0, endRadius: bodyW * 0.3))
+        ctx.fill(body, with: .radialGradient(Gradient(colors: [core, bright, deep]),
+                                             center: CGPoint(x: cx, y: cy + ry * 0.1), startRadius: 0, endRadius: rx * 1.25))
+        // A soft inner glow in the chest.
+        ctx.fill(Path(ellipseIn: CGRect(x: cx - rx * 0.45, y: cy - ry * 0.05, width: rx * 0.9, height: ry * 0.8)),
+                 with: .radialGradient(Gradient(colors: [core.opacity(sleepy ? 0.25 : 0.55), .clear]),
+                                       center: CGPoint(x: cx, y: cy + ry * 0.35), startRadius: 0, endRadius: rx * 0.5))
         if era >= 2 {   // after the Forge: a small forged ember-gem on the brow
             var gem = Path()
-            gem.move(to: P(0.5, 0.36)); gem.addLine(to: P(0.54, 0.41)); gem.addLine(to: P(0.5, 0.46)); gem.addLine(to: P(0.46, 0.41))
+            gem.move(to: P(0.5, 0.40)); gem.addLine(to: P(0.535, 0.44)); gem.addLine(to: P(0.5, 0.48)); gem.addLine(to: P(0.465, 0.44))
             gem.closeSubpath()
             ctx.fill(gem, with: .color(Color(red: 0.43, green: 0.68, blue: 0.95)))
         }
 
         // Face.
-        let eyeY = 0.58, eyeDX = 0.15
+        let eyeY = 0.56, eyeDX = 0.16
         let blink = sleepy || (t.truncatingRemainder(dividingBy: 4.2) < 0.12)
         let eyeColor = Color(red: 0.25, green: 0.1, blue: 0.08)
         for side in [-1.0, 1.0] {
@@ -132,15 +143,24 @@ struct FlameCharacter: View {
                                  control: CGPoint(x: c.x, y: c.y + (m == .joyful ? -1 : 1) * bodyH * 0.05))
                 ctx.stroke(lid, with: .color(eyeColor), style: StrokeStyle(lineWidth: bodyW * 0.022, lineCap: .round))
             } else {
-                let ew = bodyW * 0.075, eh = bodyH * 0.09
-                ctx.fill(Path(ellipseIn: CGRect(x: c.x - ew / 2, y: c.y - eh / 2, width: ew, height: eh)), with: .color(eyeColor))
-                ctx.fill(Path(ellipseIn: CGRect(x: c.x - ew * 0.1, y: c.y - eh * 0.35, width: ew * 0.35, height: ew * 0.35)), with: .color(.white))
+                let ew = bodyW * 0.13, eh = bodyH * 0.13
+                let lookX = sin(t * 0.7) * ew * 0.06
+                ctx.fill(Path(ellipseIn: CGRect(x: c.x - ew / 2 + lookX, y: c.y - eh / 2, width: ew, height: eh)),
+                         with: .radialGradient(Gradient(colors: [Color(red: 0.45, green: 0.2, blue: 0.12), eyeColor]),
+                                               center: CGPoint(x: c.x + lookX, y: c.y + eh * 0.2), startRadius: 0, endRadius: ew * 0.6))
+                ctx.fill(Path(ellipseIn: CGRect(x: c.x - ew * 0.25 + lookX, y: c.y - eh * 0.36, width: ew * 0.42, height: ew * 0.42)), with: .color(.white))
+                ctx.fill(Path(ellipseIn: CGRect(x: c.x + ew * 0.12 + lookX, y: c.y + eh * 0.12, width: ew * 0.18, height: ew * 0.18)), with: .color(.white.opacity(0.85)))
+                // soft eyebrow
+                var brow = Path()
+                brow.move(to: CGPoint(x: c.x - ew * 0.45, y: c.y - eh * 0.85))
+                brow.addQuadCurve(to: CGPoint(x: c.x + ew * 0.45, y: c.y - eh * 0.85), control: CGPoint(x: c.x, y: c.y - eh * 1.05))
+                ctx.stroke(brow, with: .color(deep.opacity(0.9)), style: StrokeStyle(lineWidth: bodyW * 0.02, lineCap: .round))
             }
             // blush
             ctx.fill(Path(ellipseIn: CGRect(x: c.x + side * bodyW * 0.03 - bodyW * 0.045, y: c.y + bodyH * 0.06, width: bodyW * 0.09, height: bodyH * 0.035)),
                      with: .color(Color(red: 1, green: 0.45, blue: 0.4).opacity(0.5)))
         }
-        let mc = P(0.5, 0.71)
+        let mc = P(0.5, 0.70)
         var mouth = Path()
         switch m {
         case .joyful:
