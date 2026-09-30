@@ -72,28 +72,23 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-09-30, before Mathis's macOS update / restart)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-01, during Mathis's movie break)
 
 **Any new session: read this block first and continue exactly from it.** Standing rule (decision 63): adopt Claude's recommendations by default, log them as [by default], add them to the review table below, and keep moving.
 
-### 1. Work that was in flight at shutdown (redo these first)
-- **Codex jobs:** run `scripts/resume-codex.sh` in the background; it relaunches every unfinished Codex job.
-- **Sanctuary concept art (Codex):** check `docs/design/sanctuary/` for `stone-era-bright.png`, `stone-era-embers.png`, `metal-era-bright.png`. If any are missing, rerun the brief in `docs/design/briefs/sanctuary.md` (in the background), then review the images and show them to Mathis (SendUserFile, render).
-- **The two remaining Codex blockers** (`docs/reviews/2026-09-30-codex-r5.md`). Fix both in chapter 04 Part B **and** the reference script (`docs/master-plan/reference/growth_reference_v1.py`), add vectors, run it:
-  1. **Duplicates must preserve per-pillar contributions.** Replace "highest d × edge wins" with: for each occurrence, the effective contribution **per pillar** = the max over its duplicates of `w_p × d × edge`. Adding a duplicate can then never lower any pillar. Add Codex's counterexample (Body 0.90 → 0.11) as a vector.
-  2. **Comeback brightness must never drop on completion.** After partial comeback days, completing day 4 fell from 1.00 to 0.79. Fix: once a comeback completes, carry a relight floor that starts at R(3) = 1.0 and decays only through finalized days with presence below 1 (define it precisely), so a completion never lowers displayed Vitality. Add vectors for half-completed comeback days 1–3, then day 4 fully completed (≥ the previous value), and morning versus post-completion values.
-  - Then run one **targeted** Codex check of those two items only (decision 60). When it passes, mark Phase B (16, 17, 20, 22) and chapter 04 Part B **approved** in the table below and in their status lines.
+### 1. In flight (Codex jobs; `scripts/resume-codex.sh` relaunches any unfinished one)
+- **Empty-pedestal Sanctuary backgrounds** (`docs/design/briefs/sanctuary-empty-pedestal.md`). When they're ready: use `stone-era-bright-empty.png` as the prototype background (`prototypes/feel-v0/FeelPrototype/sanctuary.png`), align the Flame's position with the pedestal in `FlameView.vessel(in:)`, rebuild, and screenshot.
+- **Codex review of the MVP-track chapters** (`docs/reviews/briefs/mvp-chapters-review.md`, output `docs/reviews/2026-10-01-codex-mvp-chapters.md`). When it arrives: fix blocking items in the chapters (decision 60 style), and log deferrable ones for the implementation plans.
 
-### 2. Next chapters (MVP track, with defaults)
-06 tracking moment → 07 Companion (lean) → 08 the Flame's birth → 12 identity (MVP slice) → **23 MVP definition**. Each: draft with defaults, add to the review table, commit; send design work to Codex (decision 62). Show Mathis the Part A content in chat (memory: show content in chat).
+### 2. Waiting for Mathis
+- **Try the feel prototype on his iPhone** (free): see `prototypes/feel-v0/README.md`. Answer the 4 questions in chapter 06 §B.5, and share any tuned values from the "Tune" sheet.
+- **Review the "Decisions to review" table** below (the chapters are drafted with defaults).
+- **Needs his input:** the app's name; the beta language(s); **his own current goals** (user zero, chapter 07 §A.4).
+- *(Optional)* The Apple Developer Program, needed before M5, M6 and M8 (chapter 23 §A.6).
 
-### 3. Mathis's to-dos (outside the app)
-1. **macOS update to 26.6 or later** (in progress at the time of writing) → then the App Store updates **Xcode to 27** → in Terminal, `sudo xcodebuild -license accept` → open Xcode once to install components (the iOS 27 simulator).
-2. Update the iPhone to **iOS 27** (Settings → General → Software Update).
-3. *(Optional)* Apple Developer Program ($99/yr): only for the App Review health question (draft: `docs/vision/app-review-question-health.md`) and TestFlight. Not needed for the free feel prototype.
-
-### 4. After chapter 03 is settled: the feel prototype
-A free, throwaway spike on Mathis's own iPhone (Xcode 27 + cable + Developer Mode): the Flame (first version), completing an Action with haptics, sound and the spark into the vessel, and the comeback. Labeled throwaway; it informs chapters 03 and 06.
+### 3. Next for Claude
+- Once Codex's chapter review is resolved → mark chapters 03, 05, 06, 07, 08, 12, 23 and 28 as "drafted + reviewed," pending Mathis's batch approval.
+- Then **implementation plans for M1** (the foundation: `Domain` + `RecordStore`), using the superpowers writing-plans skill. That's allowed because the foundation chapters are approved (66); M1 has no dependency on the unapproved experience chapters.
 
 ## 📋 Decisions to review (made by default under decision 63; any can be reversed)
 

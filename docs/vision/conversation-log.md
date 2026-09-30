@@ -163,3 +163,14 @@ Phase B conversation complete. Next: draft chapters 16, 17, 20 and 22 (first pas
 - **The Flame's form:** Claude's inline sketches first. **Mathis asked for Codex to create the visuals** ("much more performant"), and Codex generated the concept art. **Mathis loves B, a living fire in a crafted vessel, where both the outer and inner elements can change** (61). **Design work goes to Codex from now on** (62).
 - **Free route:** Mathis asked how far he can go without paying Apple. Answer: the whole feel (Flame, haptics, tracking moment, on-device AI, likely HealthKit) runs free on his own iPhone via Xcode, with 7-day re-signing; the $99 is only needed for TestFlight, the circle, PCC and App Store. Agreed idea: a **feel prototype** once the Flame direction is set.
 - **Xcode installed** (the license still needs accepting). Mathis paused the session, asking that work continue in the background.
+
+---
+
+## Session 2 — 2026-09-30 → 2026-10-01 — Autonomous stretch
+
+- Mathis updated macOS (27.0.1) and installed **Xcode 27**, and accepted the license. Resume trigger "work again" set up (CLAUDE.md, memory, `scripts/resume-codex.sh`).
+- **Standing rule (63):** Claude adopts its recommendations by default; Mathis reviews them in batches.
+- Codex fixed rounds 5–6 → **foundation approved (66)**.
+- Drafted chapters 03, 05, 06, 07, 08, 12, 23 and 28 with defaults. Research pass for onboarding (Duolingo delayed sign-up, Opal chat onboarding, Finch hatching).
+- **Codex design output:** Flame concepts, pillar renders, Sanctuary eras, birth storyboard, home screen, tracking-moment storyboard. Mathis asked that **design work go to Codex** (62).
+- Mathis asked for about 2 hours of uninterrupted work while he watched a movie. Claude built the **M0 feel prototype** (68) and verified it in the simulator: the tracking moment works end to end (×1.000 → ×1.003).

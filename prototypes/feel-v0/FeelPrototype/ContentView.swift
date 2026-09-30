@@ -30,27 +30,34 @@ struct ContentView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 4) {
-            Text("Ascent").font(.system(.caption, design: .serif)).foregroundStyle(.white.opacity(0.7))
-            Text(String(format: "×%.3f", state.ascent))
-                .font(.system(size: 30, weight: .regular, design: .serif))
-                .foregroundStyle(.white)
-                .contentTransition(.numericText())
-                .animation(.easeOut(duration: 0.4), value: state.ascent)
-            TimelineView(.periodic(from: .now, by: 0.1)) { tl in
-                let visible = state.lastGain.map { tl.date.timeIntervalSince($0.at) < 2.2 } ?? false
-                Text(state.lastGain?.text ?? " ")
-                    .font(.system(.footnote, design: .serif))
-                    .foregroundStyle(Color(red: 1, green: 0.8, blue: 0.5))
-                    .opacity(visible ? 1 : 0)
-                    .animation(.easeOut(duration: 0.3), value: visible)
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                    .font(.footnote).foregroundStyle(.white.opacity(0.8))
+                Text("Today").font(.system(size: 34, weight: .regular, design: .serif)).foregroundStyle(.white)
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(String(format: "×%.3f", state.ascent))
+                    .font(.system(size: 28, weight: .regular, design: .serif))
+                    .foregroundStyle(.white)
+                    .contentTransition(.numericText())
+                    .animation(.easeOut(duration: 0.4), value: state.ascent)
+                TimelineView(.periodic(from: .now, by: 0.1)) { tl in
+                    let visible = state.lastGain.map { tl.date.timeIntervalSince($0.at) < 2.2 } ?? false
+                    Text(state.lastGain?.text ?? " ")
+                        .font(.system(.footnote, design: .serif))
+                        .foregroundStyle(Color(red: 1, green: 0.8, blue: 0.5))
+                        .opacity(visible ? 1 : 0)
+                        .animation(.easeOut(duration: 0.3), value: visible)
+                }
             }
         }
         .padding(.top, 12)
     }
 
     private var cards: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             ForEach(state.actions) { item in
                 ActionCard(item: item, state: state)
             }
@@ -105,7 +112,7 @@ struct ActionCard: View {
             HStack(spacing: 12) {
                 Capsule().fill(item.pillar.color).frame(width: 4)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(item.isSpark ? "Spark · \(item.pillar.name)" : item.pillar.name)
+                    Text(item.isRitual ? "Ritual" : item.isSpark ? "Spark · \(item.pillar.name)" : item.pillar.name)
                         .font(.caption2).foregroundStyle(item.pillar.color)
                     Text(item.title).font(.system(.body, design: .serif)).foregroundStyle(.white)
                         .lineLimit(2).minimumScaleFactor(0.85)
@@ -129,7 +136,7 @@ struct ActionCard: View {
             .opacity(item.done ? 0.75 : 1)
             .gesture(item.done ? nil : press(in: geo))
         }
-        .frame(height: 72)
+        .frame(height: 64)
     }
 
     private func press(in geo: GeometryProxy) -> some Gesture {

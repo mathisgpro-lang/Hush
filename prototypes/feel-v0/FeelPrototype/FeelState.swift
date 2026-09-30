@@ -31,6 +31,7 @@ struct ActionItem: Identifiable {
     let subtitle: String
     let pillar: Pillar
     let isSpark: Bool
+    var isRitual = false
     var done = false
 }
 
@@ -84,10 +85,11 @@ final class FeelState {
             ActionItem(title: "Morning run", subtitle: "4 km easy · Path", pillar: .body, isSpark: false),
             ActionItem(title: "Read", subtitle: "20 min · Path", pillar: .mind, isSpark: false),
             ActionItem(title: "Tell someone why you admire them", subtitle: "Spark", pillar: .heart, isSpark: true),
+            ActionItem(title: "Call someone you love", subtitle: "Ritual · Week 40 · 41,209 joined", pillar: .heart, isSpark: false, isRitual: true),
         ]
     }
 
-    var dayComplete: Bool { actions.allSatisfy(\.done) }
+    var dayComplete: Bool { actions.filter { !$0.isRitual }.allSatisfy(\.done) }
 
     // MARK: - The tracking moment
 
@@ -123,7 +125,7 @@ final class FeelState {
         for p in Pillar.allCases { recentMix[p] = (recentMix[p] ?? 0) * 0.85 }
         recentMix[item.pillar, default: 0] += 0.3
 
-        let share = 1.0 / Double(actions.count)
+        let share = item.isRitual ? 0.0 : 1.0 / Double(actions.filter { !$0.isRitual }.count)
         let gain = 0.01 * share
         ascent *= 1 + gain
         lastGain = (String(format: "+%.2f%%", gain * 100), .now)
@@ -142,7 +144,7 @@ final class FeelState {
             if tuning.soundOn { synth.play(.land(item.pillar)) }
         }
 
-        if dayComplete {
+        if dayComplete && !item.isRitual {
             Task { @MainActor in
                 try? await Task.sleep(for: .seconds(0.6))
                 self.flareUntil = .now.addingTimeInterval(1.0)
