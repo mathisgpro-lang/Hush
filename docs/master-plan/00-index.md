@@ -43,7 +43,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 09 | Verification: private vs. verified progress, integrations | ⬜ | Decision 3 |
 | 10 | Rewards and milestones: two tiers, titles, icons, big transformations, scarcity rules | ⬜ | Decisions 6, 10; rewards psychology research needed |
 | 11 | Community: the Ritual, collective presence, profiles, friends, sharing | ⬜ | Decisions 6, 9 |
-| 12 | Visual and sound identity: cockpit × Dune × sanctuary | ⬜ | Original brief, "Overall style" |
+| 12 | [Visual, sound and verbal identity](12-identity.md): cockpit × Dune × sanctuary | 📝 (defaults; the app name is Mathis's call) | Original brief, "Overall style" |
 
 ### Part III — Ecosystem and Business
 | # | Chapter | Status | Notes |
@@ -121,6 +121,12 @@ A free, throwaway spike on Mathis's own iPhone (Xcode 27 + cable + Developer Mod
 | 08-a | The birth: darkness → the myth lines → touch the ember → stone carved around your fire → a first conversation (≤4 exchanges) → first Path → optional Apple Health → **a first real Action within ~3 minutes** → home | ch. 08 §A.2 |
 | 08-b | No account, no questionnaire, no upfront permissions, no feature tour; the Flame isn't named (it's you) | ch. 08 §A.3 |
 | 08-c | New phone = a reunion ("Welcome back"), never a rebirth | ch. 08 §A.4 |
+| 12-a | Names: growth number = **Ascent**; Transformations = **Eras** (Stone, Metal, Crystal, Light); collectibles = **Relics** | ch. 12 §A.2 |
+| 12-b | Fonts: New York (ceremonial) + SF Pro (UI), both free and built into iPhone | ch. 12 §A.3 |
+| 12-c | Pillar colors and Era palettes (starting hex values) | ch. 12 §A.4 |
+| 12-d | Voice rules: sparse, no exclamation marks, banned guilt words (streak, fail, missed, lost…) | ch. 12 §A.6 |
+| 12-e | The app icon follows your Era (alternate icons, opt-out possible) | ch. 12 §A.7 |
+| ❓ | **Needs Mathis:** the app's final name (candidates: Ignis, Hearth, Sanctum, Vessel, Emberlight); the beta language(s) | ch. 12 §A.2, §A.6 |
 | 28-a | The world is **your Sanctuary**: Dune-like ruins reclaimed by nature, with traces of future tech; it changes with each Transformation era and breathes with Vitality | ch. 28 §A.2 |
 | 28-b | The myth paragraph: *"Every person carries a flame…"*, the seed of the app's voice (mythic, sparse, never cheesy) | ch. 28 §A.3 |
 | 28-c | **Hidden Sparks**: rare challenges that appear only when a pillar is deep enough (six in the MVP) | ch. 28 §A.5 |
