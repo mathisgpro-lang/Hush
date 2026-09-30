@@ -37,3 +37,6 @@ run_brief docs/design/briefs/tracking-moment.md \
 
 run_brief docs/reviews/briefs/mvp-chapters-review.md \
   docs/reviews/2026-10-01-codex-mvp-chapters.md
+
+run_brief docs/design/briefs/sanctuary-empty-pedestal.md \
+  docs/design/sanctuary/stone-era-bright-empty.png docs/design/sanctuary/stone-era-embers-empty.png
