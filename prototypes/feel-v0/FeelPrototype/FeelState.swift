@@ -70,6 +70,7 @@ final class FeelState {
 
     init() {
         // Debug-only: `-autodemo` completes the first card after 1 s (for simulator screenshots).
+        if ProcessInfo.processInfo.arguments.contains("-away") { simulateAway() }
         if ProcessInfo.processInfo.arguments.contains("-autodemo") {
             Task { @MainActor in
                 try? await Task.sleep(for: .seconds(1))

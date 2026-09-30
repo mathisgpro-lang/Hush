@@ -84,19 +84,27 @@ struct Sanctuary: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                if let img = UIImage(named: "sanctuary") {
-                    Image(uiImage: img).resizable().scaledToFill()
-                        .frame(width: geo.size.width, height: geo.size.height).clipped()
-                } else {
-                    Color(red: 0.23, green: 0.18, blue: 0.29)
-                }
-                Color(red: 0.08, green: 0.1, blue: 0.22).opacity(0.55 * (1 - vitality))
+                layer("sanctuary", geo: geo)
+                layer("sanctuary-embers", geo: geo).opacity(max(0, min(1, (0.9 - vitality) / 0.6)))
+                Color(red: 0.08, green: 0.1, blue: 0.22).opacity(0.25 * (1 - vitality))
                 LinearGradient(colors: [.black.opacity(0.35), .clear, .black.opacity(0.55)],
                                startPoint: .top, endPoint: .bottom)
             }
             .animation(.easeInOut(duration: 1.2), value: vitality)
         }
         .ignoresSafeArea()
+    }
+
+    /// Scaled up and anchored at the bottom so the empty pedestal sits just above the day cards.
+    @ViewBuilder private func layer(_ name: String, geo: GeometryProxy) -> some View {
+        if let img = UIImage(named: name) {
+            Image(uiImage: img).resizable().scaledToFill()
+                .frame(width: geo.size.width, height: geo.size.height)
+                .scaleEffect(1.3, anchor: .bottom)
+                .clipped()
+        } else {
+            Color(red: 0.23, green: 0.18, blue: 0.29)
+        }
     }
 }
 

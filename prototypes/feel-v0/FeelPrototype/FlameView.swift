@@ -19,7 +19,7 @@ struct FlameView: View {
     private func vessel(in size: CGSize) -> (rect: CGRect, outer: Path, cavity: Path) {
         let h = size.height * 0.26
         let w = h * 0.56
-        let c = CGPoint(x: size.width / 2, y: size.height * 0.44)
+        let c = CGPoint(x: size.width / 2, y: size.height * 0.46)
         let r = CGRect(x: c.x - w / 2, y: c.y - h / 2, width: w, height: h)
         func diamond(_ inset: CGFloat) -> Path {
             var p = Path()
