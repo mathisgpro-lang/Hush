@@ -10,6 +10,8 @@ final class Synth {
     private var next = 0
     private let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
     private var cache: [Sound: AVAudioPCMBuffer] = [:]
+    private let ambience = AVAudioPlayerNode()
+    private var ambienceStarted = false
 
     init() {
         // .ambient respects the silent switch (chapter 06 §A.5).
@@ -20,7 +22,46 @@ final class Synth {
             engine.connect(p, to: engine.mainMixerNode, format: format)
             players.append(p)
         }
+        engine.attach(ambience)
+        engine.connect(ambience, to: engine.mainMixerNode, format: format)
+        ambience.volume = 0
         try? engine.start()
+    }
+
+    /// The fire's own sound: a quiet, looping crackle. Level follows Vitality (embers ≈ silent).
+    func setAmbience(vitality: Double) {
+        guard engine.isRunning || (try? engine.start()) != nil else { return }
+        if !ambienceStarted {
+            ambience.scheduleBuffer(fireLoop(), at: nil, options: .loops)
+            ambience.play()
+            ambienceStarted = true
+        }
+        ambience.volume = Float(0.02 + 0.13 * max(0, min(1, vitality)))
+    }
+
+    func stopAmbience() { ambience.volume = 0 }
+
+    private func fireLoop() -> AVAudioPCMBuffer {
+        let sr = format.sampleRate
+        let n = AVAudioFrameCount(6 * sr)
+        let buf = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: n)!
+        buf.frameLength = n
+        let out = buf.floatChannelData![0]
+        var rng = SystemRandomNumberGenerator()
+        var brown = 0.0
+        var pop = 0.0
+        for i in 0..<Int(n) {
+            // low roar: brown noise
+            brown = (brown + Double.random(in: -1...1, using: &rng) * 0.02) * 0.995
+            // crackles: sparse decaying clicks
+            if Double.random(in: 0...1, using: &rng) < 0.0004 { pop = Double.random(in: 0.3...1, using: &rng) }
+            pop *= 0.992
+            let click = pop * Double.random(in: -1...1, using: &rng)
+            // fade the loop's ends so it repeats seamlessly
+            let edge = min(1, Double(min(i, Int(n) - i)) / (0.05 * sr))
+            out[i] = Float((brown * 3 + click * 0.5) * edge)
+        }
+        return buf
     }
 
     func play(_ sound: Sound) {

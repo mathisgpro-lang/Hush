@@ -37,7 +37,10 @@ struct TodayView: View {
         .sheet(isPresented: $showJourney) { JourneySheet(model: model).presentationDetents([.large]) }
         .overlay { if let step = model.pendingUnlock { UnlockMoment(step: step) { model.witnessUnlock(step); haptics.thrum(.spirit, intensity: 0.8) } } }
         .overlay { if model.forgeReady && model.pendingUnlock == nil { ForgeMoment(forging: $forging, haptics: haptics, synth: synth, stage: stage) { model.witnessForge() } } }
-        .onAppear { model.dealTodayIfNeeded() }
+        .onAppear { model.dealTodayIfNeeded(); synth.setAmbience(vitality: model.state.vitality) }
+        .onDisappear { synth.stopAmbience() }
+        .onChange(of: model.state.vitality) { _, v in synth.setAmbience(vitality: v) }
+        .onChange(of: scenePhase) { _, p in if p != .active { synth.stopAmbience() } else { synth.setAmbience(vitality: model.state.vitality) } }
         .task { while !Task.isCancelled { try? await Task.sleep(for: .seconds(30)); model.refreshDay() } }
         .overlay(alignment: .top) {
             if let problem = model.storageProblem {
