@@ -40,6 +40,14 @@ Inside the app lives a whole world. **Your Flame is you**: a living cartoon char
 
 The Eras (Stone → Metal → …) become **the world's ages** that you unlock, and your character wears their mark (for example the forged gem after the Forge).
 
+**Character brief: traits from Mathis's references (2026-10-01; inspiration only, the design must be original):**
+- a round, **plush body of soft fluffy fire**, huggable;
+- **flame hair** rising from the head, the tallest tongue in the center;
+- **big glossy eyes** with bright highlights, soft eyebrows, rosy blush, a small warm smile;
+- **short stubby arms and legs**;
+- a **warm glowing core**, lighter in the center, with embers floating around;
+- a **stylized 3D look** with volume and soft light (decision 82).
+
 **Personalization, earned never bought (P7):** relics you earn (Ritual rewards, Hidden Sparks, milestones) are things your Flame can wear or carry: a scarf, a lantern, a crown of embers. *"I've had this since week 40 of 2026."*
 
 ## A.3 The world *[Settled 81; map by default]*

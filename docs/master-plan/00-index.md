@@ -96,12 +96,13 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 - **Demo launch arguments (simulator only):** `-demoBirth`, `-demoAdvance N`, `-demoLive N`, `-demoWitness`, `-demoForged`.
 - **Install on Mathis's iPhone:** open `app/LifeGamified.xcodeproj`, pick "Mathis's iPhone", press ▶. The free signing expires every 7 days.
 
-### 2. In flight (Codex's usage limit hit on 2026-09-30, resets 2026-10-01 01:15)
-- `scripts/style-tests.sh` (run by `scripts/resume-codex.sh`) still has to produce:
-  - `docs/design/style-tests/C-pixel-flame-character.png` and `D-cartoon-flame-character.png`: sketches of the future personified Flame (decision 76);
-  - `docs/design/pixel/sanctuary-stone-empty.png`: the pixel Sanctuary with an empty pedestal. Then copy it to `app/LifeGamified/Resources/sanctuary-pixel.png`, and in `SanctuaryView` return to anchoring at the bottom so the Flame sits on the pedestal;
-  - `docs/design/pixel/sanctuary-metal-empty.png`: the Metal Era. Copy it to `Resources/sanctuary-pixel-metal.png`; `SanctuaryView` picks it up automatically.
-- **Art direction is pixel art (decision 77).** The live Flame is `Experience/PixelFlameView.swift` (pixel-fire simulation, pixel vessel). The birth carving is pixelated. The old realistic assets (`FlameView`, `vessel-body*.png`) are unused, kept only as a fallback.
+### 2. In flight (Codex's usage limit: resets 2026-10-01 01:15)
+- **`scripts/style-tests.sh`** (called by `scripts/resume-codex.sh`) is the Codex art queue for the cartoon universe:
+  - `docs/design/character/flame-hero.png`, `flame-expressions.png`, `flame-evolution.png`: the U2 character bible, original design;
+  - `docs/design/world/sanctuary-empty.png`: copy it to `app/LifeGamified/Resources/sanctuary-cartoon.png`, then set `SanctuaryView` to anchor at the bottom so the character stands on the pedestal;
+  - `docs/design/world/world-map.png`: the background for `WorldMapView`, with the node positions in `WorldCatalog` matched to the painting;
+  - `docs/design/world/grove-scene.png`: the image for the Grove in `LocationScene`.
+- **Current app state:** the cartoon character v1b (`Experience/FlameCharacter.swift`, a placeholder until the final stylized 3D character, decision 82); the world map v1 (`Features/WorldMapView.swift`, `Content/WorldCatalog.swift`, `Domain/World.swift`); the cartoon Sanctuary (style test B, which still has a painted vessel hidden behind the cards). `PixelFlameView` and `FlameView` are unused fallbacks.
 
 ### 3. Next (the Universe, chapter 29, is now the core)
 - **U2 character bible** (Codex, after the usage reset): an original cartoon flame, an expression sheet, evolution stages. Mathis picks.
