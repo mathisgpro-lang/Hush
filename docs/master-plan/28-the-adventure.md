@@ -64,7 +64,24 @@ The Chronicles build up into a book of your life that you can look back on in te
 | The first Ritual and its earned fire style | Global Ritual events and world-changing community milestones |
 | The weekly Chronicle | The Chronicle book (year-end, shareable excerpts) |
 
-## A.8 Design work (Codex, decision 62)
+## A.8 The First Journey: the adventure in steps *[by default, decision 71]*
+
+The app doesn't show everything on day one. **You travel through it**, like the opening chapters of a great game. Each step unlocks something new, with its own moment:
+
+| Step | When (about) | What opens | The moment |
+|---|---|---|---|
+| **I. The Ember** | Day 1 | Your Flame, the Sanctuary, your first Path | The birth (chapter 08) |
+| **II. The Spark** | Day 2 | Your first daily Spark, the swap | A shimmer at dawn: *"Something new waits for you."* |
+| **III. The Others** | First Ritual week (days 3–7) | The weekly Ritual; seeing that others walk too | "41,209 joined," and you're one of them |
+| **IV. The Voice** | Week 2 | The Companion's full help: questions, new Paths, adapting plans | The Companion speaks at length for the first time since the birth |
+| **V. The Chronicle** | End of week 2 | Your first written chapter | Your story, told back to you |
+| **VI. The Forge** | Around week 6 (30 active days) | **The Metal Era** | The first Transformation ceremony: the stone cracks and your vessel is forged |
+
+- Steps unlock by **living**, not by dates alone. A step opens when you've shown up enough, so someone who's away simply arrives later, never "behind."
+- A quiet **journey marker** shows the steps behind you and the next one veiled ahead (P16: you never see the whole map).
+- After the Forge, the adventure continues: Hidden Sparks, the veiled Crystal Era, and later Seasons (yearly arcs with their own story).
+
+## A.9 Design work (Codex, decision 62)
 
 Codex produces concept art for the Sanctuary in the Stone and Metal eras, plus the dusky (low Vitality) and bright (full Vitality) atmospheres, using `docs/design/flame-concepts/` as the style reference.
 

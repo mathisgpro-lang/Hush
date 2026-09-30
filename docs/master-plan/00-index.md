@@ -136,6 +136,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 23-b | The MVP scope list, and **8 launch Paths** (running, strength, sleep, reading, meditation, relationships, deep work, nature) plus your own goals | ch. 23 §A.3 |
 | 23-c | Milestones M0–M8, each ending with something you try on your phone; roughly 2–3 months to the private beta | ch. 23 §A.4 |
 | 23-d | Success: you use it daily for 30 days and love the tracking moment; ≥ 60% of testers active at week 4; zero data loss, privacy or safety incidents | ch. 23 §A.5 |
+| 71 | **The First Journey:** the first ~6 weeks unfold in 6 steps (Ember → Spark → the Others → the Voice → the Chronicle → the Forge / Metal Era), unlocking the app progressively | ch. 28 §A.8 |
 | ❓ | **Needs Mathis:** the app's final name (candidates: Ignis, Hearth, Sanctum, Vessel, Emberlight); the beta language(s) | ch. 12 §A.2, §A.6 |
 | 28-a | The world is **your Sanctuary**: Dune-like ruins reclaimed by nature, with traces of future tech; it changes with each Transformation era and breathes with Vitality | ch. 28 §A.2 |
 | 28-b | The myth paragraph: *"Every person carries a flame…"*, the seed of the app's voice (mythic, sparse, never cheesy) | ch. 28 §A.3 |
