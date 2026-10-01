@@ -77,15 +77,20 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-01, PLAN 2.0: building paused, decision 83)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-01 morning, PLAN 2.0 DRAFTED: awaiting Mathis's review, decision 84)
 
-**Next session starts Plan 2.0**, re-planning the whole universe (decision 83), beginning with part 1: **the integrated experience** (how real life, challenges, long-term goals, the world and the Flame blend into one). The seven parts: (1) integrated experience, (2) World Bible, (3) Character Bible, (4) technical architecture for a game-scale world and 3D character (engine research and spikes), (5) production (AI vs. human artists, cost), (6) phased roadmap to a polished vertical slice → MVP → V1, (7) rewriting chapters 03/05/12/23/28 around the universe. **Rule (Mathis): nothing gets built before it's planned out and approved, like the first slice.** See the proposal in the conversation log, session 3, and the Plan 2.0 section below once drafted. Codex's art queue (character bible, world map, grove, sanctuary) is scheduled at 01:16 and feeds the bibles.
+**Plan 2.0 is written:** `docs/plan-2.0/00-overview.md` (start there) plus Parts 1–8. **Building stays paused** until Mathis approves it (decision 83 rule).
 
+**Next steps, in order:**
+1. Ask Mathis the seven questions in `00-overview.md` §4, **one at a time** (approval first). Log each answer.
+2. Once Plan 2.0 is approved, rewrite the master-plan chapters per Part 8 (01, 02, 03, 05, 06, 07, 08, 12, 16, 17, 22, 23, 28, 29).
+3. Then start **P2** (Part 7): spikes S1–S3 (RealityKit on the iPhone 15, throwaway, in `prototypes/`), plus Codex concept rounds for the final Flame, the Lamplighter, the Sanctuary and the Grove. **Each spike gets its own short plan first.**
+4. Codex review of Parts 1, 5 and 7 (`-s read-only`, report in `docs/reviews/`).
 
 **Any new session: read this block first and continue exactly from it.** Standing rule (decision 63) applies, with its exceptions.
 
 ### 1. State: building in living slices (decisions 72–74)
-- **Real app:** `app/LifeGamified.xcodeproj` (iOS 26+, team SX845VA92A, bundle `com.mathis.lifegamified`) plus `app/Packages/Core` (`Domain`, `Storage` with GRDB; **59 tests pass**: `cd app/Packages/Core && swift test`).
+- **Real app:** `app/LifeGamified.xcodeproj` (iOS 26+, team SX845VA92A, bundle `com.mathis.lifegamified`) plus `app/Packages/Core` (`Domain`, `Storage` with GRDB; **67 tests pass**: `cd app/Packages/Core && swift test`).
 - **Built and verified in the simulator:**
   - the birth (resumable);
   - Today (Codex layout);
@@ -99,7 +104,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 - **Demo launch arguments (simulator only):** `-demoBirth`, `-demoAdvance N`, `-demoLive N`, `-demoWitness`, `-demoForged`.
 - **Install on Mathis's iPhone:** open `app/LifeGamified.xcodeproj`, pick "Mathis's iPhone", press ▶. The free signing expires every 7 days.
 
-### 2. In flight (Codex's usage limit: resets 2026-10-01 01:15)
+### 2. In flight (Codex art queue restarted 2026-10-01 07:01)
 - **`scripts/style-tests.sh`** (called by `scripts/resume-codex.sh`) is the Codex art queue for the cartoon universe:
   - `docs/design/character/flame-hero.png`, `flame-expressions.png`, `flame-evolution.png`: the U2 character bible, original design;
   - `docs/design/world/sanctuary-empty.png`: copy it to `app/LifeGamified/Resources/sanctuary-cartoon.png`, then set `SanctuaryView` to anchor at the bottom so the character stands on the pedestal;
@@ -107,7 +112,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
   - `docs/design/world/grove-scene.png`: the image for the Grove in `LocationScene`.
 - **Current app state:** the cartoon character v1b (`Experience/FlameCharacter.swift`, a placeholder until the final stylized 3D character, decision 82); the world map v1 (`Features/WorldMapView.swift`, `Content/WorldCatalog.swift`, `Domain/World.swift`); the cartoon Sanctuary (style test B, which still has a painted vessel hidden behind the cards). `PixelFlameView` and `FlameView` are unused fallbacks.
 
-### 3. Next (the Universe, chapter 29, is now the core)
+### 3. Older "next" list (superseded by Plan 2.0 Part 7; kept for reference)
 - **U2 character bible** (Codex, after the usage reset): an original cartoon flame, an expression sheet, evolution stages. Mathis picks.
 - **U3 world bible** + **U4 world map v1** (the Sanctuary + the Whispering Grove at step III, tap to travel, enter the scene).
 - Real sound design (the current sounds are synthesized placeholders).

@@ -205,3 +205,25 @@ Phase B conversation complete. Next: draft chapters 16, 17, 20 and 22 (first pas
   - it lives in **a whole explorable world** (map, realms, locations unlocked by living, lore).
 
   Mathis: "this is how ambitious this project is… the creation of this universe." Chapter 29 was written as the heart of the plan, and CLAUDE.md and memory were updated. Built: the character v1/v1b (placeholder) and the world map v1. **The final character should be much nicer and 3D** (82), at a later stage.
+
+---
+
+## Session 4 — 2026-10-01 (morning) — Plan 2.0, the universe planned end to end
+
+- **Mathis's ask:** "build this super extensive plan for the plan 2.0… leaving no room for guessing", with the lore, characters and style left to Claude's judgment, inspired by great universes and consistent with everything decided so far.
+- **Written** (`docs/plan-2.0/`), in eight parts plus an overview:
+  1. the integrated experience: every real thing becomes light, your Flame carries it, and the world wakes;
+  2. the World Bible: the Emberlands, the Hush, the Sanctuary's Ages, six realms with Keepers, four Acts, seasons, world rules;
+  3. the Character Bible: personality, look, the stages Spark → Beyond, pillar shaping, naming, the animation list, the cast;
+  4. art and sound;
+  5. the technical architecture: RealityKit, validated by spikes, with a Unity fallback;
+  6. production: AIs plus a few freelancers, with cost ranges;
+  7. the roadmap P0–P6+;
+  8. the master-plan rewrites.
+- **Pushed back / honest notes:**
+  - a game-scale world needs some **human craft** (the 3D character, animation, music), which costs real money. Part 6 gives cheaper routes (3D characters with 2.5D painted realms; fewer realms at V1);
+  - the 3D engine choice is **not taken on faith**: three spikes on the iPhone 15 decide;
+  - health Journeys stay blocked until decision 70's safety work and a qualified reviewer.
+- **Kept unchanged:** the growth engine, the record, privacy, sources and safety. The universe only *shows* the truth.
+- **Codex art queue:** its scheduled timer stalled while the Mac slept, so it was restarted in the morning.
+- **Decided by default:** decision 84 (all Plan 2.0 defaults). Seven questions await Mathis (`00-overview.md` §4).
