@@ -25,9 +25,35 @@ final class SanctuaryScene {
     static let distance: Float = 1.2
     static let fov: Float = 40
 
+    /// Depth from Apple's Depth Anything V2 (tools/depthmap), white = near. Read once into memory.
+    private var depth: (w: Int, h: Int, px: [UInt8])?
+    private func loadDepth(_ name: String) {
+        guard let img = UIImage(named: name)?.cgImage else { return }
+        let (w, h) = (img.width, img.height)
+        var px = [UInt8](repeating: 0, count: w * h)
+        let ctx = CGContext(data: &px, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w,
+                            space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue)!
+        ctx.draw(img, in: CGRect(x: 0, y: 0, width: w, height: h))
+        depth = (w, h, px)
+    }
+    /// Depth 0…1 at painting uv (v = 0 at the bottom), averaged over a small area to keep the relief smooth.
+    private func depthAt(_ u: Float, _ v: Float) -> Float {
+        guard let d = depth else { return 0.3 }
+        let cx = Int(u * Float(d.w - 1)), cy = Int((1 - v) * Float(d.h - 1))
+        var sum = 0, n = 0
+        for dy in -2...2 { for dx in -2...2 {
+            let x = max(0, min(d.w - 1, cx + dx)), y = max(0, min(d.h - 1, cy + dy))
+            sum += Int(d.px[y * d.w + x]); n += 1
+        } }
+        return Float(sum) / Float(n * 255)
+    }
+    /// How much nearer than the base plane a point sits, from its depth (lifted mid-tones so the arches separate).
+    private func relief(_ g: Float) -> Float { 0.45 * pow(g, 0.6) - 0.15 }
+
     func build() async throws {
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
         let tex = try await TextureResource(named: "sanctuary-paint.png")
+        loadDepth("sanctuary-depth.png")
         let visibleH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180)
         let aspect = Float(tex.width) / Float(tex.height)
         let (w, h) = (visibleH * aspect * 1.08, visibleH * 1.08)     // a little overscan so parallax never shows edges
@@ -35,12 +61,12 @@ final class SanctuaryScene {
 
         // The painting, bent in depth. Each vertex keeps its rest screen position (scaled along the camera ray),
         // so from the rest camera the painting looks untouched; moving the camera reveals the depth.
-        let (nx, ny) = (24, 64)
+        let (nx, ny) = (72, 156)
         var pos: [SIMD3<Float>] = [], uvs: [SIMD2<Float>] = [], idx: [UInt32] = []
         for j in 0...ny { for i in 0...nx {
             let u = Float(i) / Float(nx), v = Float(j) / Float(ny)
             let rest = SIMD3<Float>((u - 0.5) * w, (v - 0.5) * h, -Self.distance)
-            let d = Self.distance - Self.depthOffset(v)
+            let d = Self.distance - (depth == nil ? Self.depthOffset(v) : relief(depthAt(u, v)))
             pos.append(rest * (d / Self.distance)); uvs.append([u, v])
         } }
         for j in 0..<ny { for i in 0..<nx {
@@ -90,7 +116,8 @@ final class SanctuaryScene {
         // Its feet sit exactly at the depth of the step it stands on (the painting is bent in depth), so the
         // rows above it fall behind it and the rows below it stay below its feet.
         let stepV: Float = 0.285
-        let d = Self.distance - Self.depthOffset(stepV) - 0.008          // a hair in front of the step
+        let stepDepth = depth == nil ? Self.depthOffset(stepV) : relief(depthAt(0.5, stepV + 0.01))
+        let d = Self.distance - stepDepth - 0.01                         // a hair in front of the step
         let k = d / Self.distance                                      // keep its screen position and size
         let scale = heroScale * k
         let stepsY = (stepV - 0.5) * h * k
@@ -131,7 +158,7 @@ final class SanctuaryScene {
             comp.materials = [m]; painting.model = comp
         }
         // The camera breathes very slowly (an alive world), and follows the phone's tilt for parallax.
-        let drift = autoDrift ? SIMD2(noise.sample(time * 0.09), noise.sample(time * 0.07 + 30)) * 0.035 : .zero
+        let drift = autoDrift ? SIMD2(noise.sample(time * 0.09), noise.sample(time * 0.07 + 30)) * 0.06 : .zero
         let offset = SIMD3<Float>(tilt.x * 0.06 + drift.x, -tilt.y * 0.04 + drift.y * 0.6, 0)
         camera.look(at: [offset.x * 0.3, offset.y * 0.3, -Self.distance], from: offset, relativeTo: nil)
     }

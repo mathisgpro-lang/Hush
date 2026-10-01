@@ -100,3 +100,9 @@
 - 60 fps and about 61 MB in the simulator (one 13 fps dip while recording right after launch; to verify on the device).
 - **Gap to the bar (Part 4 §10):** still one painting with a bend. Real layers (B1) and occlusion (A5) need the depth maps (queued); world-lights-Flame (A2), reactions (A7), wind (B3) and creatures (B4) are not done yet. The 3D route of S2 is not built yet.
 - Demo: `docs/design/demos/2026-10-01-s2-sanctuary-painted-v2.mp4`; Hushed still: `docs/design/demos/2026-10-01-s2-hushed.png`.
+
+## Depth from Apple's Depth Anything V2 (decision 102)
+- Model: `tools/models/DepthAnythingV2SmallF16.mlpackage` (Apache-2.0, input/output 518×392), compiled with `xcrun coremlcompiler compile`.
+- Tool: `swiftc -O tools/depthmap.swift -o tools/depthmap` → `./tools/depthmap <model.mlmodelc> <painting.png> <out.png> 0.5`. Portrait paintings run as 5 overlapping landscape tiles (40% overlap), each aligned to the previous one by least squares on the overlap, with feathered blending. White = near.
+- S2 uses `sanctuary-depth.png` as a **relief mesh** (72×156 grid; relief = 0.45·g^0.6 − 0.15 m, mid-tones lifted so the arches separate from the cliffs); the Flame's depth is sampled at its step. 60 fps, about 64 MB in the simulator.
+- Known limit: a single relief stretches at depth edges (rubber-sheet). Next: split into layers at depth discontinuities with edge inpainting, so things can pass in front of the Flame cleanly (A5).
