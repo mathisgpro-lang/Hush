@@ -42,8 +42,9 @@
 - **The Sanctuary** (final): Age of Stone, the hearth, keepsake shelf, day/night, the Hush at the edges, Evening at the Hearth.
 - **The Lamplighter**: Act I story beats.
 - **The world map** (final style) with the Grove open at step III and the other realms misted.
-- **The Whispering Grove** (final): restoration levels 0–3, Nim & Ro, the Gathering (local count until the Relay).
-- **One full Journey** as a quest line: *Lanterns for the Ones You Love* (Heart; safe, no health content).
+- **The Whispering Grove** (final): restoration levels 0–3, Nim & Ro, the Gathering (your own lights plus scenery, no implied crowd, Part 9 R8).
+- **Discovery** (Part 9 R15) across several safe Journeys: *Lanterns for the Ones You Love* lives in the Grove; the others run from the Sanctuary until their realm exists.
+- **All of Act I**, ending with a **Sanctuary-hosted Forge ceremony** (Orrin visits the hearth → the Age of Metal), and the Book of Your Flame kept in the Sanctuary.
 - Today's calls in-world, the tracking moment in-world, the Return, the evolution ceremony (Spark → Flame), the Book of Your Flame (Act I).
 - Music: the Sanctuary theme, the Grove theme. Sound design: the Flame's voice, the core UI.
 
@@ -52,15 +53,14 @@
 
 ## P4 · MVP: "The First Beacons" (about 2–3 months)
 - **Realms:** + the Ascent Highlands (Body) and the Stillwater (Spirit), with Brakka and Ilo.
-- **Journeys:** + *The Road to the First Summit* (requires the health safety work and the qualified review) and *The Clear Water*.
+- **Journeys:** + gentle Body habits in the Highlands (walks, stretching, sleep) and *The Clear Water*. Training plans stay disabled until a qualified reviewer approves them (Part 9 R10).
 - **The Flame:** + the Blaze stage design (reached later in the beta), pillar shaping v1.
-- **The Forge ceremony** → the Age of Metal.
 - **Infrastructure without the $99 program (decision 88):** the record stays on the phone, protected by iPhone iCloud Backup and the in-app export; the Keepers' counsel is **curated content with sources** (no AI yet: the iPhone 15 has no on-device model); the AI layer is built behind a switch and tested later; all realms ship inside the app (no downloads yet); the Gathering is local. The app is re-signed every 7 days from the Mac (free signing).
 - **Finish line:** chapter 23 §A.5 success criteria, lived by Mathis, with friends trying it on his phone.
 
 ## P5 · V1: public launch (about 3–4 months)
-- **Join the Apple Developer Program ($99/yr)** first, then turn on what it unlocks: iCloud sync (CloudKit), Apple's cloud AI (Private Cloud Compute) for the Keepers, realm downloads, the Relay for real Gathering counts.
-- **A short TestFlight round (2–3 weeks, a handful of people, other iPhone models):** the app will only ever have run on one iPhone 15, so this catches crashes and slow devices before the public sees them.
+- **Join the Apple Developer Program ($99/yr)** first, then integrate what it unlocks, each behind a tested gate (Part 9 R12–R14): iCloud sync (CloudKit), Apple's cloud AI **if eligible** (R13), realm delivery via Background Assets, the Relay for real Gathering counts; training plans after qualified approval (R10).
+- **A TestFlight round (a minimum of 2–3 weeks, extended whenever a gate fails; Part 9 R14):** the app will only ever have run on one iPhone 15, so this catches crashes and slow devices before the public sees them.
 - 3–4 realms at release (+ the Library or Forge), Seasons system (the first season), keepsake system complete, accessibility pass, localization (decided in P1), privacy policy, App Store presence, security review.
 - **Finish line:** App Store release.
 

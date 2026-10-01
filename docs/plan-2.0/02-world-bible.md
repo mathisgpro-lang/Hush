@@ -73,7 +73,7 @@ The Sanctuary sits at the bottom of a great valley. Each realm lies along the va
 **Your home, your way (keepsakes):** the Sanctuary has places to set keepsakes you've earned: shelves, the hearth mantle, the garden, the pool. Arrange them however you like. Each keepsake has a date and a story. Your home becomes the museum of your life.
 
 **Its inhabitants:**
-- **The Lamplighter**: an old, hooded flame whose light is very dim. They have waited centuries for a new flame to be born. Mentor of Act I, teller of lore, gentle and wry. *"I've seen many flames go quiet. I've never seen one come back. Show me."*
+- **The Lamplighter**: an old, hooded flame whose light is very dim. They have waited centuries for a new flame to be born. Mentor of Act I, teller of lore, gentle and wry. *"Every flame that wakes makes this place a little warmer. Welcome, little one."*
 - Over time, creatures from restored realms come to visit (a fox from the Grove, an owlet from the Library…).
 
 ---
@@ -139,7 +139,7 @@ Each realm mirrors one pillar. Each has a **Keeper**, a **look**, a **sound**, *
 ### 5.5 Forge Mountain (Craft)
 - **Look:** a volcano-mountain hollowed into workshops, rivers of molten light, bronze machinery, anvils that ring. Iron Man's precision meets an ancient forge.
 - **Sound:** hammer rhythms, bellows, metallic resonance.
-- **Keeper: Orrin**, a soot-black salamander smith with spectacles, gruff and secretly proud of every apprentice. *"Talent's cheap. Show me the hours."*
+- **Keeper: Orrin**, a soot-black salamander smith with spectacles, gruff and secretly proud of every apprentice. *"Every hour leaves a mark. I can see yours."*
 - **Places:**
   - **The Apprentice's Bench**: deep work sessions.
   - **The Hall of Unfinished Work**: your projects take shape here.
@@ -176,6 +176,8 @@ Each realm mirrors one pillar. Each has a **Keeper**, a **look**, a **sound**, *
 ---
 
 ## 7. The story in Acts (the long arc)
+
+*Durations are illustrative: Acts advance only by lived progress, never by the calendar (Part 9 R5). How Beacons gate the story is open for Mathis (Part 9 §5).*
 
 | Act | When (lived time, never calendar) | The story | Real-life arc |
 |---|---|---|---|

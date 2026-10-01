@@ -76,12 +76,12 @@ All of these are **derived** from the existing record (`actionCompleted`, `sched
 ### B.3 Rendering
 - **Engine:** RealityKit via `RealityView` in SwiftUI (iOS 26+), validated by S1–S3.
 - **Assets:** USDZ authored in Blender (by a human artist), with stylized materials via Reality Composer Pro's Shader Graph. One package per realm (a Reality Composer Pro bundle). Characters are rigged with skeletal animation; facial expressions use **texture-swapped eyes/mouth or bone-driven face**, avoiding the reported issues with blend shapes combined with skeletal animation.
-- **Restoration shading:** one material parameter per area (`hush ∈ [0,1]`), driven by `RestorationState`, controlling saturation, fog density and emissives.
+- **Restoration shading:** two inputs per area (Part 9 R1): `restoration` (rebuilt geometry, water, inhabitants, from Depth) and `vitality` (mist, light, saturation, from Vitality), plus a temporary Return effect. Restoration levels reached are grants (Part 9 R2).
 - **Performance budget (iPhone 15):** 60 fps target, ≤ 150 MB memory per scene, ≤ 50k triangles per scene, ≤ 2 dynamic lights, baked lighting where possible, scenes loaded per realm (never all at once).
-- **Fallback:** if a device can't hold 60 fps, drop particles first, then the Hush fog, then switch to a pre-rendered still with the character on top.
+- **Quality modes:** five ordered modes with separate inputs and hysteresis, defined in Part 9 R4 (the Flame stays animated in all of them).
 
 ### B.4 Content delivery
-- Realm packages are large, so: **realm 1 (the Sanctuary) ships in the app**; other realms download as **Apple On-Demand Resources / Background Assets** when unlocked, from Apple's servers (no personal data involved).
+- **Until launch, every realm ships inside the app** (decision 88). At P5, realm packages move to **Background Assets** (On-Demand Resources is deprecated from iOS 27), Part 9 R12.
 - Story beats, Encounters, Journey definitions and Keeper counsel ship in the **content catalog** (chapter 16 §B.10), so they can be updated without app releases.
 
 ### B.5 The character state machine

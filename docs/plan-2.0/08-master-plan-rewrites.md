@@ -49,12 +49,12 @@
 ### 07 Companion
 - **Who speaks:** the Keeper of the realm a question belongs to (Brakka for Body, Quill for Mind…), in that Keeper's voice, **always with sources** shown as "from the Keeper's library" with the real citation.
 - **Your Flame** never gives advice; it reacts, encourages, and remembers.
-- **Safety (decision 70, blocking before any health Journey):** the combined prescription validator, the safety outcome matrix, referral texts, and a qualified human reviewer. These are done in P2/P4 (Part 7).
-- **The AI path stays:** curated content first (works offline, on every phone), Apple's on-device model where available, Private Cloud Compute after the $99 program, then a zero-retention provider through the pass-through server.
+- **Safety:** decision 91 and Part 9 R10: gentle curated habits now; training plans disabled until a qualified reviewer approves that content version (P5); never improvised medical, eating or mental-health advice. The combined prescription validator, safety outcome matrix and referral texts (decision 70) apply to every template, Encounter and Gathering.
+- **The AI path stays:** curated content first (works offline, on every phone), Apple's on-device model where available, Private Cloud Compute at P5 **if eligible** (Part 9 R13), then a zero-retention provider through the pass-through server.
 
 ### 23 MVP
 - **Old:** a tracker with the Flame, Paths, the Spark, the Ritual and the Companion.
-- **New:** **P3 vertical slice** (the Sanctuary, your Flame Spark → Flame, the Grove, one Journey, Act I) for Mathis alone, then **P4 MVP** (+ 2 realms, health Journeys after safety work, TestFlight, iCloud, the Relay) for the circle. Success criteria (§A.5) stay and add one: *"Testers describe the app as a world they want to return to, not a tracker."*
+- **New:** exactly as in **Part 9 §1** (the phase contract): P3 and P4 run on Mathis's phone only, bundled, curated and local; paid-program services arrive in P5. Success criteria (§A.5) stay and add one: *"Testers describe the app as a world they want to return to, not a tracker."*
 
 ---
 
@@ -72,7 +72,7 @@
 | **Journeys** | Paths told as quest lines: a road, waypoints, chapters, a summit |
 | **Encounters** | Sparks told as creatures with a request |
 | **The Gathering** | The Ritual, held in the Whispering Grove |
-| **Beacons** | One per realm; lit when a realm is fully restored (Act II) |
+| **Beacons** | One per realm; their exact unlock rule is open for Mathis (Part 9 §5) |
 | **Keepsakes** | Earned, dated objects (worn, carried, or kept at home). Never sold |
 | **Stages** | Your Flame's evolution: Spark, Flame, Blaze, Kindled, Beyond |
 | **Acts** | The story's long chapters: I The Waking, II The Six Beacons, III The Grey Sea, IV Beyond the Veil |

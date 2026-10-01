@@ -23,7 +23,7 @@ Over days, your Flame grows bolder. Over weeks, a realm comes back to life. Over
 
 - **Your long-term goals are Journeys:** roads through a realm with waypoints and a summit.
 - **Your daily surprise is an Encounter:** a creature with a request.
-- **The weekly shared challenge is the Gathering:** everyone's lights in the Grove's trees.
+- **The weekly shared challenge is the Gathering:** lights in the Grove's trees (your own until launch; other travellers' after).
 - **Your Chronicle is the Book of Your Flame.**
 
 **Nothing in the world can be bought or ground in-app.** The only way to change it is to live. And when you're away, nothing dies: your Flame sleeps as an ember, the Hush settles softly, and your return relights everything.
@@ -32,7 +32,7 @@ Over days, your Flame grows bolder. Over weeks, a realm comes back to life. Over
 
 ---
 
-## 2. The eight parts (reading guide)
+## 2. The nine parts (reading guide)
 
 | Part | Title | What it answers | Read time |
 |---|---|---|---|
@@ -44,6 +44,7 @@ Over days, your Flame grows bolder. Over weeks, a realm comes back to life. Over
 | **6** | [Production](06-production-plan.md) | Who makes what (AIs vs. freelance artists), rough costs, ways to spend less | 8 min |
 | **7** | [Roadmap](07-roadmap.md) | Phases P1–P6+, each with a finish line: spikes → vertical slice "The Waking" → MVP → V1 → realm releases | 8 min |
 | **8** | [Master-Plan Rewrites](08-master-plan-rewrites.md) | Which existing chapters stay, change or merge; new glossary; what happens to the existing code | 8 min |
+| **9** | [**The Phase Contract**](09-phase-contract.md) | **Wins over the other parts:** what exists in each phase, the rules settled by Codex's review, what each phase plan must contain | 10 min |
 
 **If you only have 15 minutes:** read this page, Part 1 §1–3, Part 3 §1–3, and Part 7's table.
 

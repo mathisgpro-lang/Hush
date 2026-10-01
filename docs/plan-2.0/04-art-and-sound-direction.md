@@ -111,3 +111,22 @@ Chapter 06's haptic language remains and extends into the world:
 5. **UI kit:** calls, plates, buttons and the map UI, in-world.
 
 Codex makes the concepts (one image per call, short prompts). Mathis picks. A human artist then turns the chosen concepts into production assets (Part 6).
+
+---
+
+## 9. Style anchors: approved by Mathis (decision 95)
+
+*Mathis, 2026-10-01: "I absolutely love the evolution concept v2 of the spark towards beyond, and I also absolutely love the Whispering Grove and the other world concepts Codex has designed, those are exactly the kind of world I want this app to feel like."*
+
+| Anchor | File | What it fixes |
+|---|---|---|
+| **Your Flame's evolution** | `docs/design/character/flame-evolution.png` (v2) | The character's identity across all five stages: the same face, glossy eyes, plush fluffy fire, swirling golden core, glowing markings appearing in the later stages |
+| **The character** | `docs/design/character/flame-hero.png`, `flame-expressions.png` | Proportions, materials, emotional range |
+| **The Whispering Grove** | `docs/design/world/grove-scene.png` | The world's feel: rich, painterly, luminous, hundreds of warm lights, mist, depth, golden-hour color |
+| **The world map** | `docs/design/world/world-map.png` | The Emberlands' layout and grandeur: the Sanctuary in the sea, the Grove, the Stillwater, the floating Library, the Forge, the Veil |
+
+**What this settles:**
+- **The world's target is the Grove/map look,** detailed and painterly-rich, not a simplified cartoon. The character and the world become one family through **shared light and palette** (warm key light, golden glow, dusk violets), **not** by simplifying the world.
+- **Every new concept is generated with these images as references** (Codex `--image`), so the look doesn't drift.
+- **The evolution keeps v2's identity and arc.** The design round adds distinct details per stage (posture, markings shaped by your pillars, the crown at Kindled) on top of v2, so each stage reads as deeper, not just bigger (decision 4).
+- **A technical note for spike S2:** a world this rich is demanding on a phone. S2/S3 must show whether it runs fully in 3D, or as painted, layered scenes with live 3D elements (water, lights, mist, creatures) and your live 3D Flame. Either way it must look like these anchors and move (decision 93).

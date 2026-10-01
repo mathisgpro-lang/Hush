@@ -31,9 +31,9 @@ Today, the app has separate pieces: a Flame, a day of cards, a map, a journey ma
 | **Vitality** | **The Hush** at the edges of the world | When you've been away, a soft grey quiet creeps in (it never destroys anything). When you return, it lifts |
 | **Paths** (long-term goals) | **Journeys**: quest lines inside a realm | Your marathon is a road up the Highlands with waypoints, chapters and a summit |
 | **Plan steps** (the day's Path items) | **Today's steps on your Journey** | Each step you complete moves your Flame along the road on the realm map |
-| **The Spark** | **An Encounter**: a creature or traveller who appears with a request | "A little fox hasn't seen anyone in days. Tell someone why you admire them." |
+| **The Spark** | **An Encounter**: a creature or traveller who appears with a request | "A little fox is curious about kindness. Tell someone why you admire them." (Declining is always fine; the fox is fine either way, Part 9 R5) |
 | **Hidden Sparks** | **Legendary Encounters** | Rare beings that appear only to Flames who've grown deep in a realm |
-| **The Ritual** | **The Gathering** in the Whispering Grove | Everyone's lights gather in the Grove this week; you see them glowing in the trees |
+| **The Ritual** | **The Gathering** in the Whispering Grove | This week's lights gather in the Grove (your own lights until launch; other travellers' after, Part 9 R8) |
 | **The Companion / the Voice** | **The Keepers' counsel** + **your Flame's own voice** | Each realm's Keeper teaches its craft, always with sources. Your Flame speaks to you as a friend |
 | **The Chronicle** | **The Book of Your Flame**, kept in the Library of Embers | A storybook of your life, written week by week |
 | **Rewards, relics** | **Keepsakes**: things you bring home | Displayed in your Sanctuary, worn by your Flame, forever dated ("Week 40, 2026") |
@@ -59,19 +59,19 @@ Today, the app has separate pieces: a Flame, a day of cards, a map, a journey ma
   2. your Flame **catches it** (a little hop, a happy face);
   3. it **carries the light** toward the realm (a short flight across the Sanctuary's window into that realm's direction);
   4. a soft chime in that realm's voice, a haptic heartbeat;
-  5. Height ticks up.
+  5. Height rises, but only when it really changes; when the daily ceiling is reached, a "light stored" acknowledgment plays instead (Part 9 R3).
 
   The whole moment takes 1.5 seconds and never blocks you.
 - Opening the world map shows the light you just added: **the Highlands are a little greener than this morning.**
 
 ### Evening: at the Hearth
-- When you choose **Evening at the Hearth** (or after 20:00), your Flame walks back home, sits by the fire, and **the day's light settles into the stones**: a 15-second ritual, no input. The world map updates in the background (restoration ticks forward). Your Flame says one short line about your day, and then it falls asleep.
+- When you choose **Evening at the Hearth** (or after 20:00), your Flame walks back home, sits by the fire, and **the day's light settles into the stones**: a 15-second ritual, no input. The world already changed when you acted; the Hearth only gathers the day into a summary (Part 9 R3). Your Flame says one short line about your day, and then it falls asleep.
 
 ### When you've been away
 - **1 day:** nothing happens (the free day, P6).
 - **3 days:** your Flame is quieter, sitting by the hearth. A thin grey mist (the Hush) appears at the edges of the Sanctuary.
 - **2 weeks:** your Flame sleeps as a small ember. The Hush covers the paths, softly. **Nothing you built is lost:** every restored place is still there under the mist.
-- **The Return:** the first thing you do lifts the mist from the Sanctuary in one breath. Your Flame wakes, leaps, and the Lamplighter greets you. *Returning is the most beautiful moment in the app, never a punishment.*
+- **The Return:** the first thing you do lifts the mist from the Sanctuary in one breath (a temporary welcome effect; your Vitality really recovers over about 3 days, Part 9 R1). Your Flame wakes, leaps, and the Lamplighter greets you. *Returning is the most beautiful moment in the app, never a punishment.*
 
 ---
 
@@ -80,10 +80,10 @@ Today, the app has separate pieces: a Flame, a day of cards, a map, a journey ma
 | Rhythm | What happens in the universe |
 |---|---|
 | **Every day** | Today's calls, the tracking moment, Evening at the Hearth, maybe an Encounter |
-| **Every week** | **The Gathering**: a new shared Ritual in the Whispering Grove, everyone's lights in the trees, a dated keepsake. **A new page** in the Book of Your Flame (the Chronicle) |
+| **Every week** | **The Gathering**: a new shared Ritual in the Whispering Grove, lights in the trees (your own until launch, Part 9 R8), a dated keepsake. **A new page** in the Book of Your Flame (the Chronicle) |
 | **Every month** | A **Keeper's visit**: one Keeper comes to your Sanctuary to see how far you've come in their realm, with a short scene and maybe a gift. **New moon:** a Legendary Encounter becomes possible |
-| **Every season** (4 a year) | **A Season of the world**: Thaw, Long Light, Harvest, Embernight. The world changes color and weather, a seasonal story chapter opens, and a seasonal keepsake can be earned by living through the season |
-| **Every year** | **Your Flame's Birthday** (the anniversary of its birth): the Book of Your Flame closes a volume, a celebration in the Sanctuary, a yearly keepsake *"Year 1, 2026–2027"*. The world's story advances one Act for everyone |
+| **Every season** (4 a year) | **A Season of the world**: Thaw, Long Light, Harvest, Embernight. The world changes color and weather, a seasonal story chapter opens, and a seasonal keepsake can be earned by living through the season, and stays earnable later (Part 9 R5) |
+| **Every year** | **Your Flame's Birthday** (the anniversary of its birth): the Book of Your Flame closes a volume, a celebration in the Sanctuary, a yearly keepsake *"Year 1, 2026–2027"*. *(Acts advance only by lived progress, never by the calendar, Part 9 R5.)* |
 
 ---
 
@@ -103,7 +103,7 @@ This is how long-term goals blend into the world. **A Path becomes a Journey.**
 | **The summit** | The goal reached (you ran the 5K) | **The finale**: the summit or beacon of the realm, a ceremony, a permanent landmark named after you, a keepsake, and a Keeper scene |
 | **If life happens** | Pause, reschedule | Your Flame waits at the last campfire. The road is still there |
 
-### Journeys in the MVP library (from chapter 07, made into quests)
+### The Journey catalog (future; what's usable in each phase is in Part 9 §1)
 | Realm | Journey | Finale |
 |---|---|---|
 | Ascent Highlands (Body) | *The Road to the First Summit* (walk → 5K) | The Summit Lantern |
@@ -147,7 +147,7 @@ This is how long-term goals blend into the world. **A Path becomes a Journey.**
 | **The Keepers** | Ask the Keeper of a realm anything about your Journeys, always with sources and safety | The Voice |
 | **Settings** | Morning time, backup, delete everything, sound and haptics, accessibility | Settings |
 
-**Navigation feeling:** no tabs, no menus. You *move*: from the Sanctuary, you step out of the gate into the World; you tap a realm and travel; you enter. A small, elegant "home" ember always brings you back. It should feel like walking through a place, not using an app.
+**Navigation feeling: world-first, never world-only** (Part 9 R7: every essential task also has a labeled route and a plain Simple view). You *move*: from the Sanctuary, you step out of the gate into the World; you tap a realm and travel; you enter. A small, elegant "home" ember always brings you back. It should feel like walking through a place, not using an app.
 
 ---
 
