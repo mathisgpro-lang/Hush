@@ -155,6 +155,13 @@ void sanctuaryLive(realitykit::surface_parameters params)
     // Falling water shimmer.
     col.rgb += half3(0.08) * half(fall * (0.5 + 0.5 * sin(uv.y * 400.0 + t * 12.0)));
 
+    // The Flame lights the world (A1): warm light on nearby surfaces, stronger on the ground below it.
+    float4 cp = params.uniforms().custom_parameter();
+    float2 fd = float2((uv.x - cp.y) * 0.46, uv.y - cp.z);
+    float below = fd.y < 0.0 ? 1.25 : 0.6;
+    float light = cp.w * exp(-dot(fd, fd) / 0.0035) * below;
+    col.rgb += col.rgb * half3(1.0, 0.55, 0.18) * half(light * 1.4) + half3(0.22, 0.10, 0.02) * half(light * 0.35);
+
     // The Hush: grey, cooler, misty and dimmer as vitality drops (nothing disappears).
     float hush = 1.0 - vitality;
     float grey = dot(float3(col.rgb), float3(0.3, 0.59, 0.11));
@@ -180,4 +187,20 @@ void mistDrift(realitykit::surface_parameters params)
     params.surface().set_base_color(half3(0));
     params.surface().set_emissive_color(half3(0.8, 0.8, 0.86));
     params.surface().set_opacity(half(saturate(n * 1.6 - 0.35) * edge * c.x));
+}
+
+// The Flame's reflection: the same painting mirrored below its feet, fading with distance and rippling.
+// custom: x mood, y brightness, zw hair follow-through (shared with heroLive).
+[[visible]]
+void heroReflection(realitykit::surface_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float t = params.uniforms().time();
+    constexpr sampler s(address::clamp_to_edge, filter::linear);
+    float2 r = float2(sin(uv.y * 70.0 + t * 3.2) * 0.012 * uv.y + sin(uv.y * 31.0 - t * 1.7) * 0.006 * uv.y, 0);
+    half4 col = params.textures().base_color().sample(s, float2(uv.x, 1.0 - uv.y) + r);
+    float fade = 1.0 - smoothstep(0.0, 0.55, uv.y);
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(col.rgb * half(0.75 * params.uniforms().custom_parameter().y));
+    params.surface().set_opacity(col.a * half(0.38 * fade));
 }

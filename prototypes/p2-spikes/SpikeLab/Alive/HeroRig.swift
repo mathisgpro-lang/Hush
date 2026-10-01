@@ -12,6 +12,11 @@ final class HeroRig: FlameRig {
     private let walkPivot = Entity()  // where it stands on the ground
     private let bodyPivot = Entity()  // at the feet: squash, stretch and lean happen around here
     private var hero: ModelEntity?
+    private var reflection: ModelEntity?
+    private let reflectPivot = Entity()
+    private var landingPuff: Entity?
+    /// Where it stands along the ground (meters, before any scene scale): scenes use it to place its light.
+    var standingX: Float { body.x }
     private var faces: [String: TextureResource] = [:]
     private var eyesHeldClosed = false
     private var body = FluidBody(seed: 11)
@@ -28,6 +33,7 @@ final class HeroRig: FlameRig {
         walkPivot.addChild(bodyPivot)
         bodyPivot.position = [0, Self.feetY, 0]
         bodyPivot.addChild(lookPivot)
+        walkPivot.addChild(reflectPivot)
     }
 
     func build() async throws {
@@ -68,6 +74,30 @@ final class HeroRig: FlameRig {
         e.components.set(ModelSortGroupComponent(group: sortGroup, order: 2))
         lookPivot.addChild(e); hero = e
 
+        // Its reflection (A4): the same painting mirrored under its feet; the pivot mirrors the body every frame.
+        if let lib {
+            var u = unlit; u.faceCulling = .none
+            var m = try CustomMaterial(from: u, surfaceShader: .init(named: "heroReflection", in: lib),
+                                       geometryModifier: .init(named: "heroLive", in: lib))
+            m.custom.value = [0.8, 1, 0, 0]; m.faceCulling = .none
+            m.blending = .transparent(opacity: .init(floatLiteral: 1.0)); m.writesDepth = false
+            let r = ModelEntity(mesh: e.model!.mesh, materials: [m])
+            r.position = [0, -0.012, 0]
+            r.components.set(ModelSortGroupComponent(group: sortGroup, order: 1))
+            reflectPivot.addChild(r); reflection = r
+        }
+        // A puff of embers when it lands (A3).
+        let puff = Entity()
+        var pe = ParticleEmitterComponent()
+        pe.emitterShape = .sphere; pe.emitterShapeSize = [0.05, 0.005, 0.02]
+        pe.emissionDirection = [0, 1, 0]; pe.speed = 0.06; pe.speedVariation = 0.03
+        pe.mainEmitter.birthRate = 0; pe.burstCount = 24; pe.burstCountVariation = 6
+        pe.mainEmitter.lifeSpan = 0.7; pe.mainEmitter.size = 0.003; pe.mainEmitter.blendMode = .additive
+        pe.mainEmitter.color = .constant(.single(UIColor(red: 1, green: 0.7, blue: 0.3, alpha: 1)))
+        pe.isEmitting = false
+        puff.components.set(pe); puff.position = [0, Self.feetY + 0.005, 0.01]
+        walkPivot.addChild(puff); landingPuff = puff
+
         if let lib {
             let glowTex = try await TextureResource(named: "glow.png")
             func glow(_ size: SIMD2<Float>, at p: SIMD3<Float>, strength: Float, order: Int32) throws -> ModelEntity {
@@ -103,9 +133,17 @@ final class HeroRig: FlameRig {
         bodyPivot.transform = Transform(scale: [body.scaleX, body.scaleY, 1],
                                         rotation: simd_quatf(angle: body.roll, axis: [0, 0, 1]),
                                         translation: [0, Self.feetY + body.y, 0])
-        if let hero, var comp = hero.model, var m = comp.materials.first as? CustomMaterial {
+        reflectPivot.transform = Transform(scale: [body.scaleX, -body.scaleY, 1],
+                                           rotation: simd_quatf(angle: -body.roll, axis: [0, 0, 1]),
+                                           translation: [0, Self.feetY - body.y, 0])
+        for e in [hero, reflection].compactMap({ $0 }) {
+            guard var comp = e.model, var m = comp.materials.first as? CustomMaterial else { continue }
             m.custom.value = [mood, brightness, body.hairDrag.x, body.hairDrag.y]
-            comp.materials = [m]; hero.model = comp
+            comp.materials = [m]; e.model = comp
+        }
+        if body.landed > 0.2, let puff = landingPuff, var pe = puff.components[ParticleEmitterComponent.self] {
+            pe.burst()
+            puff.components.set(pe)
         }
     }
 
@@ -191,9 +229,12 @@ final class HeroRig: FlameRig {
     }
 
     private func setFace(_ key: String) {
-        guard let hero, var comp = hero.model, var m = comp.materials.first as? CustomMaterial, let t = faces[key] else { return }
-        m.baseColor = .init(tint: m.baseColor.tint, texture: .init(t))
-        comp.materials = [m]; hero.model = comp
+        guard let t = faces[key] else { return }
+        for e in [hero, reflection].compactMap({ $0 }) {
+            guard var comp = e.model, var m = comp.materials.first as? CustomMaterial else { continue }
+            m.baseColor = .init(tint: m.baseColor.tint, texture: .init(t))
+            comp.materials = [m]; e.model = comp
+        }
     }
 
     private func closeEyes(for s: Double) {

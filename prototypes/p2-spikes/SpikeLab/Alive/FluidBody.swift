@@ -39,6 +39,7 @@ struct FluidBody {
     private(set) var roll: Float = 0
     private(set) var scaleX: Float = 1, scaleY: Float = 1
     private(set) var hairDrag = SIMD2<Float>(0, 0)          // follow-through for the hair shader (meters)
+    private(set) var landed: Float = 0                       // impact speed of a landing this frame (0 if none)
 
     // Behavior inputs (set by the rig's idles and reactions).
     var wanderRange: Float = 0.06
@@ -83,8 +84,9 @@ struct FluidBody {
         // Hops with gravity.
         vy -= gravity * dt
         y += vy * dt
+        landed = 0
         if y <= 0 {
-            if vy < -0.15 { squash.velocity -= min(6, -vy * 9) }   // landing impact → squash, then jiggle back
+            if vy < -0.15 { squash.velocity -= min(6, -vy * 9); landed = -vy }   // landing impact → squash, then jiggle back
             y = 0; vy = 0
         }
 

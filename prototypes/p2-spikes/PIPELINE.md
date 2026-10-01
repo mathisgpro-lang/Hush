@@ -92,3 +92,11 @@
 - Behaviors now only set targets and impulses; the physics makes every transition flow.
 - Measured on the recording: centroid displacement every 0.25 s over 21 s gave 83 samples, **0 nearly still**; motion amplitude rises and falls smoothly (bigger on hops and travel).
 - Demo: `docs/design/demos/2026-10-01-codex-hero-alive-v4.mp4`.
+
+## S2 · the painted Sanctuary: first pass (2026-10-01, simulator)
+- `sanctuary-paint.png` (Codex's `sanctuary-empty.png`) on a mesh **bent in depth** (water near, steps, arches and waterfalls, then the sky far). Each vertex keeps its rest screen position (scaled along the camera ray), so the painting looks untouched from the rest camera, and camera drift or tilt reveals parallax.
+- `sanctuaryLive`: rippling water with soft glints, waterfalls flowing (pale bright pixels in the middle band), the Hush grading from Vitality (grey, cool, mist, dimmer), and **the Flame's light spill** (A1), following its position and flickering.
+- Mist cards just behind the Flame (it stays the clearest, warmest thing); fireflies; the HeroRig on the top step at the step's own depth, with reflection (A4) and landing embers (A3); SwiftUI calls on top (tap → the Flame reacts).
+- 60 fps and about 61 MB in the simulator (one 13 fps dip while recording right after launch; to verify on the device).
+- **Gap to the bar (Part 4 §10):** still one painting with a bend. Real layers (B1) and occlusion (A5) need the depth maps (queued); world-lights-Flame (A2), reactions (A7), wind (B3) and creatures (B4) are not done yet. The 3D route of S2 is not built yet.
+- Demo: `docs/design/demos/2026-10-01-s2-sanctuary-painted-v2.mp4`; Hushed still: `docs/design/demos/2026-10-01-s2-hushed.png`.

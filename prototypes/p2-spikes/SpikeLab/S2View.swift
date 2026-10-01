@@ -11,6 +11,9 @@ final class SanctuaryScene {
     let root = Entity()
     let camera = PerspectiveCamera()
     private var painting: ModelEntity?
+    private var vitality: Float = 1
+    private var paintingW: Float = 1, paintingH: Float = 1
+    private let heroScale: Float = 0.55
     private var mists: [ModelEntity] = []
     let hero = HeroRig()
     private var time: Float = 0
@@ -28,6 +31,7 @@ final class SanctuaryScene {
         let visibleH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180)
         let aspect = Float(tex.width) / Float(tex.height)
         let (w, h) = (visibleH * aspect * 1.08, visibleH * 1.08)     // a little overscan so parallax never shows edges
+        paintingW = w; paintingH = h
 
         // The painting, bent in depth. Each vertex keeps its rest screen position (scaled along the camera ray),
         // so from the rest camera the painting looks untouched; moving the camera reveals the depth.
@@ -83,10 +87,15 @@ final class SanctuaryScene {
 
         // The Flame on the steps (v ≈ 0.33 in the painting), scaled to the scene.
         try await hero.build()
-        let scale: Float = 0.55
-        let stepsY = (0.285 - 0.5) * h      // the top step in this painting
+        // Its feet sit exactly at the depth of the step it stands on (the painting is bent in depth), so the
+        // rows above it fall behind it and the rows below it stay below its feet.
+        let stepV: Float = 0.285
+        let d = Self.distance - Self.depthOffset(stepV) - 0.008          // a hair in front of the step
+        let k = d / Self.distance                                      // keep its screen position and size
+        let scale = heroScale * k
+        let stepsY = (stepV - 0.5) * h * k
         hero.leanPivot.scale = .init(repeating: scale)
-        hero.leanPivot.position = [0, stepsY + 0.09 * scale, -Self.distance + 0.03]
+        hero.leanPivot.position = [0, stepsY + 0.09 * scale, -d]
         root.addChild(hero.leanPivot)
 
         camera.camera.fieldOfViewInDegrees = Self.fov
@@ -103,9 +112,7 @@ final class SanctuaryScene {
     }
 
     func setVitality(_ v: Float) {
-        if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
-            m.custom.value = [v, 0, 0, 0]; comp.materials = [m]; painting.model = comp
-        }
+        vitality = v
         for (k, e) in mists.enumerated() {
             guard var comp = e.model, var m = comp.materials.first as? CustomMaterial else { continue }
             m.custom.value.x = (1 - v) * (k == 0 ? 0.55 : 0.75)
@@ -116,6 +123,13 @@ final class SanctuaryScene {
     func update(dt: Float) {
         time += dt
         hero.update(dt: dt)
+        // The Flame's light on the painting follows it and flickers with the fire (A1); dimmer in the Hush.
+        if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
+            let u = 0.5 + hero.standingX * heroScale / paintingW
+            let flicker = 0.85 + 0.15 * noise.sample(time * 7) + 0.05 * sin(time * 23)
+            m.custom.value = [vitality, u, 0.30, 0.9 * flicker * (0.5 + 0.5 * vitality)]
+            comp.materials = [m]; painting.model = comp
+        }
         // The camera breathes very slowly (an alive world), and follows the phone's tilt for parallax.
         let drift = autoDrift ? SIMD2(noise.sample(time * 0.09), noise.sample(time * 0.07 + 30)) * 0.035 : .zero
         let offset = SIMD3<Float>(tilt.x * 0.06 + drift.x, -tilt.y * 0.04 + drift.y * 0.6, 0)
