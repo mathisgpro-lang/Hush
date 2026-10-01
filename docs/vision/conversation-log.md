@@ -233,3 +233,4 @@ Phase B conversation complete. Next: draft chapters 16, 17, 20 and 22 (first pas
 - **Art budget (87):** Mathis chose AI-only for now and will reflect on the long-term route as the game develops. Claude noted it must be decided before the vertical slice at final quality.
 - **The $99 program (88):** Mathis wants to go as far as possible for free and will join when the app is basically done; he is the only user, and friends test on his phone. Claude laid out the consequences (no sync, no cloud AI, weekly re-signing) and added a short TestFlight round before launch, since the app will only have run on one phone.
 - **Names (89):** Mathis kept all the proposed world names. The app's title will come later; his candidate is "Hush". Claude flagged the inversion (the Hush is the grey you fight) and that a short word is likely taken, to check before deciding.
+- **Language (90):** English, translation-ready.
