@@ -31,10 +31,10 @@
 |---|---|---|
 | Tech | S1 character, S2 diorama, S3 restoration in RealityKit on the iPhone 15 (Part 5 §B.7) | Claude, then Codex review |
 | Design | Codex concept rounds: the Flame (all stages), the Lamplighter, Nim & Ro, the Sanctuary, the Grove, the world map, the UI kit; Mathis picks | Codex, Mathis |
-| Production | Briefs for the 3D character artist and environment artist; paid test jobs | Claude, Mathis (spend) |
+| Production | **AI-only for now (decision 87):** Codex concepts + free placeholder 3D. No freelancers, no spend. The art budget is revisited after the spikes, with real quotes | Claude, Codex |
 | Safety | Decision 70's blocking safety fixes in chapter 07 (combined prescription validator, safety outcome matrix, referral texts) drafted; a qualified reviewer found | Claude, Mathis |
 
-**Finish line:** spikes pass (or the fallback engine is chosen); the Flame and the Sanctuary designs are approved; the first freelancer is engaged (if Mathis agrees).
+**Finish line:** spikes pass (or the fallback engine is chosen); the Flame and the Sanctuary designs are approved; **Mathis takes the art-budget decision** (decision 87), because P3 at final quality needs it.
 
 ## P3 · Vertical slice: "The Waking" (about 6–10 weeks)
 **Scope (everything at final quality, nothing more):**

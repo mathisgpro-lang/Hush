@@ -69,8 +69,8 @@ Over days, your Flame grows bolder. Over weeks, a realm comes back to life. Over
 
 | # | Question | My recommendation |
 |---|---|---|
-| **1** | **Approve Plan 2.0** as the direction (with any changes)? | Approve, then fix details as we live the slice |
-| **2** | **Art budget approach:** full 3D everywhere, **3D characters + 2.5D painted realms**, or AI-only for now? | 3D characters + 2.5D realms; V1 with 3–4 realms (Part 6 §3). Vertical slice ≈ $12k–40k with humans; or start with AI-only and decide after the spikes |
+| **1** ✅ | **Answered: approved (decision 85),** plus the First Words (86). Original question: **approve Plan 2.0** as the direction (with any changes)? | Approve, then fix details as we live the slice |
+| **2** ✅ | **Answered: AI-only for now (decision 87).** Revisit after the spikes. Original question: **art budget approach:** full 3D everywhere, **3D characters + 2.5D painted realms**, or AI-only for now? | 3D characters + 2.5D realms; V1 with 3–4 realms (Part 6 §3). Vertical slice ≈ $12k–40k with humans; or start with AI-only and decide after the spikes |
 | **3** | **When to join Apple's Developer Program ($99/yr)?** It unlocks TestFlight, iCloud sync and Private Cloud Compute | At the start of P4 (the MVP for your circle). Not needed for spikes or the vertical slice |
 | **4** | **The app's name.** The world is the Emberlands; the app could carry its own name or the world's | Decide after the vertical slice, when the world has a face |
 | **5** | **Beta languages** (English only, or English + French)? | English first; the content catalog is translation-ready |

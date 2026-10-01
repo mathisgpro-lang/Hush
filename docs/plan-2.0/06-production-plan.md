@@ -66,7 +66,7 @@ These are **typical freelance market ranges** as a planning aid, not quotes. Rea
 4. **Fewer realms in V1** (the Sanctuary + 3 realms), with the rest added as later "realm releases": a good rhythm for keeping users excited anyway.
 5. **Stock music libraries** for early phases, with a composer later for the signature themes.
 
-**My recommendation:** combine 2 + 4: 3D characters, 2.5D painted realms, and V1 with 3–4 realms. That puts the money where people feel it most (your Flame) and keeps the world growing release by release.
+**Decided for now (decision 87): AI-only until the spikes are done**, then revisit with real quotes. **Longer-term recommendation:** combine 2 + 4: 3D characters, 2.5D painted realms, and V1 with 3–4 realms. That puts the money where people feel it most (your Flame) and keeps the world growing release by release.
 
 ---
 
