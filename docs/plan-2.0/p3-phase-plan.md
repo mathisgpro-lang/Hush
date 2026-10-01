@@ -174,6 +174,8 @@ Does the universe make you come back *because you want to*, and does it help you
 
 ### B.8 The build plans (each written, approved, built with tests, simulator-checked, Codex-reviewed)
 
+**Reordered by decision 105:** first the **app shell**: intro → home (cockpit) → road-style world map → enter a world (the Flame inside, spots to explore) → back. It's built as a full-screen shell in SpikeLab for fast iteration on feel, shown to Mathis, then moved into the real app. The table's plans 1, 3, 4 and 5 are delivered through that shell; plans 2 and 6–9 follow.
+
 | # | Build plan | Contents |
 |---|---|---|
 | 1 | **Universe layer** | Port and harden from SpikeLab: SceneRenderer (relief, painted scenes), FluidBody, LayeredFlame (rig contract), AliveDirector, WorldLife, Strand; tests for FluidBody and the idle picker |
