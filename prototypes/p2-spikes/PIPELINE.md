@@ -114,3 +114,12 @@
 - **A7, the moth:** it visits for about 11 s every 25–35 s, fluttering around the Flame's head; the Flame looks at it and drifts after it. It resets once when the moth leaves (resetting every frame cancelled the wandering).
 - Demo: `docs/design/demos/2026-10-01-s2-sanctuary-life.mp4`.
 - Bar status: A1 ✅ light spill, A2 ✅ rim/haze (first pass), A3 ✅ landing embers (contact shade still missing), A4 ✅ reflection, A5 partial (birds behind the arches; the Flame itself can't yet walk behind things), A6 ❌ (it only moves sideways on one step), A7 partial (the moth), A8 partial; B1 partial (one relief, not layers), B2 ✅, B3 ✅, B4 partial (birds, moth), B5 ❌.
+
+## S3 · restoration in the Whispering Grove, painted route (2026-10-01, simulator)
+- Codex's `grove-scene.png` as a depth relief (Depth Anything V2, blurred 5 px to calm the depth edges).
+- **474 lights** detected by color (bright, warm, saturated blobs; the sun is excluded by size) and ordered **outward from the stone circle**. `grove-lanterns.png`: R = order of the nearest lantern (Voronoi within 34 px, read with nearest filtering), G = the lantern core (soft), B = its pool of light (wide blur).
+- `groveRestore` (R1): restoration 0…1 from the Heart pillar's Depth via the Part 1 §8 levels (0/3/15/50/150/400, continuous within a level). Hushed = grey, cool, dim, thick mist, every lantern dark. Lanterns relight in order (flicker, a flare when relit), color and light return early in each lit lantern's pool, then everywhere. Water moves from about level 1; fireflies return from r > 0.25; vitality thickens or thins the mist; wind sways the foliage.
+- **The core loop, visible:** "A real Heart action" → the Flame cheers → a glowing strand with a spark trail arcs from its chest to the next lantern (1.1 s) → a cluster of 6 relights with a flare; Depth is raised to match (in the real app, Depth comes from the growth engine).
+- Bugs fixed on the way: hard lantern discs (jagged rings, color patches) → soft G/B masks; interpolated order at region edges → nearest sampling; the sun detected as a lantern → only accepted blobs enter the mask.
+- 60 fps, about 64 MB in the simulator. Demo: `docs/design/demos/2026-10-01-s3-grove-restoration.mp4`; still: `2026-10-01-s3-hushed-vs-radiant.png`.
+- **Gap:** restoration here is light and color (painted); "geometry returns" (an arch rebuilding, a bridge appearing) needs painted state variants or the 3D route. Creatures returning (Nim & Ro, animals) come with the cast art.

@@ -220,3 +220,74 @@ void heroReflection(realitykit::surface_parameters params)
     params.surface().set_emissive_color(col.rgb * half(0.75 * params.uniforms().custom_parameter().y));
     params.surface().set_opacity(col.a * half(0.38 * fade));
 }
+
+// ---------- S3 · restoration in the Whispering Grove ----------
+// custom: x = restoration 0…1 (from the Heart pillar's Depth, R1), y = vitality 0…1 (atmosphere, R1),
+//         z = order of the lantern relit last, w = seconds since it relit (for its flare).
+// custom texture: lantern order map (0 = not a lantern; (0,1] = the order in which it relights).
+// roughness_scale = wind.
+[[visible]]
+void groveRestore(realitykit::surface_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float t = params.uniforms().time();
+    float4 c = params.uniforms().custom_parameter();
+    float r = c.x, vitality = c.y;
+    constexpr sampler s(address::clamp_to_edge, filter::linear);
+    float2 tuv = float2(uv.x, 1.0 - uv.y);
+
+    // Water moves again from restoration level ~1.
+    float water = 1.0 - smoothstep(0.12, 0.2, uv.y);
+    float flowing = smoothstep(0.15, 0.4, r);
+    float2 ripple = float2(sin(uv.y * 150.0 - t * 1.4 + sin(uv.x * 10.0 + t * 0.5)) * 0.002,
+                           sin(uv.x * 60.0 + t * 1.0) * 0.001) * water * flowing;
+    half4 base0 = params.textures().base_color().sample(s, tuv);
+    float wind = params.material_constants().roughness_scale();
+    float green = smoothstep(0.02, 0.12, float(base0.g) - max(float(base0.r) * 0.85, float(base0.b)));
+    float2 sway = float2(sin(t * 2.0 + uv.y * 28.0 + uv.x * 7.0) * 0.003 * wind * green * (0.4 + uv.y), 0);
+    half4 col = params.textures().base_color().sample(s, tuv + ripple + sway);
+    float3 rgb = float3(col.rgb);
+
+    // Lanterns (custom texture: R = order of the nearest lantern, G = the lantern itself, B = its pool of light).
+    // R (order) must not be interpolated between lanterns or at its edge, so it's read with nearest filtering.
+    constexpr sampler sn(address::clamp_to_edge, filter::nearest);
+    half4 lm = params.textures().custom().sample(s, tuv);
+    float order = float(params.textures().custom().sample(sn, tuv).r), core = float(lm.g), pool = float(lm.b);
+    float lit = step(0.001, order) * smoothstep(order - 0.004, order, r);
+    float lum = dot(rgb, float3(0.299, 0.587, 0.114));
+    float flicker = 0.92 + 0.08 * sin(t * 9.0 + order * 300.0) * sin(t * 3.7 + order * 91.0);
+    float flare = (1.0 - smoothstep(0.0, 0.006, abs(order - c.z))) * exp(-c.w * 2.5);
+
+    // The Hushed Grove: grey, cool and dim; color returns with restoration, and early around lit lanterns.
+    float localLight = lit * pool;
+    float sat = max(0.1 + 0.9 * smoothstep(0.0, 0.9, r), localLight * 0.85);
+    float3 graded = mix(float3(lum) * float3(0.82, 0.88, 1.02), rgb, sat);
+    graded *= max(0.42 + 0.58 * smoothstep(0.0, 0.8, r), 0.42 + 0.5 * localLight);
+    // Unlit lanterns dim their own painted glow; lit ones shine (flickering, flaring right after relighting).
+    float3 dark = float3(lum * 0.22) * float3(0.8, 0.85, 1.0);
+    float3 shining = rgb * flicker * 1.12 + float3(1.0, 0.8, 0.45) * flare * 1.4;
+    graded = mix(graded, mix(dark, shining, lit), core);
+    graded += float3(1.0, 0.7, 0.35) * pool * lit * 0.06 * flicker + float3(1.0, 0.75, 0.4) * pool * flare * 0.35;
+    float m0 = 0.0;
+
+    // Mist: thick when Hushed, lifting with restoration; vitality thickens or thins it day to day.
+    float mistAmount = (1.0 - smoothstep(0.0, 0.85, r)) * 0.55 + (1.0 - vitality) * 0.25;
+    float m = s2fbm(uv * float2(3.0, 5.0) + float2(t * 0.015, 0)) * mistAmount * (1.0 - localLight * 0.8) + m0;
+    graded = mix(graded, float3(0.6, 0.63, 0.7), m);
+
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(half3(graded));
+    params.surface().set_opacity(1.0);
+}
+
+// The light strand an action sends from the Flame to the world: a soft glowing orb (opacity from custom.x).
+[[visible]]
+void strandGlow(realitykit::surface_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float d = length(uv - float2(0.5));
+    float a = pow(saturate(1.0 - d * 2.0), 2.2) * params.uniforms().custom_parameter().x;
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(half3(1.0, 0.82, 0.5) * half(1.0 + (1.0 - d * 2.0)));
+    params.surface().set_opacity(half(a));
+}
