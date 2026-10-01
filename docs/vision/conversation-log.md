@@ -227,3 +227,4 @@ Phase B conversation complete. Next: draft chapters 16, 17, 20 and 22 (first pas
 - **Kept unchanged:** the growth engine, the record, privacy, sources and safety. The universe only *shows* the truth.
 - **Codex art queue:** its scheduled timer stalled while the Mac slept, so it was restarted in the morning.
 - **Decided by default:** decision 84 (all Plan 2.0 defaults). Seven questions await Mathis (`00-overview.md` §4).
+- **Codex art queue finished (07:xx):** `docs/design/character/flame-hero.png`, `flame-expressions.png`, `flame-evolution.png`; `docs/design/world/sanctuary-empty.png`, `world-map.png`, `grove-scene.png`. This is concept art for P2 concept rounds, not approved designs.
