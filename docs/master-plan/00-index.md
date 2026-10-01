@@ -82,9 +82,9 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 
 **Plan 2.0 is written:** `docs/plan-2.0/00-overview.md` (start there) plus Parts 1–8. **Building stays paused** until Mathis approves it (decision 83 rule).
 
-**▶ CURRENT: P2.5 · Design & Feel** (decisions 105–107). Plan: `docs/plan-2.0/10-cohesion-plan.md` (pending Mathis's approval).
+**▶ CURRENT: P2.5 · Design & Feel** (decisions 105–107). Plan: `docs/plan-2.0/10-cohesion-plan.md` (✅ approved, decision 108). Spec in progress: `docs/plan-2.0/p25-design-spec.md` (D2 storyboards, D3 language).
 - In flight: the cohesion frames (`scripts/cohesion-frames.sh`, auto at 17:04 → `docs/design/cohesion/`), then the Codex review of the P3 plan.
-- Next: ask Mathis (1) approve Part 10, (2) the cohesion direction from the 4 frames, (3) Rive, (4) the Gemini key. Then D1 style bible v2 → D2 storyboards → D3 interaction/motion/sound language → D4 the feel slice → D5 on his phone.
+- Next: ask Mathis (2) the cohesion direction from the 4 frames, (3) Rive, (4) the Gemini key. Then D1 style bible v2 → D2 storyboards → D3 interaction/motion/sound language → D4 the feel slice → D5 on his phone.
 - The app shell v1 (SpikeLab; it opens on the shell, add `-lab` for the old tests) is the starting point to rebuild.
 
 **Next steps, in order:**
