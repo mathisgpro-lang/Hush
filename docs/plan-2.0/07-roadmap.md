@@ -14,8 +14,8 @@
 | **P1** | Plan 2.0 + decisions | Everything planned, nothing guessed | Mathis approves Parts 1–8 and the open decisions |
 | **P2** | Spikes + final designs | Prove the tech; lock the look | S1–S3 pass on the iPhone 15; the Flame and the Sanctuary are designed and approved |
 | **P3** | **Vertical slice: "The Waking"** | One perfect, fully blended piece of the universe | Mathis lives Act I for 6 weeks and says "this is it" |
-| **P4** | MVP: "The First Beacons" | The universe with your circle | 5–15 testers through Act I and into Act II for 6–8 weeks; success criteria met (chapter 23 §A.5) |
-| **P5** | V1: public launch | The Emberlands open to the world | App Store release with the Sanctuary + 3–4 realms, Gatherings, Seasons |
+| **P4** | MVP: "The First Beacons" | The universe on Mathis's phone (decision 88: no paid program yet) | Mathis lives Act I into Act II for 6–8 weeks; friends try it **on his phone**; success criteria met (chapter 23 §A.5) |
+| **P5** | V1: public launch | The Emberlands open to the world | Join the $99 program → iCloud sync, cloud AI, a short TestFlight round on other iPhones → App Store release with the Sanctuary + 3–4 realms, Gatherings, Seasons |
 | **P6+** | Realm releases and Acts II–IV | A universe that grows for years | A new realm or season roughly every quarter; Acts III–IV with community |
 
 ---
@@ -55,10 +55,12 @@
 - **Journeys:** + *The Road to the First Summit* (requires the health safety work and the qualified review) and *The Clear Water*.
 - **The Flame:** + the Blaze stage design (reached later in the beta), pillar shaping v1.
 - **The Forge ceremony** → the Age of Metal.
-- **Infrastructure:** the $99 program, TestFlight, iCloud sync (CloudKit), the Relay for real Gathering counts, the Keepers' counsel (curated + PCC where allowed).
-- **Finish line:** chapter 23 §A.5 success criteria with 5–15 testers.
+- **Infrastructure without the $99 program (decision 88):** the record stays on the phone, protected by iPhone iCloud Backup and the in-app export; the Keepers' counsel is **curated content with sources** (no AI yet: the iPhone 15 has no on-device model); the AI layer is built behind a switch and tested later; all realms ship inside the app (no downloads yet); the Gathering is local. The app is re-signed every 7 days from the Mac (free signing).
+- **Finish line:** chapter 23 §A.5 success criteria, lived by Mathis, with friends trying it on his phone.
 
 ## P5 · V1: public launch (about 3–4 months)
+- **Join the Apple Developer Program ($99/yr)** first, then turn on what it unlocks: iCloud sync (CloudKit), Apple's cloud AI (Private Cloud Compute) for the Keepers, realm downloads, the Relay for real Gathering counts.
+- **A short TestFlight round (2–3 weeks, a handful of people, other iPhone models):** the app will only ever have run on one iPhone 15, so this catches crashes and slow devices before the public sees them.
 - 3–4 realms at release (+ the Library or Forge), Seasons system (the first season), keepsake system complete, accessibility pass, localization (decided in P1), privacy policy, App Store presence, security review.
 - **Finish line:** App Store release.
 

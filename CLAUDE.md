@@ -8,7 +8,7 @@ The foundation is built (`app/`: the growth engine, the record, living slices on
 
 ### Earlier phase notes
 
-MVP-first order (decision 46): 04 → 03 → 28 → 05 → 06 → 07 → 08 → 12 → 23. **When chapter 23 is approved, remind Mathis to install Xcode 27 and join the Apple Developer Program**, then start build plans.
+MVP-first order (decision 46): 04 → 03 → 28 → 05 → 06 → 07 → 08 → 12 → 23. *(Superseded by decision 88: Mathis joins the Apple Developer Program only when the app is basically done, at the start of P5. Remind him then. Until then, everything must work without it.)*
 
 
 We are writing the **master plan** before building anything. **Do not write product code, scaffold projects or install dependencies** until the master plan chapters an MVP feature depends on are approved by Mathis. See [docs/master-plan/00-index.md](docs/master-plan/00-index.md) for chapter status and working order.

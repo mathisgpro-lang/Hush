@@ -84,7 +84,7 @@ These are **typical freelance market ranges** as a planning aid, not quotes. Rea
 
 | Item | Cost | When |
 |---|---|---|
-| Apple Developer Program | $99/year | Before the vertical slice reaches your circle (TestFlight), iCloud sync, Private Cloud Compute |
+| Apple Developer Program | $99/year | **When the app is basically done (decision 88)**, at the start of P5: iCloud sync, cloud AI, TestFlight, App Store |
 | Cloudflare (the Relay for Gatherings) | free tier expected | MVP |
 | Codex / ChatGPT plan | your current plan (it hit its usage limit once on 2026-09-30) | ongoing; consider a higher plan during art-heavy phases |
 
