@@ -40,3 +40,21 @@ void breathe(realitykit::geometry_parameters params)
     float b = sin(t * 1.6 * c.x) * c.y;
     params.geometry().set_model_position_offset(float3(p.x * b * 0.6, p.y * b, 0));
 }
+
+// Codex's hero painting, alive as one layer: flame hair (top of the image) sways and licks upward, the body breathes.
+// custom: x = liveliness (mood), y = unused.
+[[visible]]
+void heroLive(realitykit::geometry_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float3 p = params.geometry().model_position();
+    float4 c = params.uniforms().custom_parameter();
+    float t = params.uniforms().time();
+    float hair = smoothstep(0.50, 1.0, uv.y);
+    float energy = 0.6 + 0.6 * c.x;
+    float sway = (sin(t * 2.4 + uv.y * 9.0 + uv.x * 5.0) * 0.008 + sin(t * 5.7 + uv.x * 13.0) * 0.003) * hair * hair * energy;
+    float lick = (sin(t * 3.3 + uv.x * 17.0) * 0.5 + 0.5) * 0.010 * hair * hair * hair * energy;
+    float breath = sin(t * 1.6) * 0.012;
+    float body = 1.0 - hair;
+    params.geometry().set_model_position_offset(float3(sway + p.x * breath * 0.6 * body, lick + p.y * breath * 0.5 * body, 0));
+}

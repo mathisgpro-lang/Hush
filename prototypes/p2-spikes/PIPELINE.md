@@ -60,3 +60,8 @@
 | Alive system on route C | ✅ same director as route A: blinks, idles, giggle, pillar reactions, parallax glance (face moves most, body least), mood tint, sleep at night |
 | Touch → response | simulator, code-triggered: p50 15 ms, p95 42 ms |
 | Next | swap in Codex's layers (`docs/design/rig/`, keyed with `tools/rig_assets.py keyout`); author `PaintedLayout` for them |
+
+## Route C preview: Codex's hero painting, alive (2026-10-01, simulator)
+- `hero-keyed.png`: `flame-hero.png` with the dark background keyed out by brightness, feathered edges, the floor reflection faded.
+- One subdivided plane with the `heroLive` geometry modifier: the top of the painting (flame hair) sways and licks upward, the body breathes; mood scales the motion; embers; the shared alive system (hops, tilts, lean, tap reactions).
+- 60 fps, about 55 MB in the simulator. No blinking or mouth yet (that needs the face parts from the design round). Demo: `docs/design/demos/2026-10-01-codex-hero-alive.mp4`.

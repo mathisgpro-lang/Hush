@@ -20,11 +20,12 @@ final class TiltSource {
     func stop() { motion.stopDeviceMotionUpdates() }
 }
 
-enum FlameRoute: String, CaseIterable { case blender = "A · Blender", painted = "C · Painted" }
+enum FlameRoute: String, CaseIterable { case blender = "A · Blender", painted = "C · Layers", hero = "C · Codex hero" }
 
 /// S1 with a route switcher: every route is judged by the same alive system and controls.
 struct S1Screen: View {
-    @State private var route: FlameRoute = CommandLine.arguments.contains("-painted") ? .painted : .blender
+    @State private var route: FlameRoute = CommandLine.arguments.contains("-hero") ? .hero
+        : CommandLine.arguments.contains("-painted") ? .painted : .blender
     var body: some View {
         S1View(route: route)
             .id(route)
@@ -45,7 +46,7 @@ struct S1View: View {
     @State private var rig: FlameRig?
     @State private var tilt = TiltSource()
     @State private var simTilt = SIMD2<Float>(0, 0)
-    @State private var showControls = true
+    @State private var showControls = !CommandLine.arguments.contains("-nocontrols")
     @State private var selfTest = ""
 
     var body: some View {
@@ -71,6 +72,11 @@ struct S1View: View {
                         do { try await painted.build() } catch { selfTest = "painted rig failed: \(error)"; return }
                         content.add(painted.leanPivot)
                         r = painted
+                    case .hero:
+                        let hero = HeroRig()
+                        do { try await hero.build() } catch { selfTest = "hero failed: \(error)"; return }
+                        content.add(hero.leanPivot)
+                        r = hero
                     }
 
                     let camera = PerspectiveCamera()
