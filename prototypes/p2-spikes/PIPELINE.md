@@ -65,3 +65,12 @@
 - `hero-keyed.png`: `flame-hero.png` with the dark background keyed out by brightness, feathered edges, the floor reflection faded.
 - One subdivided plane with the `heroLive` geometry modifier: the top of the painting (flame hair) sways and licks upward, the body breathes; mood scales the motion; embers; the shared alive system (hops, tilts, lean, tap reactions).
 - 60 fps, about 55 MB in the simulator. No blinking or mouth yet (that needs the face parts from the design round). Demo: `docs/design/demos/2026-10-01-codex-hero-alive.mp4`.
+
+### Preview v2: "it looks like a fixed image" (Mathis), and what changed
+- **Keying:** only darkness connected to the image border is background (`tools/hero_key.py`); dark details inside the Flame stay opaque (v1 made the irises semi-transparent).
+- **Blink and happy squint:** eyes found by color, refilled from the skin above and below, lash curves drawn; textures swapped live (`hero-blink.png`, `hero-happy.png`).
+- **Living fire:** `heroFireSurface` (upward-flowing waves through hair and fur, the face kept crisp, a heartbeat pulse in the core, soft flicker) + `heroLive` (sway, lick, breathing).
+- **Light in the world:** a ground pool and a halo (`glowPulse`) breathing with the core.
+- **No card-turning:** looking at the finger is now a small drift and lean, not a Y rotation (rotating a flat image reads as a card).
+- **Lesson:** a `CustomMaterial` converted from `UnlitMaterial` behaves as lit here, and its tint reads as 0. Output color via `set_emissive_color`, and pass brightness in `custom.y`.
+- Demo: `docs/design/demos/2026-10-01-codex-hero-alive-v2.mp4`. Still to come: separate parts (eyes that move, a mouth that talks, arms), a depth map (parallax), and route B (true 3D).
