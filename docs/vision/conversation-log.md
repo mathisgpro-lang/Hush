@@ -235,3 +235,5 @@ Phase B conversation complete. Next: draft chapters 16, 17, 20 and 22 (first pas
 - **Names (89):** Mathis kept all the proposed world names. The app's title will come later; his candidate is "Hush". Claude flagged the inversion (the Hush is the grey you fight) and that a short word is likely taken, to check before deciding.
 - **Language (90):** English, translation-ready.
 - **Health safety (91):** safe Paths and gentle Body habits first; training plans get a qualified review before launch. Mathis answered "yes", read as the recommended option A.
+- **User zero's goals (92):** Mathis: "that should be part of what the app should figure out, not something predetermined." Agreed: discovery is the product. Claude noted the limit: until launch there's no AI on his phone, so discovery relies on the first question, a curated library and learning from behavior.
+- **All seven Plan 2.0 questions are answered** (decisions 85–92). Next: the master-plan rewrites (Part 8), then P2.

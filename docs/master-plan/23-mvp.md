@@ -93,7 +93,7 @@ Each milestone ends with something **you try on your phone** (decision 39).
 | Private Cloud Compute access | Before M4's cloud tasks (on-device works first) | Free (Small Business Program) |
 | Cloudflare account for the Relay | M7 | Free tier expected |
 | Art | M2 onwards: Codex first; a human artist for the final Flame if needed | Budget to decide |
-| Your own goals (user zero) | Before M4 | 5 minutes of your time |
+| ~~Your own goals (user zero)~~ | Resolved by decision 92: the app discovers goals | — |
 
 ---
 

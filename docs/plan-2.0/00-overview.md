@@ -75,7 +75,7 @@ Over days, your Flame grows bolder. Over weeks, a realm comes back to life. Over
 | **4** ✅ | **Answered (decision 89): the world names are confirmed; the app's title is decided later (Mathis's candidate: "Hush").** Original question: **the app's name.** The world is the Emberlands; the app could carry its own name or the world's | Decide after the vertical slice, when the world has a face |
 | **5** ✅ | **Answered: English (decision 90).** Original question: **beta languages** (English only, or English + French)? | English first; the content catalog is translation-ready |
 | **6** ✅ | **Answered: safe Paths first, training plans reviewed before launch (decision 91).** Original question: **decision 70's open items:** (a) a qualified human health reviewer before any Body Journey; (b) narrow the 8-Path launch library to the safe ones first; (c) the $99 before any PCC work (now: at launch, decision 88); (d) the Era scope (now answered by the Ages) | (a) yes, in P4; (b) yes: Heart, Mind, Spirit, World first; (c) see #3; (d) resolved |
-| **7** | **Your own goals as user zero.** Which Journeys do you want to live first? | Tell me 2–3 real goals; they shape the first Journeys we write |
+| **7** ✅ | **Answered (decision 92): no predetermined goals. The app discovers each person's goals, Mathis's included.** Original question: **your own goals as user zero.** Which Journeys do you want to live first? | Tell me 2–3 real goals; they shape the first Journeys we write |
 
 ---
 

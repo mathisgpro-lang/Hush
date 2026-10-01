@@ -145,6 +145,6 @@ WHO Guidelines on physical activity and sedentary behaviour (2020) · NHS Couch 
 - The user can view and delete them; deletion = tombstone (chapter 17 §B.8).
 
 ## B.8 Open
-- Mathis's own goals (user zero): the first Paths to deepen and test.
+- ~~Mathis's own goals (user zero)~~: resolved by decision 92 (the app discovers goals; nothing is predetermined).
 - Localization (MVP: English first; Mathis's language to confirm).
 - The age policy for public release → chapter 15.
