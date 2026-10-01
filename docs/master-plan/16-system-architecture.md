@@ -9,6 +9,9 @@ This chapter has two layers:
 
 If the two layers ever disagree, Part A's intent wins and Part B gets corrected.
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** Adds a **Universe layer** (WorldRenderer in RealityKit, CharacterRig, SceneDirector, RestorationShading) between Features and Experience, pending spikes S1–S3 (Plan 2.0 Part 5); Unity embedded is the fallback. Domain decides what's true; the Universe layer only draws it. **Until launch (decision 88):** no CloudKit sync, no Private Cloud Compute, no On-Demand Resources (all realms ship in the app); the Relay isn't needed while Mathis is the only user.
+
 ---
 
 # Part A — For Mathis

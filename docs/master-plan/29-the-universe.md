@@ -4,6 +4,9 @@
 **Based on:** decisions 40, 64, 71, 76, 79–81 · **Supersedes where they conflict:** the vessel-centered Flame of chapter 03, and chapter 28's Sanctuary-only world
 **Importance:** this is **the heart of what the project is**, the creation of a universe (Mathis, 2026-10-01). Every other system (growth, the day, the Companion, rewards, community) feeds into it.
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** **Superseded by Plan 2.0** (`docs/plan-2.0/`), which develops this chapter into eight parts. Kept as history: Plan 2.0 wins wherever they differ.
+
 ---
 
 # Part A — For Mathis

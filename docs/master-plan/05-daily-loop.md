@@ -3,6 +3,9 @@
 **Status:** 📝 Drafted with default decisions (63), for Mathis's batch review · **Last updated:** 2026-09-30
 **Based on:** decisions 16–17, 52–54, 63, 65 and chapters 03, 04, 28
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** Same day structure, told in the world (Plan 2.0 Part 1 §3): your Flame wakes; today's steps appear as **calls** near the hearth; the tracking moment sends light to its realm; **Evening at the Hearth** is "Close the day"; time away is **the Hush**, and coming back is **the Return** (the comeback relight values from chapter 04 are unchanged). Sparks are **Encounters**; the Ritual is **the Gathering** (local only until launch, decision 88). The full rewrite happens in the P3 build plan.
+
 ---
 
 # Part A — For Mathis

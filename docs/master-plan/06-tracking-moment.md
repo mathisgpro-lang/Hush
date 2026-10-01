@@ -5,6 +5,9 @@
 
 > This chapter describes a *feeling*. Every number in it is a starting point, and the feel prototype exists to replace these numbers with ones that feel right in the hand.
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** Same hold-to-strike and haptic language. Added (Plan 2.0 Part 1 §6): your Flame **catches the light** and **carries it to the realm**, where it lands as restoration. The full rewrite happens in the P3 build plan.
+
 ---
 
 # Part A — For Mathis

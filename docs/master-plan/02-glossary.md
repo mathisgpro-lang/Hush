@@ -11,6 +11,9 @@ The official vocabulary of the project. Every document, every line of code and e
 
 > Names that users see in the app (like "the Spark") may still change during chapter 12 (visual and sound identity). The *concepts* here are what matter for planning.
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** New official terms (decision 89, confirmed names): **the Emberlands, the Hush, the Sanctuary** (with its Ages: Stone, Metal, Crystal, Light), **realms** (the Ascent Highlands/Body, the Library of Embers/Mind, the Whispering Grove/Heart, the Stillwater/Spirit, Forge Mountain/Craft, the Wilds/World), **restoration** (levels 0–5), **Keepers** (Brakka, Quill, Nim & Ro, Ilo, Orrin, Mossbeard), **the Lamplighter, Journeys** (Paths as quest lines), **Encounters** (Sparks), **the Gathering** (the Ritual), **Beacons, keepsakes, stages** (Spark, Flame, Blaze, Kindled, Beyond), **Acts** (I The Waking, II The Six Beacons, III The Grey Sea, IV Beyond the Veil), **the Book of Your Flame** (the Chronicle), **Emberspeak** (the Flame's language). Full definitions: Plan 2.0 Part 8 §3.
+
 ---
 
 ## Core

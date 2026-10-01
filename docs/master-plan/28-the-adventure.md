@@ -3,6 +3,9 @@
 **Status:** 📝 Drafted with default decisions (63), for Mathis's batch review · **Last updated:** 2026-09-30
 **Based on:** decisions 40, 47, 61, 64 and principles P15–P16 · **Scope:** the full vision in intent, the MVP slice in detail
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** **Merged into Plan 2.0:** the First Journey (steps I–VI) becomes **Act I: The Waking** (Part 2 §7). The unlock logic stays in Domain. The Sanctuary is no longer the only world: it's home in the Emberlands. The pixel-art notes below are superseded (decision 79).
+
 ---
 
 > **Revision note (2026-10-01):** the Sanctuary is **pixel art** (decision 77; style test A). The birth is animated live, with no still photos (decision 75). The future personified Flame (decision 76) becomes the adventure's main character.

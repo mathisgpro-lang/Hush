@@ -3,6 +3,9 @@
 **Status:** 📝 Drafted with default decisions (63), for Mathis's batch review · **Last updated:** 2026-10-01
 **Based on:** decisions 5, 33, 40, 54, 61, 64 and principles P15–P16 · **Research:** §A.1
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** **The First Words** (decision 86, Plan 2.0 Part 3 §11): right after the ember hold, the Spark hatches and speaks in **Emberspeak** (babble + a text box whose ember glyphs melt into English): who it is, growth through real effort, the loud world and **the Hush**, a glimpse of the roads and stages ahead, and "a tool, not a cage." Then **your Flame asks the first question itself**. The opening myth shrinks to two lines. The vessel carving becomes the Spark's hatching in the Sanctuary. The Lamplighter appears later, in Act I. The age/terms line and the HealthKit step stay. The full rewrite happens in the P3 build plan.
+
 ---
 
 # Part A — For Mathis

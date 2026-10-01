@@ -5,6 +5,9 @@
 
 > **Approval note:** Mathis approved all of Claude's proposals in this chapter on 2026-09-30. Tags show where each item came from: *[Settled, decision N]* for earlier decisions, *[Approved 2026-09-30]* for items approved with this chapter.
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** The vision now includes **the universe**: *a living world that your real life restores* (Plan 2.0 Part 1). New principle **P-World: the world only changes because of real life.** No in-app grinding, no paid progress, light only from real actions (Part 2 §9). Everything else in this chapter stands.
+
 ---
 
 ## 1. Why this chapter exists

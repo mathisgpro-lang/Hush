@@ -3,6 +3,9 @@
 **Status:** First pass (Phase B baseline): Part A ✅ approved 2026-09-30 (revised after Codex review, decisions 48–50) · Part B ✅ approved 2026-10-01 (decision 66, Codex round 6) · **Last updated:** 2026-09-30
 **Based on:** decisions 29, 30, 34, 37, 43, 48–50 · **Depends on:** chapters 16, 17
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** Adds: freelancer contracts never involve user data and must transfer full rights (Plan 2.0 Part 6 §4); realm assets download from Apple only (at launch). **Until launch:** the record is protected by iPhone iCloud Backup + the in-app export (decision 88).
+
 ---
 
 # Part A — For Mathis

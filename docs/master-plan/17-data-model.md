@@ -5,6 +5,9 @@
 
 The two layers work as in chapter 16: Part A is for Mathis, and Part B is for the builders.
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** **No new truth for the world.** Restoration, stages, Journey progress and story beats are derived from the existing record. Small additions: the Flame's name (an attachment), worn keepsakes and home placement (settings), story beats as `momentWitnessed` keys (Plan 2.0 Part 5 §B.2).
+
 ---
 
 # Part A — For Mathis

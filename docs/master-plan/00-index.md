@@ -66,6 +66,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 ### Part VI — The Universe (the heart of the project)
 | # | Chapter | Status | Notes |
 |---|---------|--------|-------|
+| P2.0 | [**Plan 2.0**](../plan-2.0/00-overview.md): the universe planned end to end (8 parts) | ✅ direction approved (85) | Decisions 84–92; Codex review running |
 | 29 | [**The Universe**](29-the-universe.md): your personified Flame, the world map, realms, lore | 📝 (defaults) | Decisions 79–81. U1 (character v1) is built. Next: U2 character bible, U3 world bible, U4 map v1 |
 
 ### Part V — Roadmap
@@ -82,10 +83,11 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 **Plan 2.0 is written:** `docs/plan-2.0/00-overview.md` (start there) plus Parts 1–8. **Building stays paused** until Mathis approves it (decision 83 rule).
 
 **Next steps, in order:**
-1. **All seven questions answered** (decisions 85–92). ~~Ask question 7~~ in `00-overview.md` §4, **one at a time**. Log each answer.
-2. Rewrite the master-plan chapters per Part 8 (01, 02, 03, 05, 06, 07, 08, 12, 16, 17, 22, 23, 28, 29).
-3. Then start **P2** (Part 7): spikes S1–S3 (RealityKit on the iPhone 15, throwaway, in `prototypes/`), plus Codex concept rounds for the final Flame, the Lamplighter, the Sanctuary and the Grove. **Each spike gets its own short plan first.**
-4. Codex review of Parts 1, 5 and 7 (`-s read-only`, report in `docs/reviews/`).
+1. ✅ All seven Plan 2.0 questions answered (decisions 85–92).
+2. ✅ Older chapters aligned: each affected chapter (01–08, 12, 16, 17, 20, 22, 23, 28, 29) now opens with a **"Plan 2.0 update" block** that overrides anything conflicting below it. The full prose rewrites of 03/05/06/07/08/23/28 happen inside the **P3 phase plan and its build plans** (that's when every detail gets pinned down for building).
+3. ⏳ **Codex review of Plan 2.0** running (brief `docs/reviews/briefs/plan-2-review.md` → `docs/reviews/2026-10-01-codex-plan-2.md`; relaunched by `scripts/resume-codex.sh`). When it lands: triage the findings, fix BLOCKING ones by default, show Mathis a summary.
+4. Then **P2 phase plan** (`docs/plan-2.0/p2-phase-plan.md`): spikes S1–S3 (RealityKit on the iPhone 15, throwaway, in `prototypes/`, placeholder 3D only) + the design round (Codex concepts: the Flame's stages with **distinct forms, not just size**, the Lamplighter, Nim & Ro, the Sanctuary with the hearth, the Grove, Emberspeak glyphs, the UI kit). Mathis approves the P2 plan before anything is built.
+5. Constraints until launch: no spend (87), no paid Apple program (88), English (90), safe Paths first (91), no predetermined goals (92).
 
 **Any new session: read this block first and continue exactly from it.** Standing rule (decision 63) applies, with its exceptions.
 

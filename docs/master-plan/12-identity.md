@@ -3,6 +3,9 @@
 **Status:** 📝 Drafted with default decisions (63), for Mathis's batch review · **Last updated:** 2026-10-01
 **Based on:** the original brief ("Overall style"), decisions 35, 40, 61, 62, 64 and chapters 03, 06, 28 · **Design production:** Codex (decision 62)
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** **Visual and sound direction are superseded by Plan 2.0 Part 4** (a warm, stylized 3D storybook; decision 79 replaced pixel art). **Still valid:** the voice rules (calm, warm, no exclamation marks, no guilt), New York + SF Pro typography, the haptic language. Language: English (decision 90). The app's title is decided later (decision 89; candidate: "Hush").
+
 ---
 
 > **Revision note (2026-10-01):** the visual identity is **pixel art** (decision 77): crisp pixels, a limited warm palette, 2D. Pillar colors and Era palettes below still apply, quantized to the pixel palette. Typography stays New York + SF Pro for readability over the pixel world, to be revisited with a pixel display font later.

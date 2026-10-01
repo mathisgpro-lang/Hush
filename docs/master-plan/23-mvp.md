@@ -3,6 +3,9 @@
 **Status:** 📝 Drafted with default decisions (63), for Mathis's batch review · **Last updated:** 2026-10-01
 **Based on:** every chapter on the MVP track (03, 04, 05, 06, 07, 08, 12, 28) and the approved foundation (16, 17, 20, 22; decision 66)
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** **This MVP is replaced by Plan 2.0's roadmap** (Part 7): **P3, the vertical slice "The Waking"** (the Sanctuary, your Flame Spark → Flame with the First Words, the Whispering Grove, the Heart Journey *Lanterns for the Ones You Love*, Act I), then **P4, "The First Beacons"** (+ the Highlands with gentle Body habits, the Stillwater; the Forge → the Age of Metal), **all on Mathis's phone, no paid program, no testers** (decision 88), AI-only art (decision 87), safe Paths first (decision 91), no predetermined goals (decision 92). The success criteria (§A.5) remain and add: *"it feels like a world I want to return to, not a tracker."* The P3 and P4 phase plans will rewrite this chapter in full.
+
 ---
 
 # Part A — For Mathis

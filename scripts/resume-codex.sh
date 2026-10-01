@@ -44,5 +44,8 @@ run_brief docs/design/briefs/sanctuary-empty-pedestal.md \
 run_brief docs/design/briefs/vessel-bodies.md \
   assets/flame/stone/vessel-body.png assets/flame/metal/vessel-body.png
 
+run_brief docs/reviews/briefs/plan-2-review.md \
+  docs/reviews/2026-10-01-codex-plan-2.md
+
 # style tests (decision 75)
 "$ROOT/scripts/style-tests.sh"

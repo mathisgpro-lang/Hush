@@ -3,6 +3,9 @@
 **Status:** First pass (Phase B): Part A ✅ approved 2026-09-30 · Part B ✅ approved 2026-10-01 (decision 66, Codex round 6) · **Last updated:** 2026-09-30
 **Based on:** decisions 20, 38, 39, 46
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** Adds the **asset pipeline** (Codex concept → Mathis picks → 3D artist, later → USDZ → app → Mathis's phone) and the **spike rule** (risky tech is proven by throwaway spikes on the iPhone 15 before any build plan depends on it). Art is AI-only for now (decision 87). TestFlight comes at launch (decision 88); until then Mathis installs from the Mac every 7 days.
+
 ---
 
 # Part A — For Mathis

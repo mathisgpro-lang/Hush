@@ -3,6 +3,9 @@
 **Status:** 📝 Drafted with default decisions (63), for Mathis's batch review · **Last updated:** 2026-10-01
 **Based on:** decisions 17–19, 34, 37, 41, 49, 54, 59 and principles P4, P8 · **Gates:** plan generation can't ship until this chapter is approved (chapter 16 §B.4)
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** **Who speaks changes; the knowledge, sources and safety stay.** Counsel comes from **the Keepers** (one per realm, each in its own voice, always with real citations shown as "from the Keeper's library"). **Your Flame never gives advice**: it feels, cheers, remembers and asks the first question at birth. **Until launch there's no AI** (decision 88: no paid program; the iPhone 15 has no on-device model), so the counsel is **curated content with sources**, and the AI layer is built behind a switch. **Safe Paths first** (decision 91): Heart, Mind, Spirit, World and gentle Body habits; training plans get a qualified review before launch. **No predetermined goals** (decision 92): the app discovers what each person wants; the "user zero goals" note below is withdrawn.
+
 ---
 
 # Part A — For Mathis

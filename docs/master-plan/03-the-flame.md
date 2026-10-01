@@ -5,6 +5,9 @@
 
 Items marked **[by default]** were decided under decision 63 and are listed for review in the index.
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** **The Flame is now a personified character** (Plan 2.0 Part 3). Depth, Vitality and the pillars stay exactly as defined here. What changes is how they're shown: Vitality → the character's mood and glow (joyful → sleepy ember, never sad); Depth + active days → **evolution stages** (Spark, Flame, Blaze, Kindled, Beyond; Domain `CharacterStage`); pillar Depth → **realm restoration** and, from Blaze, **pillar markings** on the character. The vessel becomes **the hearth** in the Sanctuary, whose material follows the **Ages** (Stone → Metal → Crystal → Light; these replace the Eras' visuals). "Depth, never size" (decision 4) means stages change form, posture and markings, not just scale. The pixel-art notes below are superseded (decision 79: cartoon / stylized 3D).
+
 ---
 
 > **Revision note (2026-10-01):** the look is now **pixel art** (decision 77); the realistic concept art is mood reference only. The Flame will later become a **personified companion** with eyes and a mouth that moves around (decision 76), likely merging with chapter 07. The live app renders the Flame in `PixelFlameView` (pixel-fire simulation plus a pixel vessel).

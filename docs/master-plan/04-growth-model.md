@@ -5,6 +5,9 @@
 
 Part A is for Mathis. Part B is for the builders (and goes to Codex review).
 
+
+> **Plan 2.0 update (2026-10-01, decisions 84–92). This block wins over anything below that conflicts with it.** **Unchanged:** this is the engine of everything. Plan 2.0 only adds two read-only views of Depth: restoration thresholds per realm (pillar Depth 3/15/50/150/400, Plan 2.0 Part 1 §8) and the stage thresholds (`CharacterStage`: Flame 7 active days; Blaze 60 days + Depth 120; Kindled 300 days + Depth 800).
+
 ---
 
 # Part A — For Mathis
