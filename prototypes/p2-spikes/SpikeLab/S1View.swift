@@ -91,7 +91,7 @@ struct S1View: View {
                     rig = r
                     let d = AliveDirector(seed: 42, meter: meter)
                     director = d
-                    d.attach(r)
+                    d.attach(r, tempo: route == .hero ? 0.55 : 1)   // the painted Flame is livelier
                     applyLaunchOptions(d)
                 }
                 .contentShape(Rectangle())

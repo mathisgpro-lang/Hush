@@ -3,7 +3,7 @@
 import Foundation
 
 enum IdleBehavior: String, CaseIterable, Sendable {
-    case glanceLeft, glanceRight, glanceUp, lookAtYou, stretch, hum, watchEmber, smallHop, sway, yawn, doze
+    case glanceLeft, glanceRight, glanceUp, lookAtYou, stretch, hum, watchEmber, smallHop, sway, yawn, doze, wander, dance
 }
 
 /// SplitMix64: small, fast, seedable.
@@ -49,6 +49,8 @@ struct IdlePicker {
         case .watchEmber: return 0.8
         case .smallHop: return energy * 1.0
         case .sway: return 0.7
+        case .wander: return inputs.timeOfDay == .night ? 0.2 : 0.6 + energy * 1.2
+        case .dance: return energy > 0.6 ? 0.5 : 0.0
         }
     }
 
@@ -56,16 +58,18 @@ struct IdlePicker {
     /// (that's what made A-B-A-B patterns possible).
     static func cooldown(_ b: IdleBehavior) -> Int {
         switch b {
-        case .stretch, .yawn, .smallHop: return 4
+        case .stretch, .yawn, .smallHop, .dance: return 4
         case .doze: return 3
         default: return 2
         }
     }
 
-    /// Seconds until the next idle behavior: 4–12 s, a little sooner when the Flame is lively.
+    /// Seconds until the next idle behavior: 4–12 s by default, a little sooner when the Flame is lively.
+    /// `tempo` < 1 makes a rig livelier (e.g. 0.55 → about 2.2–6.6 s).
+    var tempo: Double = 1
     mutating func nextDelay(_ inputs: AliveInputs) -> Double {
         let base = Double.random(in: 4...12, using: &rng)
-        return max(4, base * (1.15 - 0.3 * inputs.mood))
+        return max(4 * tempo, base * tempo * (1.15 - 0.3 * inputs.mood))
     }
 
     mutating func next(_ inputs: AliveInputs) -> IdleBehavior {

@@ -7,7 +7,11 @@ import Metal
 @MainActor
 final class HeroRig: FlameRig {
     let leanPivot = Entity()
-    let lookPivot = Entity()
+    let lookPivot = Entity()          // kept for FlameRig symmetry; the body moves through walkPivot and bodyPivot
+    private let walkPivot = Entity()  // where the Flame stands on the ground (it wanders)
+    private let bodyPivot = Entity()  // at the feet: hops, squash and stretch, and tilts happen around here
+    private var walkX: Float = 0
+    private var stepPhase = false
     private var hero: ModelEntity?
     private var faces: [String: TextureResource] = [:]
     private var eyesHeldClosed = false
@@ -15,7 +19,12 @@ final class HeroRig: FlameRig {
 
     private let sortGroup = ModelSortGroup(depthPass: nil)
 
-    init() { leanPivot.addChild(lookPivot) }
+    init() {
+        leanPivot.addChild(walkPivot)
+        walkPivot.addChild(bodyPivot)
+        bodyPivot.position = [0, -0.09, 0]
+        bodyPivot.addChild(lookPivot)
+    }
 
     private func setFace(_ key: String) {
         guard let hero, var comp = hero.model, var m = comp.materials.first as? CustomMaterial, let t = faces[key] else { return }
@@ -33,7 +42,7 @@ final class HeroRig: FlameRig {
                  "blink": try await TextureResource(named: "hero-blink.png"),
                  "happy": try await TextureResource(named: "hero-happy.png")]
         let aspect = Float(tex.width) / Float(tex.height)
-        let h: Float = 0.31, w = h * aspect
+        let h: Float = 0.27, w = h * aspect
         let (nx, ny) = (16, 32)
         var pos: [SIMD3<Float>] = [], uvs: [SIMD2<Float>] = [], idx: [UInt32] = []
         for j in 0...ny { for i in 0...nx {
@@ -61,7 +70,7 @@ final class HeroRig: FlameRig {
             material = m
         }
         let e = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
-        e.position = [0, -0.10, 0]
+        e.position = [0, -0.012, 0]      // the painted feet sit a little above the image bottom
         e.components.set(ModelSortGroupComponent(group: sortGroup, order: 2))
         lookPivot.addChild(e); hero = e
 
@@ -79,8 +88,8 @@ final class HeroRig: FlameRig {
                 g.components.set(ModelSortGroupComponent(group: sortGroup, order: order))
                 return g
             }
-            lookPivot.addChild(try glow([0.34, 0.07], at: [0, -0.095, -0.01], strength: 0.85, order: 0))   // ground pool
-            lookPivot.addChild(try glow([0.36, 0.36], at: [0, 0.02, -0.02], strength: 0.35, order: 1))    // halo
+            walkPivot.addChild(try glow([0.26, 0.055], at: [0, -0.088, -0.01], strength: 0.85, order: 0))  // ground pool (stays down)
+            lookPivot.addChild(try glow([0.32, 0.32], at: [0, 0.12, -0.02], strength: 0.35, order: 1))     // halo (moves with it)
         }
 
         let embers = Entity()
@@ -88,44 +97,62 @@ final class HeroRig: FlameRig {
         p.emitterShape = .sphere; p.emitterShapeSize = [0.1, 0.08, 0.02]; p.emissionDirection = [0, 1, 0]; p.speed = 0.035
         p.mainEmitter.birthRate = 10; p.mainEmitter.lifeSpan = 2.4; p.mainEmitter.size = 0.003
         p.mainEmitter.color = .constant(.single(UIColor(red: 1, green: 0.72, blue: 0.3, alpha: 1))); p.mainEmitter.blendMode = .additive
-        embers.components.set(p); embers.position = [0, 0.05, 0.01]
+        embers.components.set(p); embers.position = [0, 0.15, 0.01]
         lookPivot.addChild(embers)
     }
 
     func perform(_ idle: IdleBehavior) {
         switch idle {
-        case .glanceLeft: tilt(0.06, hold: 1.4)
-        case .glanceRight: tilt(-0.06, hold: 1.4)
-        case .smallHop, .stretch: hop(0.015)
-        case .sway, .hum: tilt(0.05, hold: 0.5); after(0.6) { self.tilt(-0.05, hold: 0.5) }
-        case .yawn: closeEyes(for: 1.2)
-        case .doze: closeEyes(for: 3.5)
-        case .lookAtYou: setFace("happy"); after(0.9) { if !self.eyesHeldClosed { self.setFace("open") } }
-        default: break
+        case .glanceLeft: lookAround(0.09, hold: 1.3)
+        case .glanceRight: lookAround(-0.09, hold: 1.3)
+        case .glanceUp, .watchEmber:
+            pose(y: 0.004, sx: 0.97, sy: 1.05, roll: 0.03, duration: 0.5)
+            after(1.2) { self.settle(0.5) }
+        case .lookAtYou: smile(0.9); hop(0.012)
+        case .smallHop: hop(0.02)
+        case .stretch:
+            setFaceTemporarily("blink", 1.0)
+            pose(y: 0, sx: 0.93, sy: 1.11, roll: 0, duration: 0.55, timing: .easeInOut)
+            after(0.95) { self.pose(y: 0, sx: 1.05, sy: 0.95, roll: 0, duration: 0.15); self.after(0.16) { self.settle(0.3) } }
+        case .sway, .hum: rock(times: 3, angle: 0.06)
+        case .dance:
+            smile(2.2)
+            for k in 0..<4 { after(Double(k) * 0.5) { self.hop(0.014, roll: k.isMultiple(of: 2) ? 0.09 : -0.09) } }
+        case .wander: wander()
+        case .yawn: closeEyes(for: 1.2); pose(y: 0, sx: 0.96, sy: 1.06, roll: 0, duration: 0.6); after(1.2) { self.settle(0.4) }
+        case .doze: closeEyes(for: 3.5); pose(y: -0.002, sx: 1.03, sy: 0.96, roll: 0.04, duration: 1.0); after(3.5) { self.settle(0.6) }
         }
     }
+
     func react(_ reaction: Reaction) {
         switch reaction {
-        case .giggle:
-            setFace("happy"); hop(0.012); squash()
-            after(0.55) { if !self.eyesHeldClosed { self.setFace("open") } }
-        case .leanIn: scale(1.06); after(0.7) { self.scale(1) }
-        case .cheer, .pillar:
-            setFace("happy"); hop(0.03)
-            after(0.7) { if !self.eyesHeldClosed { self.setFace("open") } }
+        case .giggle: smile(0.6); hop(0.014)
+        case .leanIn: pose(y: 0, sx: 1.06, sy: 1.06, roll: 0, duration: 0.25); after(0.7) { self.settle(0.35) }
+        case .cheer: smile(0.9); hop(0.04)
+        case .pillar(let p):
+            smile(0.8)
+            switch p {
+            case .body: hop(0.03)
+            case .mind: lookAround(0.1, hold: 0.8)
+            case .heart: pose(y: 0, sx: 1.05, sy: 0.97, roll: 0, duration: 0.3); after(0.5) { self.settle(0.4) }
+            case .spirit: pose(y: 0.02, sx: 0.98, sy: 1.03, roll: 0, duration: 0.8, timing: .easeInOut); after(1.4) { self.settle(0.8) }
+            case .craft: pose(y: -0.003, sx: 1.04, sy: 0.95, roll: 0, duration: 0.12); after(0.15) { self.settle(0.2) }
+            case .world: rock(times: 2, angle: 0.08)
+            }
         }
     }
+
     func blink() {
         guard !eyesHeldClosed else { return }
         setFace("blink")
         after(0.12) { if !self.eyesHeldClosed { self.setFace("open") } }
     }
     func look(at point: SIMD2<Float>?) {
-        var t = lookPivot.transform
         let x = point?.x ?? 0
-        t.translation.x = x * 0.006
-        t.rotation = simd_quatf(angle: -x * 0.05, axis: [0, 0, 1])
-        lookPivot.move(to: t, relativeTo: leanPivot, duration: 0.2, timingFunction: .easeOut)
+        var t = lookPivot.transform
+        t.translation.x = x * 0.008
+        t.rotation = simd_quatf(angle: -x * 0.07, axis: [0, 0, 1])
+        lookPivot.move(to: t, relativeTo: bodyPivot, duration: 0.2, timingFunction: .easeOut)
     }
     func lean(_ tilt: SIMD2<Float>) { leanPivot.orientation = simd_quatf(angle: -max(-0.35, min(0.35, tilt.x * 0.5)), axis: [0, 0, 1]) }
     func setMood(_ mood: Float, season: AliveInputs.Season, timeOfDay: AliveInputs.TimeOfDay) {
@@ -138,27 +165,76 @@ final class HeroRig: FlameRig {
     }
     func mouth(_ open: Float) {}
 
-    private func tilt(_ a: Float, hold: Double) {
-        var t = lookPivot.transform; t.rotation = simd_quatf(angle: a, axis: [0, 0, 1])
-        lookPivot.move(to: t, relativeTo: leanPivot, duration: 0.35, timingFunction: .easeInOut)
-        after(hold) { var t2 = self.lookPivot.transform; t2.rotation = simd_quatf(angle: 0, axis: [0, 0, 1])
-            self.lookPivot.move(to: t2, relativeTo: self.leanPivot, duration: 0.5, timingFunction: .easeInOut) }
+    // MARK: Motion toolkit (squash and stretch around the feet)
+
+    private static let neutral = (y: Float(-0.09), sx: Float(1), sy: Float(1))
+
+    private func pose(y: Float, sx: Float, sy: Float, roll: Float, duration: Double, timing: AnimationTimingFunction = .easeOut) {
+        var t = bodyPivot.transform
+        t.translation = [0, Self.neutral.y + y, 0]
+        t.scale = [sx, sy, 1]
+        t.rotation = simd_quatf(angle: roll, axis: [0, 0, 1])
+        bodyPivot.move(to: t, relativeTo: walkPivot, duration: duration, timingFunction: timing)
     }
-    private func hop(_ h: Float) {
-        var t = lookPivot.transform; t.translation.y = h
-        lookPivot.move(to: t, relativeTo: leanPivot, duration: 0.18, timingFunction: .easeOut)
-        after(0.18) { var t2 = self.lookPivot.transform; t2.translation.y = 0
-            self.lookPivot.move(to: t2, relativeTo: self.leanPivot, duration: 0.25, timingFunction: .easeIn) }
+
+    private func settle(_ d: Double) { pose(y: 0, sx: 1, sy: 1, roll: 0, duration: d, timing: .easeOut) }
+
+    /// A hop with anticipation, stretch, squash on landing and a settle: the classic bounce that reads as alive.
+    private func hop(_ height: Float, roll: Float = 0) {
+        pose(y: 0, sx: 1.07, sy: 0.92, roll: roll * 0.5, duration: 0.08)                       // crouch
+        after(0.08) { self.pose(y: height, sx: 0.95, sy: 1.08, roll: roll, duration: 0.16) }      // launch, stretched
+        after(0.24) { self.pose(y: 0, sx: 0.97, sy: 1.04, roll: roll * 0.5, duration: 0.16, timing: .easeIn) } // fall
+        after(0.40) { self.pose(y: 0, sx: 1.09, sy: 0.90, roll: 0, duration: 0.06) }              // land, squashed
+        after(0.46) { self.settle(0.2) }
     }
-    private func squash() {
-        var t = lookPivot.transform; t.scale = [1.05, 0.95, 1]
-        lookPivot.move(to: t, relativeTo: leanPivot, duration: 0.1)
-        after(0.12) { self.scale(1) }
+
+    private func lookAround(_ roll: Float, hold: Double) {
+        pose(y: 0.002, sx: 1, sy: 1.02, roll: roll, duration: 0.35, timing: .easeInOut)
+        var t = lookPivot.transform; t.translation.x = -roll * 0.08
+        lookPivot.move(to: t, relativeTo: bodyPivot, duration: 0.35, timingFunction: .easeInOut)
+        after(hold) {
+            self.settle(0.45)
+            var t2 = self.lookPivot.transform; t2.translation.x = 0
+            self.lookPivot.move(to: t2, relativeTo: self.bodyPivot, duration: 0.45, timingFunction: .easeInOut)
+        }
     }
-    private func scale(_ s: Float) {
-        var t = lookPivot.transform; t.scale = .init(repeating: s)
-        lookPivot.move(to: t, relativeTo: leanPivot, duration: 0.25, timingFunction: .easeInOut)
+
+    private func rock(times: Int, angle: Float) {
+        for k in 0..<(times * 2) {
+            after(Double(k) * 0.4) { self.pose(y: 0.002, sx: 1, sy: 1, roll: k.isMultiple(of: 2) ? angle : -angle, duration: 0.38, timing: .easeInOut) }
+        }
+        after(Double(times * 2) * 0.4) { self.settle(0.3) }
     }
+
+    /// Walk to a new spot with a waddle: each step tilts side to side and bounces a little; the light pool follows.
+    private func wander() {
+        var target = Float.random(in: -0.06...0.06)
+        if abs(target - walkX) < 0.03 { target = walkX > 0 ? walkX - 0.05 : walkX + 0.05 }
+        let distance = target - walkX
+        let steps = max(3, Int(abs(distance) / 0.012))
+        let stepTime = 0.2
+        let lean: Float = distance > 0 ? -0.04 : 0.04
+        for k in 0..<steps {
+            after(Double(k) * stepTime) {
+                self.walkX += distance / Float(steps)
+                var t = self.walkPivot.transform; t.translation.x = self.walkX
+                self.walkPivot.move(to: t, relativeTo: self.leanPivot, duration: stepTime, timingFunction: .linear)
+                self.stepPhase.toggle()
+                self.pose(y: 0.006, sx: 0.98, sy: 1.03, roll: lean + (self.stepPhase ? 0.07 : -0.07), duration: stepTime * 0.5)
+                self.after(stepTime * 0.5) { self.pose(y: 0, sx: 1.03, sy: 0.97, roll: lean, duration: stepTime * 0.5, timing: .easeIn) }
+            }
+        }
+        after(Double(steps) * stepTime) { self.settle(0.25); self.smile(0.6) }
+    }
+
+    private func smile(_ seconds: Double) { setFaceTemporarily("happy", seconds) }
+
+    private func setFaceTemporarily(_ key: String, _ seconds: Double) {
+        guard !eyesHeldClosed else { return }
+        setFace(key)
+        after(seconds) { if !self.eyesHeldClosed { self.setFace("open") } }
+    }
+
     private func after(_ s: Double, _ work: @escaping @MainActor () -> Void) {
         Task { @MainActor in try? await Task.sleep(for: .seconds(s)); work() }
     }

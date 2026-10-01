@@ -46,8 +46,9 @@ final class AliveDirector {
         self.meter = meter
     }
 
-    func attach(_ rig: FlameRig) {
+    func attach(_ rig: FlameRig, tempo: Double = 1) {
         self.rig = rig
+        picker.tempo = tempo
         applyInputs()
         start()
     }

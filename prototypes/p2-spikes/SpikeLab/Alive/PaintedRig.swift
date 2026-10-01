@@ -164,7 +164,8 @@ final class PaintedRig: FlameRig {
         case .doze: closeEyes(for: 3.5); setMouth("flat"); after(3.5) { self.setMouth("smile") }
         case .hum:
             for k in 0..<6 { after(Double(k) * 0.18) { self.setMouth(k.isMultiple(of: 2) ? "o" : "smile") } }
-        case .sway: rock(angle: 0.07)
+        case .sway, .dance: rock(angle: 0.07)
+        case .wander: hop(height: 0.012, up: 0.2, down: 0.25)
         }
     }
 

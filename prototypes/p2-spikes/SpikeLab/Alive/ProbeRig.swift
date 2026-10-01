@@ -37,7 +37,8 @@ final class ProbeRig: FlameRig {
         case .smallHop: probe.playCheer()
         case .yawn: closeEyes(for: 1.2)
         case .doze: closeEyes(for: 3.5)
-        case .hum, .sway: rock(times: 2, angle: 0.08)
+        case .hum, .sway, .dance: rock(times: 2, angle: 0.08)
+        case .wander: glance(SIMD2(0.3, 0), hold: 1.0)
         }
     }
 

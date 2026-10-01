@@ -74,3 +74,10 @@
 - **No card-turning:** looking at the finger is now a small drift and lean, not a Y rotation (rotating a flat image reads as a card).
 - **Lesson:** a `CustomMaterial` converted from `UnlitMaterial` behaves as lit here, and its tint reads as 0. Output color via `set_emissive_color`, and pass brightness in `custom.y`.
 - Demo: `docs/design/demos/2026-10-01-codex-hero-alive-v2.mp4`. Still to come: separate parts (eyes that move, a mouth that talks, arms), a depth map (parallax), and route B (true 3D).
+
+### Preview v3: "it needs to move around a bit more" (Mathis)
+- New idles: `wander` (walks to a new spot with a waddle and per-step bounce; the ground glow follows, the halo moves with the body) and `dance`.
+- Squash and stretch around the feet (`bodyPivot`): every hop has a crouch, a stretched launch, a squashed landing and a settle. Stretch, yawn, doze and pillar reactions use the same poses.
+- A constant gentle float in `heroLive`, so it's never perfectly still.
+- Livelier pacing for the painted Flame: idle tempo 0.55 (about 2.2–6.6 s between behaviors).
+- Demo: `docs/design/demos/2026-10-01-codex-hero-alive-v3.mp4`.
