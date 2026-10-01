@@ -1,0 +1,8 @@
+HushUnity/Library/
+HushUnity/Temp/
+HushUnity/Logs/
+HushUnity/Obj/
+HushUnity/Builds/
+HushUnity/UserSettings/
+HushUnity/*.csproj
+HushUnity/*.sln
