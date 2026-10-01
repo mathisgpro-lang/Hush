@@ -53,7 +53,7 @@ Over days, your Flame grows bolder. Over weeks, a realm comes back to life. Over
 
 | # | Choice | Where |
 |---|---|---|
-| a | **Names:** the Emberlands, the Hush, the Sanctuary, the Lamplighter, the six realms and Keepers (Brakka, Quill, Nim & Ro, Ilo, Orrin, Mossbeard), the Grey Sea, the Veil. All provisional | Part 2 |
+| a | **Names:** the Emberlands, the Hush, the Sanctuary, the Lamplighter, the six realms and Keepers (Brakka, Quill, Nim & Ro, Ilo, Orrin, Mossbeard), the Grey Sea, the Veil. **Confirmed by Mathis (decision 89)** | Part 2 |
 | b | **The story in four Acts:** I The Waking (≈ first 6 weeks, replaces the First Journey), II The Six Beacons (months), III The Grey Sea (year 1–2, community), IV Beyond the Veil (years) | Part 2 §7 |
 | c | **Restoration levels** per realm at Depth ≥ 3 / 15 / 50 / 150 / 400 in that pillar | Part 1 §8 |
 | d | **Evolution stages:** Flame at 7 active days; Blaze at 60 days + Depth 120; Kindled at 300 days + Depth 800; Beyond after years | Part 3 §3 |
@@ -72,7 +72,7 @@ Over days, your Flame grows bolder. Over weeks, a realm comes back to life. Over
 | **1** ✅ | **Answered: approved (decision 85),** plus the First Words (86). Original question: **approve Plan 2.0** as the direction (with any changes)? | Approve, then fix details as we live the slice |
 | **2** ✅ | **Answered: AI-only for now (decision 87).** Revisit after the spikes. Original question: **art budget approach:** full 3D everywhere, **3D characters + 2.5D painted realms**, or AI-only for now? | 3D characters + 2.5D realms; V1 with 3–4 realms (Part 6 §3). Vertical slice ≈ $12k–40k with humans; or start with AI-only and decide after the spikes |
 | **3** ✅ | **Answered: only when the app is basically done (decision 88).** Mathis is the only user until then. Original question: **when to join Apple's Developer Program ($99/yr)?** It unlocks TestFlight, iCloud sync and Private Cloud Compute | At the start of P4 (the MVP for your circle). Not needed for spikes or the vertical slice |
-| **4** | **The app's name.** The world is the Emberlands; the app could carry its own name or the world's | Decide after the vertical slice, when the world has a face |
+| **4** ✅ | **Answered (decision 89): the world names are confirmed; the app's title is decided later (Mathis's candidate: "Hush").** Original question: **the app's name.** The world is the Emberlands; the app could carry its own name or the world's | Decide after the vertical slice, when the world has a face |
 | **5** | **Beta languages** (English only, or English + French)? | English first; the content catalog is translation-ready |
 | **6** | **Decision 70's open items:** (a) a qualified human health reviewer before any Body Journey; (b) narrow the 8-Path launch library to the safe ones first; (c) the $99 before any PCC work (now: at launch, decision 88); (d) the Era scope (now answered by the Ages) | (a) yes, in P4; (b) yes: Heart, Mind, Spirit, World first; (c) see #3; (d) resolved |
 | **7** | **Your own goals as user zero.** Which Journeys do you want to live first? | Tell me 2–3 real goals; they shape the first Journeys we write |
