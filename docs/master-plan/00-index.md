@@ -82,6 +82,11 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 
 **Plan 2.0 is written:** `docs/plan-2.0/00-overview.md` (start there) plus Parts 1–8. **Building stays paused** until Mathis approves it (decision 83 rule).
 
+**▶ CURRENT: P2.5 · Design & Feel** (decisions 105–107). Plan: `docs/plan-2.0/10-cohesion-plan.md` (pending Mathis's approval).
+- In flight: the cohesion frames (`scripts/cohesion-frames.sh`, auto at 17:04 → `docs/design/cohesion/`), then the Codex review of the P3 plan.
+- Next: ask Mathis (1) approve Part 10, (2) the cohesion direction from the 4 frames, (3) Rive, (4) the Gemini key. Then D1 style bible v2 → D2 storyboards → D3 interaction/motion/sound language → D4 the feel slice → D5 on his phone.
+- The app shell v1 (SpikeLab; it opens on the shell, add `-lab` for the old tests) is the starting point to rebuild.
+
 **Next steps, in order:**
 1. ✅ All seven Plan 2.0 questions answered (decisions 85–92).
 2. ✅ Older chapters aligned: each affected chapter (01–08, 12, 16, 17, 20, 22, 23, 28, 29) now opens with a **"Plan 2.0 update" block** that overrides anything conflicting below it. The full prose rewrites of 03/05/06/07/08/23/28 happen inside the **P3 phase plan and its build plans** (that's when every detail gets pinned down for building).
