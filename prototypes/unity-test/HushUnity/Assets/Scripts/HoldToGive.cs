@@ -8,7 +8,7 @@ public class HoldToGive : MonoBehaviour
 {
     public SpriteRenderer art, glow;
     public FlameRig flame;
-    public FlameLight flameLight;
+    public MonoBehaviour flameLight;    // FlameLight (2D) or FlameLight3D: anything with a Flare() method
     public Transform flameChest;
     public Transform orb;               // the flying light
     public ParticleSystem burst;
@@ -40,6 +40,8 @@ public class HoldToGive : MonoBehaviour
 
     bool HitMe()
     {
+        var col = GetComponent<Collider>();
+        if (col != null) return col.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out _, 200f);
         var w = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, Mathf.Abs(Camera.main.transform.position.z - transform.position.z)));
         return Vector2.Distance(w, transform.position) < 0.55f * transform.lossyScale.x * 2.2f;
     }
@@ -78,7 +80,7 @@ public class HoldToGive : MonoBehaviour
         }
         orb.gameObject.SetActive(false);
         Haptics.Catch(); SoundSynth.I?.Catch();
-        flameLight.Flare(); flame.Cheer();
+        flameLight.SendMessage("Flare", SendMessageOptions.DontRequireReceiver); flame.Cheer();
         onCompleted?.Invoke();
         // Leave a small glowing rune.
         for (float t = 0; t < 1; t += Time.deltaTime / 0.6f) { transform.localScale = Vector3.Lerp(baseScale, baseScale * 0.35f, t); yield return null; }

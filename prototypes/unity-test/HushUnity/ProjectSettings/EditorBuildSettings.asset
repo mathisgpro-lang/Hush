@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Sanctuary.unity
-    guid: 95e5402e0927e4aec908ea24d7347e02
+    path: Assets/Scenes/Island3D.unity
+    guid: ba0b02f543cfe48599fc9f8586da61d5
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0
