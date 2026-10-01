@@ -5,6 +5,7 @@ import SwiftUI
 struct SpikeLabApp: App {
     var body: some Scene {
         WindowGroup {
+            if !CommandLine.arguments.contains("-lab") { AppShellView() } else {
             NavigationStack {
                 if CommandLine.arguments.contains("-probe") { ProbeView() }
                 else if CommandLine.arguments.contains("-s1") { S1Screen() }
@@ -13,6 +14,7 @@ struct SpikeLabApp: App {
                 else { menu }
             }
             .preferredColorScheme(.dark)
+            }
         }
     }
 

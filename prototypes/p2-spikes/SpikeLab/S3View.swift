@@ -32,7 +32,7 @@ enum Restoration {
 final class GroveScene {
     @ObservationIgnored let root = Entity()
     @ObservationIgnored let camera = PerspectiveCamera()
-    @ObservationIgnored let hero = HeroRig()
+    @ObservationIgnored let hero = LayeredFlame()
     @ObservationIgnored let life = SanctuaryLife()
     @ObservationIgnored private var painting: ModelEntity?
     @ObservationIgnored private var flies: Entity?
@@ -47,6 +47,11 @@ final class GroveScene {
     @ObservationIgnored private var flareAge: Float = 10
     @ObservationIgnored private var flight: (from: SIMD3<Float>, to: SIMD3<Float>, t: Float, lightTo: Float, flare: Float)?
     @ObservationIgnored var updates: EventSubscription?
+    @ObservationIgnored var focus: SIMD3<Float>?
+    @ObservationIgnored private var camPos = SIMD3<Float>(0, 0, 0)
+    @ObservationIgnored private var camLook = SIMD3<Float>(0, 0, -1.2)
+    @ObservationIgnored private var pw: Float = 1
+    @ObservationIgnored private var ph: Float = 1
 
     var heartDepth: Float = 0
     var vitality: Float = 1
@@ -81,6 +86,7 @@ final class GroveScene {
         let visibleH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180)
         let aspect = Float(tex.width) / Float(tex.height)
         let (w, h) = (visibleH * aspect * 1.08, visibleH * 1.08)
+        pw = w; ph = h
         func point(_ u: Float, _ v: Float, nearer extra: Float = 0) -> SIMD3<Float> {
             let rest = SIMD3<Float>((u - 0.5) * w, (v - 0.5) * h, -Self.distance)
             let d = Self.distance - relief(depthAt(u, v)) - extra
@@ -153,10 +159,9 @@ final class GroveScene {
         let circle = point(0.5, 0.335, nearer: 0.012)
         try await hero.build()
         let k = -circle.z / Self.distance
-        heroScale = 0.42 * k
+        heroScale = 0.55 * k
         hero.leanPivot.scale = .init(repeating: heroScale)
         hero.leanPivot.position = circle + SIMD3(0, 0.09 * heroScale, 0)
-        hero.inScene = true
         root.addChild(hero.leanPivot)
         heroFeet = circle
 
@@ -164,6 +169,12 @@ final class GroveScene {
         root.addChild(life.root)
         camera.camera.fieldOfViewInDegrees = Self.fov
         root.addChild(camera)
+    }
+
+    func spot(_ u: Float, _ v: Float) -> SIMD3<Float> {
+        let rest = SIMD3<Float>((u - 0.5) * pw, (v - 0.5) * ph, -Self.distance)
+        let d = Self.distance - relief(depthAt(u, v))
+        return rest * (d / Self.distance)
     }
 
     /// A real Heart action: the Flame cheers and sends a strand of light to the next unlit lanterns.
@@ -214,7 +225,14 @@ final class GroveScene {
         }
         let drift = SIMD2(noise.sample(time * 0.09), noise.sample(time * 0.07 + 30)) * 0.05
         let offset = SIMD3<Float>(drift.x, drift.y * 0.6, 0)
-        camera.look(at: [offset.x * 0.3, offset.y * 0.3, -Self.distance], from: offset, relativeTo: nil)
+        let (wantPos, wantLook): (SIMD3<Float>, SIMD3<Float>) = focus.map { f0 in
+            // Glide toward the spot but keep the view inside the painting (side spots would show its edge).
+            let f = SIMD3<Float>(max(-0.09, min(0.09, f0.x)), f0.y, f0.z)
+            return (f * 0.42 + offset * 0.3, f) }
+            ?? (offset, [offset.x * 0.3, offset.y * 0.3, -Self.distance])
+        let k = 1 - exp(-dt * 3.2)
+        camPos += (wantPos - camPos) * k; camLook += (wantLook - camLook) * k
+        camera.look(at: camLook, from: camPos, relativeTo: nil)
     }
 
     private func setStrand(opacity: Float, emitting: Bool) {

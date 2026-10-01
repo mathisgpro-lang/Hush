@@ -130,3 +130,14 @@
 - Layout measured on the body painting (px → m: body 0.17 m tall): eyes (228/502, 352) at 165 px wide, brows (222/508, 255), mouth (365, 432), head circle center (365, 290) r 300 for the hair bases.
 - Bug fixed: the body used `breathe` while its custom values meant mood/brightness, which stretched it about 2× (the face landed on the chest). Breathing now comes from FluidBody only.
 - 60 fps, about 59 MB in the simulator. Demo: `docs/design/demos/2026-10-01-living-flame-layers.mp4`.
+
+## The app shell v1 (decision 105) — SpikeLab now opens on it (add `-lab` for the old test menu)
+- `Shell/`:
+  - `IntroView`: ember → hold with a rising haptic → flash → the Spark springs onto the circle → the 10 First Words lines in a glowing plate, an Emberspeak glyph→English melt, the Hush greying on lines 5–6 and warming on 7 → the first question with 6 interests + "I'm not sure".
+  - `HomeView`: the cockpit. The Stone Age Sanctuary, calls as glowing scroll tags around the circle, a card ("I did it") → the light flies to the Flame → a reaction; a hint to where something new waits; a bar with World (badge), Book, Your Flame.
+  - `RoadMapView`: Codex's map scrolled from the sea up; a road along the painted paths (waypoints), gold up to the last open realm and dotted beyond; nodes open/NEW/locked in the Hush with "Opens with…"; the Flame token travels the road; zoom into the world.
+  - `RealmView`: the Grove (S3) with the LayeredFlame, glowing spots; tap → the camera glides there, clamped inside the painting; a card with the action ("Send a lantern" → the strand → lanterns relight); Map → back.
+  - `ShellModel`: prototype state only.
+- Scenes gained: Flame hatch (spring), camera focus, `spot(u,v)`.
+- Verified in the simulator: the full loop works, lanterns 118 → 125 after an action, the NEW badge clears after visiting, and the token stays at the Grove. Known: the first tap on the map right after it appears can be swallowed by the scroll settling.
+- Demo: `docs/design/demos/2026-10-01-app-shell-v1.mp4`.

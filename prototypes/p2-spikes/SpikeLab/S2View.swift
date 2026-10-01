@@ -28,6 +28,12 @@ final class SanctuaryScene {
     var autoDrift = true
     var updates: EventSubscription?
     var fingerDown = false
+    /// The intro hatches the Flame: 0 = not there yet, 1 = present (springs in with an overshoot).
+    var flameTarget: Float = 1
+    private var appear = Spring(1, stiffness: 90, damping: 9)
+    /// Camera focus for exploring spots: nil = the home view.
+    var focus: SIMD3<Float>?
+    private var camPos = SIMD3<Float>(0, 0, 0), camLook = SIMD3<Float>(0, 0, -1.2)
     private var watching = false
 
     static let distance: Float = 1.2
@@ -149,6 +155,13 @@ final class SanctuaryScene {
         return -0.15 - (v - 0.62) * 0.8                              // sky
     }
 
+    /// A point on the painting's relief, from its uv (v up): used to focus the camera on a spot.
+    func spot(_ u: Float, _ v: Float) -> SIMD3<Float> {
+        let rest = SIMD3<Float>((u - 0.5) * paintingW, (v - 0.5) * paintingH, -Self.distance)
+        let d = Self.distance - relief(depthAt(u, v))
+        return rest * (d / Self.distance)
+    }
+
     func setVitality(_ v: Float) {
         vitality = v
         for (k, e) in mists.enumerated() {
@@ -178,14 +191,21 @@ final class SanctuaryScene {
         if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
             let u = circle.x + hero.standingX * heroScale / paintingW
             let flicker = 0.85 + 0.15 * noise.sample(time * 7) + 0.05 * sin(time * 23)
-            m.custom.value = [vitality, u, circle.y, 0.9 * flicker * (0.5 + 0.5 * vitality)]
+            m.custom.value = [vitality, u, circle.y, 0.9 * flicker * (0.5 + 0.5 * vitality) * max(0, min(1, appear.value))]
             m.roughness = .init(floatLiteral: abs(life.wind))       // the shader reads wind from roughness_scale
             comp.materials = [m]; painting.model = comp
         }
         // The camera breathes very slowly (an alive world), and follows the phone's tilt for parallax.
         let drift = autoDrift ? SIMD2(noise.sample(time * 0.09), noise.sample(time * 0.07 + 30)) * 0.06 : .zero
         let offset = SIMD3<Float>(tilt.x * 0.06 + drift.x, -tilt.y * 0.04 + drift.y * 0.6, 0)
-        camera.look(at: [offset.x * 0.3, offset.y * 0.3, -Self.distance], from: offset, relativeTo: nil)
+        let (wantPos, wantLook): (SIMD3<Float>, SIMD3<Float>) = focus.map { f0 in
+            // Glide toward the spot but keep the view inside the painting (side spots would show its edge).
+            let f = SIMD3<Float>(max(-0.09, min(0.09, f0.x)), f0.y, f0.z)
+            return (f * 0.42 + offset * 0.3, f) }
+            ?? (offset, [offset.x * 0.3, offset.y * 0.3, -Self.distance])
+        let k = 1 - exp(-dt * 3.2)
+        camPos += (wantPos - camPos) * k; camLook += (wantLook - camLook) * k
+        camera.look(at: camLook, from: camPos, relativeTo: nil)
     }
 }
 

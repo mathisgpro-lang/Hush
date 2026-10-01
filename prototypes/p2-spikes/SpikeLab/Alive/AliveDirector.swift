@@ -85,6 +85,9 @@ final class AliveDirector {
 
     func stop() { idleTask?.cancel(); blinkTask?.cancel() }
 
+    /// Emberspeak: the Flame babbles a short phrase (its mouth moves, it sways a little).
+    func mutter() { rig?.perform(.hum) }
+
     // MARK: Touch, with input-to-visible-response latency measured on the next presented frame.
 
     func tapped() { respond(.giggle) }
