@@ -6,7 +6,9 @@ struct SpikeLabApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                if CommandLine.arguments.contains("-probe") { ProbeView() } else { menu }
+                if CommandLine.arguments.contains("-probe") { ProbeView() }
+                else if CommandLine.arguments.contains("-s1") { S1View() }
+                else { menu }
             }
             .preferredColorScheme(.dark)
         }
@@ -17,8 +19,8 @@ struct SpikeLabApp: App {
                     Section("Step 0") {
                         NavigationLink("Pipeline probe") { ProbeView() }
                     }
-                    Section("Spikes (coming)") {
-                        Text("S1 · The living Flame").foregroundStyle(.secondary)
+                    Section("Spikes") {
+                        NavigationLink("S1 · The living Flame") { S1View() }
                         Text("S2 · The Sanctuary").foregroundStyle(.secondary)
                         Text("S3 · Restoration").foregroundStyle(.secondary)
                     }

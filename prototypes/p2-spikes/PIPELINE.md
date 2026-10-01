@@ -39,3 +39,13 @@
 | Materials applied after import | ✅ body kept, face → `UnlitMaterial` with an alpha texture |
 | Hair geometry modifier (`CustomMaterial`) | ✅ after the Metal Toolchain download (839 MB, 2026-10-01): compiles and runs on the skinned mesh at 60 fps in the simulator |
 | Lessons | Bone-local Y runs along the bone (rotating on it twists); sway uses local Z. Crude position-based weights stretch the arms, so real characters need smooth weights. Blender emission strength > 0.6 washes colors out in RealityKit |
+
+## S1 alive system: first results (2026-10-01, simulator, probe Flame as a placeholder for all three routes)
+| Check | Result |
+|---|---|
+| Idle variety (`IdlePicker`, seeded) | ✅ 2,000 picks: 10 of 11 behaviors used (doze only at night or low mood), 0 immediate repeats, 0 patterns repeated 3× (after raising the minimum cooldown to 2; the first run had 1) |
+| Touch → visible response | ✅ simulator, code-triggered taps: p50 12 ms, p95 29 ms. **Real touch on the iPhone still owed** (decision 100) |
+| Awareness inputs | ✅ time of day, season tint, mood → glow and animation speed; night + low mood → asleep (eyes closed, no blinks) |
+| Pillar reactions | ✅ six distinct reactions after an action (hop, head tilt, warm squint + pulse, float, nod, rock) |
+| Tilt | ✅ wired to CoreMotion (device) with a slider fallback in the simulator |
+| Eye-follow | ⚠️ probe only: the whole head turns toward the finger. Real eye movement needs separate eye parts (routes B/C) |

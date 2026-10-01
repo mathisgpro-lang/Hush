@@ -15,6 +15,10 @@ final class FrameMeter {
     private var frames = 0
     private var windowStart: CFTimeInterval = 0
     private var worst: CFTimeInterval = 0
+    private var nextFrameCallbacks: [(CFTimeInterval) -> Void] = []
+
+    /// Runs once on the next display frame, with its timestamp (used to measure touch → visible response).
+    func onNextFrame(_ callback: @escaping (CFTimeInterval) -> Void) { nextFrameCallbacks.append(callback) }
 
     func start() {
         guard link == nil else { return }
@@ -29,6 +33,12 @@ final class FrameMeter {
 
     @objc private func tick(_ l: CADisplayLink) {
         let now = l.timestamp
+        if !nextFrameCallbacks.isEmpty {
+            let callbacks = nextFrameCallbacks
+            nextFrameCallbacks.removeAll()
+            // targetTimestamp is when this frame is presented on screen.
+            callbacks.forEach { $0(l.targetTimestamp) }
+        }
         if last > 0 { worst = max(worst, now - last) }
         last = now
         frames += 1

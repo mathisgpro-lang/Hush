@@ -12,6 +12,8 @@ final class ProbeModel {
     var faceTextures: [TextureResource] = []
     var faceSlot: (entity: ModelEntity, index: Int)?
     var log: [String] = []
+    var idleController: AnimationPlaybackController?
+    var speed: Float = 1
 
     // Clip map from PIPELINE.md (30 fps; the timeline starts at frame 1 = 0 s).
     static let idleRange: (Double, Double) = (0, 59.0 / 30)
@@ -89,16 +91,35 @@ final class ProbeModel {
     func playIdle(transition: TimeInterval = 0.3) {
         guard let root, let idle else { log.append("idle missing"); return }
         let c = root.playAnimation(idle, transitionDuration: transition)
+        c.speed = speed
+        idleController = c
         log.append("idle playing: \(c.isPlaying)")
     }
 
     func playCheer() {
         guard let root, let cheer else { log.append("cheer missing"); return }
         let c = root.playAnimation(cheer, transitionDuration: 0.2)
+        c.speed = speed
         log.append("cheer playing: \(c.isPlaying)")
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(Self.cheerRange.1 - Self.cheerRange.0 - 0.15))
+            try? await Task.sleep(for: .seconds((Self.cheerRange.1 - Self.cheerRange.0) / Double(self.speed) - 0.15))
             self.playIdle()
+        }
+    }
+
+    func setSpeed(_ s: Float) { speed = s; idleController?.speed = s }
+
+    /// Body glow from mood, tinted by the season (slot 0 = body).
+    func setBodyGlow(intensity: Float, tint: UIColor) {
+        guard let root else { return }
+        for model in Self.models(in: root) {
+            guard var comp = model.model, !comp.materials.isEmpty else { continue }
+            if var body = comp.materials[0] as? PhysicallyBasedMaterial {
+                body.emissiveColor = .init(color: tint)
+                body.emissiveIntensity = intensity
+                comp.materials[0] = body
+                model.model = comp
+            }
         }
     }
 
