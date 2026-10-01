@@ -178,6 +178,17 @@ What gets recorded:
 
 **The no-spend continuation** is written up at the end in plain words: what an AI-built Flame reached, what it lacks next to a professional animator's work, and the honest compromise (e.g. simpler animation, painted-layer realms).
 
+### B.6b Three Flames, compared side by side (decision 99)
+Mathis asked for the 3D Flame to get "really close to what Codex proposed". Three routes are built and compared **on his phone, side by side with the anchors**. He picks one, or a mix (e.g. the painted rig at home, 3D for travel).
+
+| Route | How | For / against |
+|---|---|---|
+| **A · Blender-built** | B.6: Claude scripts the model and rig from the turnaround | Free and fully ours; drifts furthest from the painting |
+| **B · Image-to-3D** | A third-party AI service turns `character/turnaround-flame.png` into a textured model. **Mathis creates the account and does the upload himself** (Claude never creates accounts). Free tier, **for evaluation only**. Claude then cleans and rigs it in Blender by script; the glow, fire shimmer and embers are added in RealityKit | Shape and colors come straight from the concept; needs cleanup; auto-rigging is made for humans and animals; commercial use needs a paid plan, decided at P2's exit (decision 87) |
+| **C · Painted rig** | Codex paints the Flame as separate layers (`docs/design/rig/`: body, 5 flame tongues, face parts on flat magenta, keyed out). SpikeLab animates them live: deforming flame tongues (geometry modifier), breathing, blinking, a talking mouth, touch reactions, small parallax turns | Closest to the concept (it *is* the concept), free, very alive; not true 3D: limited turning, no 360° walking |
+
+All three go through the same S1 checks (aliveness, touch < 100 ms, performance) and Mathis's visual acceptance.
+
 ### B.7 The measurement protocol (Part 9 §3.2)
 **Definitions (and the instrument behind each):**
 

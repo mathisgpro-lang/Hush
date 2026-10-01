@@ -42,7 +42,8 @@ final class ProbeModel {
         return entity
     }
 
-    /// Materials are applied after import (PIPELINE.md step 4). Parts are identified by their exported tint.
+    /// Materials are applied after import (PIPELINE.md step 4). Parts are identified by their export order:
+    /// 0 body, 1 hair, 2 face (the imported tint doesn't round-trip reliably, so it's not used).
     private func applyMaterials(_ entity: Entity) throws {
         // The hair shader needs Xcode's Metal Toolchain; without it the probe still tests skinning, clips and the face.
         let library = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
@@ -61,7 +62,7 @@ final class ProbeModel {
                     face.opacityThreshold = 0.5
                     comp.materials[i] = face
                     log.append("  [\(i)] face → unlit texture")
-                } else if Self.green(of: pbr.baseColor.tint) > 0.7, let hairModifier {
+                } else if i == 1, let hairModifier {
                     comp.materials[i] = try CustomMaterial(from: pbr, geometryModifier: hairModifier)
                     log.append("  [\(i)] hair → custom geometry modifier")
                 } else {

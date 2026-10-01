@@ -13,6 +13,7 @@
 | Rendering | RealityKit via `RealityView`; materials: `CustomMaterial` (Metal) first, Shader Graph only where simpler; bloom: `PostProcessEffect` (iOS 26+) |
 | Clips | One exported timeline; clips cut in RealityKit with `AnimationView(trimStart:trimEnd:)` |
 | Face | Separate face part with its own material; face states swapped as textures at runtime |
+| Part order | Material slots follow the export order: 0 body, 1 hair, 2 face (imported tints are unreliable for identification) |
 | Apple sample (rig-blending check) | Not used yet. Pin the exact file and its terms here before use |
 
 ## Steps (reproducible)
@@ -36,5 +37,5 @@
 | Blending idle ↔ cheer | ✅ `playAnimation(_:transitionDuration:)` hop + arm swing visible, back to idle |
 | Face texture swap while animating | ✅ eyes-closed texture shown during idle |
 | Materials applied after import | ✅ body kept, face → `UnlitMaterial` with an alpha texture |
-| Hair geometry modifier (`CustomMaterial`) | ⏸ blocked: Xcode needs the **Metal Toolchain** download (`xcodebuild -downloadComponent MetalToolchain`), pending Mathis's permission. Shader kept in `Shaders.metal.pending` |
+| Hair geometry modifier (`CustomMaterial`) | ✅ after the Metal Toolchain download (839 MB, 2026-10-01): compiles and runs on the skinned mesh at 60 fps in the simulator |
 | Lessons | Bone-local Y runs along the bone (rotating on it twists); sway uses local Z. Crude position-based weights stretch the arms, so real characters need smooth weights. Blender emission strength > 0.6 washes colors out in RealityKit |
