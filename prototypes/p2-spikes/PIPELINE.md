@@ -106,3 +106,11 @@
 - Tool: `swiftc -O tools/depthmap.swift -o tools/depthmap` → `./tools/depthmap <model.mlmodelc> <painting.png> <out.png> 0.5`. Portrait paintings run as 5 overlapping landscape tiles (40% overlap), each aligned to the previous one by least squares on the overlap, with feathered blending. White = near.
 - S2 uses `sanctuary-depth.png` as a **relief mesh** (72×156 grid; relief = 0.45·g^0.6 − 0.15 m, mid-tones lifted so the arches separate from the cliffs); the Flame's depth is sampled at its step. 60 fps, about 64 MB in the simulator.
 - Known limit: a single relief stretches at depth edges (rubber-sheet). Next: split into layers at depth discontinuities with edge inpainting, so things can pass in front of the Flame cleanly (A5).
+
+## S2 · life and integration, round 2 (2026-10-01, simulator)
+- **A2, the world lights the Flame:** in scenes (`inScene`), the hero shader adds a sunset rim on the sun side (a silhouette edge from alpha sampling) and a touch of the scene's warm haze. Brightness is passed + 10 as the switch (reflection excluded).
+- **B3, wind:** `SanctuaryLife` makes a breeze plus gusts every 9–20 s (3–4.5 s, smooth rise and fall). They sway the painting's foliage (shader; wind passed through `roughness`), bend the Flame's hair and lean it, and push the fireflies.
+- **B4, birds:** small flocks every 14–26 s, flapping (scaled sprite) at z −1.3. They **pass behind the arches** because the relief painting writes depth (real occlusion, A5, for free).
+- **A7, the moth:** it visits for about 11 s every 25–35 s, fluttering around the Flame's head; the Flame looks at it and drifts after it. It resets once when the moth leaves (resetting every frame cancelled the wandering).
+- Demo: `docs/design/demos/2026-10-01-s2-sanctuary-life.mp4`.
+- Bar status: A1 ✅ light spill, A2 ✅ rim/haze (first pass), A3 ✅ landing embers (contact shade still missing), A4 ✅ reflection, A5 partial (birds behind the arches; the Flame itself can't yet walk behind things), A6 ❌ (it only moves sideways on one step), A7 partial (the moth), A8 partial; B1 partial (one relief, not layers), B2 ✅, B3 ✅, B4 partial (birds, moth), B5 ❌.

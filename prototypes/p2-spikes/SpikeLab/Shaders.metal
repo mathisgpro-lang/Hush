@@ -91,7 +91,18 @@ void heroFireSurface(realitykit::surface_parameters params)
     col.rgb *= half(1.0 + 0.07 * w1 * flame);
 
     // custom.y = brightness (mood, night); the material tint isn't reliable on materials converted from unlit.
+    // In a scene, brightness arrives + 10: then the world lights the Flame (A2): a sunset rim on the sun side
+    // (a silhouette edge found from the alpha), and a touch of the scene's warm haze.
     float bright = params.uniforms().custom_parameter().y;
+    if (bright > 5.0) {
+        bright -= 10.0;
+        float2 suv = float2(uv.x, 1.0 - uv.y) + d;
+        float aHere = float(col.a);
+        float aSun = float(params.textures().base_color().sample(s, suv + float2(0.035, -0.01)).a);
+        float rim = saturate((aHere - aSun) * 1.6) * smoothstep(0.15, 0.7, uv.y);
+        col.rgb = mix(col.rgb, col.rgb * half3(1.0, 0.86, 0.82) + half3(0.05, 0.0, 0.03), half(0.25));
+        col.rgb += half3(1.0, 0.72, 0.55) * half(rim * 0.55);
+    }
     // Output as emissive so the painting shows its own colors whether the material is treated as lit or unlit.
     params.surface().set_base_color(half3(0));
     params.surface().set_emissive_color(col.rgb * half(bright));
@@ -147,7 +158,12 @@ void sanctuaryLive(realitykit::surface_parameters params)
     float2 flow = float2((s2noise(float2(uv.x * 60.0, uv.y * 30.0 + t * 4.0)) - 0.5) * 0.002,
                          (s2noise(float2(uv.x * 40.0, uv.y * 25.0 + t * 3.0)) - 0.5) * 0.007) * fall;
 
-    half4 col = params.textures().base_color().sample(s, tuv + ripple + flow);
+    // Wind (B3): foliage (greener than red and blue) sways with the gust, more higher up.
+    float wind = params.material_constants().roughness_scale();
+    float green = smoothstep(0.02, 0.12, float(base.g) - max(float(base.r) * 0.85, float(base.b)));
+    float2 sway = float2(sin(t * 2.2 + uv.y * 30.0 + uv.x * 8.0) * 0.0035 * wind * green * (0.4 + uv.y), 0);
+
+    half4 col = params.textures().base_color().sample(s, tuv + ripple + flow + sway);
     // Sparkles on the water where the sun reflects.
     float sp = s2noise(float2(uv.x * 140.0 + sin(t * 0.3) * 2.0, uv.y * 380.0 - t * 1.5));
     float sparkle = smoothstep(0.93, 1.0, sp) * (0.5 + 0.5 * sin(t * 6.0 + uv.x * 50.0)) * water * near * 0.6;

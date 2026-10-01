@@ -16,11 +16,17 @@ final class SanctuaryScene {
     private let heroScale: Float = 0.55
     private var mists: [ModelEntity] = []
     let hero = HeroRig()
+    let life = SanctuaryLife()
+    private var flies: Entity?
+    private var heroFeet = SIMD3<Float>(0, 0, 0)
+    private var heroWorldScale: Float = 0.55
     private var time: Float = 0
     private let noise = SmoothNoise(seed: 21)
     var tilt = SIMD2<Float>(0, 0)
     var autoDrift = true
     var updates: EventSubscription?
+    var fingerDown = false
+    private var watching = false
 
     static let distance: Float = 1.2
     static let fov: Float = 40
@@ -109,7 +115,7 @@ final class SanctuaryScene {
         f.mainEmitter.size = 0.004; f.mainEmitter.blendMode = .additive
         f.mainEmitter.color = .constant(.single(UIColor(red: 1, green: 0.85, blue: 0.45, alpha: 1)))
         flies.components.set(f); flies.position = [0, -0.18, -0.95]
-        root.addChild(flies)
+        root.addChild(flies); self.flies = flies
 
         // The Flame on the steps (v ≈ 0.33 in the painting), scaled to the scene.
         try await hero.build()
@@ -123,7 +129,12 @@ final class SanctuaryScene {
         let stepsY = (stepV - 0.5) * h * k
         hero.leanPivot.scale = .init(repeating: scale)
         hero.leanPivot.position = [0, stepsY + 0.09 * scale, -d]
+        hero.inScene = true
         root.addChild(hero.leanPivot)
+        heroFeet = [0, stepsY, -d]; heroWorldScale = scale
+
+        try await life.build()
+        root.addChild(life.root)
 
         camera.camera.fieldOfViewInDegrees = Self.fov
         root.addChild(camera)
@@ -145,16 +156,30 @@ final class SanctuaryScene {
             m.custom.value.x = (1 - v) * (k == 0 ? 0.55 : 0.75)
             comp.materials = [m]; e.model = comp
         }
+
     }
 
     func update(dt: Float) {
         time += dt
+        // Life and wind first, so the Flame can react to them this frame.
+        let chest = heroFeet + SIMD3(hero.standingX * heroWorldScale, 0.13 * heroWorldScale, 0.005)
+        let watch = life.update(dt: dt, flameAt: chest)
+        hero.wind = life.wind
+        if !fingerDown {
+            if let watch { hero.look(at: watch); watching = true }
+            else if watching { hero.look(at: nil); watching = false }   // reset once when the moth leaves
+        }
         hero.update(dt: dt)
+        if let flies, var f = flies.components[ParticleEmitterComponent.self] {
+            f.mainEmitter.acceleration = [life.wind * 0.02, 0, 0]
+            flies.components.set(f)
+        }
         // The Flame's light on the painting follows it and flickers with the fire (A1); dimmer in the Hush.
         if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
             let u = 0.5 + hero.standingX * heroScale / paintingW
             let flicker = 0.85 + 0.15 * noise.sample(time * 7) + 0.05 * sin(time * 23)
             m.custom.value = [vitality, u, 0.30, 0.9 * flicker * (0.5 + 0.5 * vitality)]
+            m.roughness = .init(floatLiteral: abs(life.wind))       // the shader reads wind from roughness_scale
             comp.materials = [m]; painting.model = comp
         }
         // The camera breathes very slowly (an alive world), and follows the phone's tilt for parallax.

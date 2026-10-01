@@ -23,6 +23,10 @@ final class HeroRig: FlameRig {
     private var behaviorRoll: Float = 0, fingerRoll: Float = 0
     private var mood: Float = 0.8, brightness: Float = 1
     var updates: EventSubscription?
+    /// In a scene, the world lights the Flame (A2: rim and haze); outside one (S1), it doesn't.
+    var inScene = false
+    /// Wind from the scene (B3): bends the hair and leans the body a little.
+    var wind: Float = 0
     var log: [String] = []
 
     private let sortGroup = ModelSortGroup(depthPass: nil)
@@ -127,7 +131,7 @@ final class HeroRig: FlameRig {
     // MARK: Every frame
 
     func update(dt: Float) {
-        body.extraRoll = behaviorRoll + fingerRoll
+        body.extraRoll = behaviorRoll + fingerRoll - wind * 0.03
         body.step(dt: dt)
         walkPivot.transform.translation = [body.x, 0, 0]
         bodyPivot.transform = Transform(scale: [body.scaleX, body.scaleY, 1],
@@ -136,9 +140,11 @@ final class HeroRig: FlameRig {
         reflectPivot.transform = Transform(scale: [body.scaleX, -body.scaleY, 1],
                                            rotation: simd_quatf(angle: -body.roll, axis: [0, 0, 1]),
                                            translation: [0, Self.feetY - body.y, 0])
+        let drag = body.hairDrag + SIMD2(wind * 0.012, 0)
         for e in [hero, reflection].compactMap({ $0 }) {
             guard var comp = e.model, var m = comp.materials.first as? CustomMaterial else { continue }
-            m.custom.value = [mood, brightness, body.hairDrag.x, body.hairDrag.y]
+            let b = (inScene && e === hero) ? brightness + 10 : brightness
+            m.custom.value = [mood, b, drag.x, drag.y]
             comp.materials = [m]; e.model = comp
         }
         if body.landed > 0.2, let puff = landingPuff, var pe = puff.components[ParticleEmitterComponent.self] {
