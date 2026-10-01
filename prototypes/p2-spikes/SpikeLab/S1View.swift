@@ -20,12 +20,12 @@ final class TiltSource {
     func stop() { motion.stopDeviceMotionUpdates() }
 }
 
-enum FlameRoute: String, CaseIterable { case blender = "A · Blender", painted = "C · Layers", hero = "C · Codex hero" }
+enum FlameRoute: String, CaseIterable { case blender = "A · Blender", hero = "C · Hero", living = "C · Living" }
 
 /// S1 with a route switcher: every route is judged by the same alive system and controls.
 struct S1Screen: View {
     @State private var route: FlameRoute = CommandLine.arguments.contains("-hero") ? .hero
-        : CommandLine.arguments.contains("-painted") ? .painted : .blender
+        : CommandLine.arguments.contains("-living") ? .living : .blender
     var body: some View {
         S1View(route: route)
             .id(route)
@@ -67,11 +67,12 @@ struct S1View: View {
                         content.add(probeRig.leanPivot)
                         probe.playIdle(transition: 0)
                         r = probeRig
-                    case .painted:
-                        let painted = PaintedRig(layout: .placeholder)
-                        do { try await painted.build() } catch { selfTest = "painted rig failed: \(error)"; return }
-                        content.add(painted.leanPivot)
-                        r = painted
+                    case .living:
+                        let living = LayeredFlame()
+                        do { try await living.build() } catch { selfTest = "living flame failed: \(error)"; return }
+                        content.add(living.leanPivot)
+                        living.updates = content.subscribe(to: SceneEvents.Update.self) { e in living.update(dt: Float(e.deltaTime)) }
+                        r = living
                     case .hero:
                         let hero = HeroRig()
                         do { try await hero.build() } catch { selfTest = "hero failed: \(error)"; return }
@@ -94,7 +95,7 @@ struct S1View: View {
                     rig = r
                     let d = AliveDirector(seed: 42, meter: meter)
                     director = d
-                    d.attach(r, tempo: route == .hero ? 0.55 : 1)   // the painted Flame is livelier
+                    d.attach(r, tempo: route == .blender ? 1 : 0.55)   // the painted Flame is livelier
                     applyLaunchOptions(d)
                 }
                 .contentShape(Rectangle())

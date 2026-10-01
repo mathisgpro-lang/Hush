@@ -123,3 +123,10 @@
 - Bugs fixed on the way: hard lantern discs (jagged rings, color patches) → soft G/B masks; interpolated order at region edges → nearest sampling; the sun detected as a lantern → only accepted blobs enter the mask.
 - 60 fps, about 64 MB in the simulator. Demo: `docs/design/demos/2026-10-01-s3-grove-restoration.mp4`; still: `2026-10-01-s3-hushed-vs-radiant.png`.
 - **Gap:** restoration here is light and color (painted); "geometry returns" (an arch rebuilding, a bridge appearing) needs painted state variants or the 3D route. Creatures returning (Nim & Ro, animals) come with the cast art.
+
+## Route C final: the living layered Flame, from Codex's parts (2026-10-01, simulator)
+- Parts: `docs/design/rig/rig-body.png`, `rig-hair.png`, `rig-face-parts.png` (flat magenta) → `tools/rig_assets.py keyout` → semantic files `SpikeLab/Assets/rig2/lf-*.png`. Fixes: pink haze removed from the closed lids; variants padded onto shared canvases (eyes 220×190 with lids low; mouths 200×140) so swaps never move parts; body and tongues eroded 1 px, with blue clamped to green (no magenta fringe).
+- `LayeredFlame` (FlameRig): body (`layerBodyFire`: fire flowing upward, the face area kept crisp, heartbeat core at uv (0.5, 0.40)); 5 tongues on the head's circle (`tongueSway` + `tongueFire`; outer ones tilted, bent by hair follow-through and wind); eyes (open L/R, closed L/R as blink and happy squint, up/down from the look target); brows lift and tilt; mouth (smile, joy, o, flat, talk; Emberspeak babble when talking); face parallax; ground glow; embers. All on `FluidBody`.
+- Layout measured on the body painting (px → m: body 0.17 m tall): eyes (228/502, 352) at 165 px wide, brows (222/508, 255), mouth (365, 432), head circle center (365, 290) r 300 for the hair bases.
+- Bug fixed: the body used `breathe` while its custom values meant mood/brightness, which stretched it about 2× (the face landed on the chest). Breathing now comes from FluidBody only.
+- 60 fps, about 59 MB in the simulator. Demo: `docs/design/demos/2026-10-01-living-flame-layers.mp4`.

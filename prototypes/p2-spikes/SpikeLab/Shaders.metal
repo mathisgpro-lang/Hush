@@ -291,3 +291,46 @@ void strandGlow(realitykit::surface_parameters params)
     params.surface().set_emissive_color(half3(1.0, 0.82, 0.5) * half(1.0 + (1.0 - d * 2.0)));
     params.surface().set_opacity(half(a));
 }
+
+// ---------- The living layered Flame (route C, Codex's separate parts) ----------
+// Body: fire flowing upward through the fur, the face area kept crisp, a heartbeat in the core.
+// custom: x = mood, y = brightness.
+[[visible]]
+void layerBodyFire(realitykit::surface_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float t = params.uniforms().time();
+    float4 c = params.uniforms().custom_parameter();
+    float energy = 0.6 + 0.6 * c.x;
+    float face = 1.0 - smoothstep(0.6, 1.0, length((uv - float2(0.5, 0.68)) / float2(0.36, 0.14)));
+    float flameAmt = (1.0 - face) * (0.5 + 0.5 * smoothstep(0.45, 0.95, uv.y));
+    float w1 = sin(uv.y * 30.0 - t * 4.0 + sin(uv.x * 10.0 + t * 0.6) * 2.0);
+    float w2 = sin(uv.y * 55.0 - t * 6.5 + uv.x * 23.0);
+    float2 d = float2(w1 * 0.004 + w2 * 0.0016, -abs(w2) * 0.003) * flameAmt * energy;
+    constexpr sampler s(address::clamp_to_edge, filter::linear);
+    half4 col = params.textures().base_color().sample(s, float2(uv.x, 1.0 - uv.y) + d);
+    float core = 1.0 - smoothstep(0.0, 0.16, length((uv - float2(0.5, 0.40)) / float2(1.0, 0.75)));
+    float beat = pow(0.5 + 0.5 * sin(t * 2.3), 8.0) + 0.35 * pow(0.5 + 0.5 * sin(t * 2.3 - 0.6), 12.0);
+    col.rgb += half3(0.42, 0.28, 0.08) * half(core * beat * 0.6 * energy);
+    col.rgb *= half(1.0 + 0.06 * w1 * flameAmt);
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(col.rgb * half(c.y));
+    params.surface().set_opacity(col.a);
+}
+
+// A flame tongue: flowing fire inside it (its sway and stretch come from tongueSway). custom: x phase, y amp, z brightness.
+[[visible]]
+void tongueFire(realitykit::surface_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float t = params.uniforms().time();
+    float4 c = params.uniforms().custom_parameter();
+    float w = sin(uv.y * 22.0 - t * 5.0 + c.x * 3.0 + sin(uv.x * 8.0 + t) * 1.5);
+    float2 d = float2(w * 0.012 * uv.y, -abs(w) * 0.01 * uv.y);
+    constexpr sampler s(address::clamp_to_edge, filter::linear);
+    half4 col = params.textures().base_color().sample(s, float2(uv.x, 1.0 - uv.y) + d);
+    col.rgb *= half(1.0 + 0.1 * w * uv.y);
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(col.rgb * half(c.z));
+    params.surface().set_opacity(col.a);
+}
