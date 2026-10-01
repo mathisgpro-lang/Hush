@@ -20,11 +20,29 @@ final class TiltSource {
     func stop() { motion.stopDeviceMotionUpdates() }
 }
 
+enum FlameRoute: String, CaseIterable { case blender = "A · Blender", painted = "C · Painted" }
+
+/// S1 with a route switcher: every route is judged by the same alive system and controls.
+struct S1Screen: View {
+    @State private var route: FlameRoute = CommandLine.arguments.contains("-painted") ? .painted : .blender
+    var body: some View {
+        S1View(route: route)
+            .id(route)
+            .safeAreaInset(edge: .top) {
+                Picker("Route", selection: $route) {
+                    ForEach(FlameRoute.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented).padding(.horizontal)
+            }
+    }
+}
+
 struct S1View: View {
+    let route: FlameRoute
     @State private var meter = FrameMeter()
     @State private var director: AliveDirector?
     @State private var probe = ProbeModel()
-    @State private var rig: ProbeRig?
+    @State private var rig: FlameRig?
     @State private var tilt = TiltSource()
     @State private var simTilt = SIMD2<Float>(0, 0)
     @State private var showControls = true
@@ -36,13 +54,24 @@ struct S1View: View {
             GeometryReader { geo in
                 RealityView { content in
                     content.camera = .virtual
-                    guard let flame = try? await probe.load() else { return }
-                    let b = flame.visualBounds(relativeTo: nil)
-                    let s = 0.3 / max(b.extents.y, 0.001)
-                    flame.scale = .init(repeating: s)
-                    flame.position = -b.center * s
-                    let r = ProbeRig(probe: probe, model: flame)
-                    content.add(r.leanPivot)
+                    let r: FlameRig
+                    switch route {
+                    case .blender:
+                        guard let flame = try? await probe.load() else { return }
+                        let b = flame.visualBounds(relativeTo: nil)
+                        let s = 0.3 / max(b.extents.y, 0.001)
+                        flame.scale = .init(repeating: s)
+                        flame.position = -b.center * s
+                        let probeRig = ProbeRig(probe: probe, model: flame)
+                        content.add(probeRig.leanPivot)
+                        probe.playIdle(transition: 0)
+                        r = probeRig
+                    case .painted:
+                        let painted = PaintedRig(layout: .placeholder)
+                        do { try await painted.build() } catch { selfTest = "painted rig failed: \(error)"; return }
+                        content.add(painted.leanPivot)
+                        r = painted
+                    }
 
                     let camera = PerspectiveCamera()
                     camera.camera.fieldOfViewInDegrees = 40
@@ -53,7 +82,6 @@ struct S1View: View {
                     sun.look(at: .zero, from: [0.4, 0.8, 0.6], relativeTo: nil)
                     content.add(sun)
 
-                    probe.playIdle(transition: 0)
                     rig = r
                     let d = AliveDirector(seed: 42, meter: meter)
                     director = d
@@ -81,7 +109,7 @@ struct S1View: View {
             }
             .padding(.horizontal).padding(.bottom, 6)
         }
-        .navigationTitle("S1 · The living Flame")
+        .navigationTitle("S1 · \(route.rawValue)")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             meter.start()

@@ -49,3 +49,14 @@
 | Pillar reactions | ✅ six distinct reactions after an action (hop, head tilt, warm squint + pulse, float, nod, rock) |
 | Tilt | ✅ wired to CoreMotion (device) with a slider fallback in the simulator |
 | Eye-follow | ⚠️ probe only: the whole head turns toward the finger. Real eye movement needs separate eye parts (routes B/C) |
+
+## Route C, the painted rig: first results (2026-10-01, simulator, placeholder layers)
+| Check | Result |
+|---|---|
+| Layers as textured planes (body, 5 tongues, eyes, mouth) + embers | ✅ built from `PaintedLayout`; placeholder art from `tools/rig_assets.py placeholder` |
+| Tongue sway + stretch (`tongueSway`) and breathing (`breathe`) shaders on `CustomMaterial` from `UnlitMaterial` | ✅ each tongue has its own phase; never in unison |
+| Draw order | ✅ after a fix: transparent layers at one depth z-fought (dark bands). Now `ModelSortGroupComponent` (strict back-to-front) + `writesDepth = false` |
+| Texture edges | ✅ after a fix: clamp-to-edge sampler (with repeat, a layer's bottom row bled into its top edge as a thin line) |
+| Alive system on route C | ✅ same director as route A: blinks, idles, giggle, pillar reactions, parallax glance (face moves most, body least), mood tint, sleep at night |
+| Touch → response | simulator, code-triggered: p50 15 ms, p95 42 ms |
+| Next | swap in Codex's layers (`docs/design/rig/`, keyed with `tools/rig_assets.py keyout`); author `PaintedLayout` for them |
