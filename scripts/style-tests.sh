@@ -8,9 +8,9 @@ gen() { # $1 output, $2 prompt, $3 optional reference image
   [[ -f "$1" ]] && { echo "exists: $1"; return; }
   mkdir -p "$(dirname "$1")"
   if [[ -n "$3" ]]; then
-    "$CODEX" exec -s workspace-write --ephemeral -C "$ROOT" --image "$3" -- "$2 Save it as $1 using your image generation tool." < /dev/null > /dev/null 2>&1
+    "$CODEX" exec -s workspace-write --ephemeral -C "$ROOT" --image "$3" -- "$2 Save it as $1 using your image generation tool. Do not create or edit any other file." < /dev/null > /dev/null 2>&1
   else
-    "$CODEX" exec -s workspace-write --ephemeral -C "$ROOT" "$2 Save it as $1 using your image generation tool." < /dev/null > /dev/null 2>&1
+    "$CODEX" exec -s workspace-write --ephemeral -C "$ROOT" "$2 Save it as $1 using your image generation tool. Do not create or edit any other file." < /dev/null > /dev/null 2>&1
   fi
   [[ -f "$1" ]] && echo "done: $1" || echo "MISSING: $1"
 }
