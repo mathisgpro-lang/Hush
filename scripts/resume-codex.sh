@@ -50,5 +50,8 @@ run_brief docs/reviews/briefs/plan-2-review.md \
 run_brief docs/reviews/briefs/p2-plan-review.md \
   docs/reviews/2026-10-01-codex-p2-plan.md
 
+# P2 design round (decision 98)
+"$ROOT/scripts/design-round-p2.sh"
+
 # style tests (decision 75)
 "$ROOT/scripts/style-tests.sh"
