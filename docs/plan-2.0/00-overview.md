@@ -60,7 +60,7 @@ Over days, your Flame grows bolder. Over weeks, a realm comes back to life. Over
 | d | **Evolution stages:** Flame at 7 active days; Blaze at 60 days + Depth 120; Kindled at 300 days + Depth 800; Beyond after years | Part 3 §3 |
 | e | **Your Flame never gives advice;** the Keepers do, always with sources. Your Flame feels, cheers and remembers | Part 3 §7, Part 8 §2 |
 | f | **Style:** a warm, stylized 3D storybook (*Spirited Away*'s warmth × *Ori*'s restoration × a premium animated film) | Part 4 |
-| g | **Tech:** RealityKit + SwiftUI, but only if three spikes pass on your iPhone 15; otherwise Unity embedded | Part 5 |
+| g | **Tech:** RealityKit + SwiftUI, but only if three spikes pass on your iPhone 15; otherwise the step-by-step fallback with Unity last (decision 97) | Part 5 |
 | h | **The vertical slice:** the Sanctuary + the Grove + one Heart Journey (*Lanterns for the Ones You Love*), chosen because it needs no health safety work | Part 7 P3 |
 | i | **The Ages of the Sanctuary** (Stone → Metal → Crystal → Light) carry the Eras forward | Part 2 |
 

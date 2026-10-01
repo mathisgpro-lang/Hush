@@ -24,7 +24,13 @@ The app now has to show **a living world** (scenes, a map, movement, weather, re
 ### A.3 Recommendation: **A, native RealityKit + SwiftUI, validated by spikes first**
 - It keeps what makes the app special: **privacy, native feel, haptics, small size, one codebase that AI agents build reliably** (decisions 20, 28–30).
 - It supports what's needed: 3D models (USDZ), skeletal animation, custom materials, particles, and lighting, inside SwiftUI screens.
-- **The risk is real,** so we don't decide on faith: three small throwaway **spikes** (S1–S3 below) must prove it on *your* iPhone 15 first. If they fail, option B (Unity) is the fallback, and the foundation (record, engine) stays the same either way.
+- **The risk is real,** so we don't decide on faith: three small throwaway **spikes** (S1–S3 below) must prove it on *your* iPhone 15 first. **If something fails, the fallback goes step by step, Unity last (decision 97):**
+  1. simplify the one failing effect inside RealityKit;
+  2. if the full 3D world is too heavy: **painted, layered scenes with live 3D elements** (water, lights, mist, creatures) and the live 3D Flame on top, close to the approved style anchors anyway (Part 4 §9);
+  3. if the character fails: **pre-rendered 3D animation** of the Flame (allowed by decision 82), mixed live in layers so it stays alive (decision 93);
+  4. only if all of that fails: **Unity as a Library, after its own bounded spike** (world + native controls, a completion round trip, navigation, background/resume, unloading, haptics, accessibility; only Swift ever writes the record).
+
+  The foundation (the record, the engine) stays the same either way.
 
 ### A.4 What the spikes must prove (before any world building)
 | Spike | Question | Pass criteria |

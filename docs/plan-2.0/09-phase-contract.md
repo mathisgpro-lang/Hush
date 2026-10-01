@@ -171,7 +171,7 @@ Rules around it:
    - the schedule re-estimated against Mathis's 1–2 hours a day.
 
    No freelance outreach or paid trial without Mathis's yes.
-4. **The fallback route**, per Mathis's decision on finding 10.
+4. **The fallback route** (decision 97): for each spike, what a failure leads to, following the step-by-step order in Part 5 §A.3 (simplify the effect → painted layers with live 3D elements → pre-rendered character animation → Unity, after its own spike).
 
 ## 4. The P3 phase plan must contain (gate before P3 approval)
 1. **Every Act I beat** with its exact engine trigger, scene, required assets and replay location (finding 2).
@@ -185,4 +185,4 @@ Rules around it:
 
 ## 5. Open for Mathis
 - ~~Beacons (finding 4)~~: answered by decision 96 (R16).
-- **The fallback engine (finding 10):** Unity is a second, untested architecture, not a ready fallback.
+- ~~The fallback engine (finding 10)~~: answered by decision 97 (step by step, Unity last).

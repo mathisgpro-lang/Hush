@@ -83,7 +83,7 @@
 ## What could go wrong (and the plan's answers)
 | Risk | Answer |
 |---|---|
-| RealityKit can't carry the look | Spikes first; the Unity fallback; the foundation unaffected |
+| RealityKit can't carry the look | Spikes first; then the step-by-step fallback, Unity last (decision 97); the foundation unaffected |
 | Art costs grow | Part 6's trade-offs (2.5D realms, fewer realms at V1); Mathis decides each spend |
 | The world distracts from real life | World rules (Part 2 §9): light only from real actions, no in-app grinding; sessions stay short by design |
 | Scope explosion | Each phase has a strict scope and a finish line; anything else waits for the next phase |
