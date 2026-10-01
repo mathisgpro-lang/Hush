@@ -2,7 +2,7 @@
 
 *Prove the technology on Mathis's iPhone 15, lock the look, and test a no-spend art pipeline from concept to phone. Nothing here touches the real app or the real record.*
 
-**Status:** draft for Mathis's approval (Plan 2.0 Part 7, P2) · **Written:** 2026-10-01
+**Status:** draft for Mathis's approval (Plan 2.0 Part 7, P2), revised after Codex's review ([`docs/reviews/2026-10-01-codex-p2-plan.md`](../reviews/2026-10-01-codex-p2-plan.md): ready with fixes; all 7 findings folded in) · **Written:** 2026-10-01
 **Meets:** Part 9 §3 (the P2 gates from Codex's review) · **Constraints:** AI-only art (87), no paid Apple program (88), Alive, always (93), style anchors (95), the step-by-step fallback (97)
 
 ---
@@ -44,6 +44,13 @@ At the same time, **Codex designs** the final look of your Flame's stages, the f
 - **Versions (recorded with every result):** Xcode 27.0 (27A266a), macOS 27.0.1, iPhone 15 (A16, 6 GB) on iOS 26.4, deployment target iOS 26.0, RealityKit via `RealityView`.
 - **The HUD on every screen:** fps, frame time, total memory, thermal state, battery level, and quality mode (Part 9 R4), plus sliders for `restoration` and `vitality` (R1).
 - **Throwaway:** the code is labeled and never merged. What we learn goes into Part 5 and the P3 plan.
+- **Free-signing checklist** (Apple's limits: 3 apps per device, 10 App IDs per week, 7-day expiry):
+  - before the first install, inventory the free-signed apps already on the phone;
+  - **one** SpikeLab app with one bundle ID and team, and no extensions;
+  - re-provision weekly by reinstalling in place;
+  - **never delete the real app** to fix signing;
+  - assets are bundled;
+  - when Codex hits a usage limit, pause and wait for the reset, never buy capacity.
 
 ### B.2 Placeholder assets (no spend)
 | Need | Source | License |
@@ -54,7 +61,17 @@ At the same time, **Codex designs** the final look of your Flame's stages, the f
 | Sanctuary block-out | Simple meshes + Codex-painted textures referencing the anchors | Ours |
 | Rig blending check | Apple's sample skeletal USDZ (development use only) | Apple sample terms; never shipped |
 
-If Mathis says no to Blender: the test Flame is built from code-generated meshes animated through RealityKit's low-level mesh API. That's less representative of real rigging, so S1 would then be marked "partial".
+**Pinned before any asset is made** (written to `prototypes/p2-spikes/PIPELINE.md`):
+- the Blender release and its version;
+- the exact Apple sample file and its terms;
+- **the material route:** `CustomMaterial` (Metal) first, Shader Graph only where it's simpler;
+- **bloom:** `PostProcessEffect` (iOS 26+);
+- **validation:** `/usr/bin/usdchecker` and Xcode's `realitytool`;
+- the order in which shaders are applied after import.
+
+**Step 0, the pipeline probe (days 1–2):** one tiny skinned model with **two blended clips, a changing face and displaced hair**, exported from Blender, imported, run on the phone, all together. If it breaks, the pipeline is fixed before anything bigger is made.
+
+If Mathis says no to Blender: the test Flame is built from code-generated meshes animated through RealityKit's low-level mesh API. S1 is then **"partial"**, and **a partial rig result blocks the engine/art conclusion and the P3 handoff** until a real rigged character is tested.
 
 ### B.3 Spike S1: the living Flame (the feature checklist)
 | # | Feature | Approach | Pass | If it fails |
@@ -66,8 +83,27 @@ If Mathis says no to Blender: the test Flame is built from code-generated meshes
 | 5 | Glowing core + embers | Emissive + bloom; `ParticleEmitterComponent` | Visible glow, soft embers | Additive sprite glow |
 | 6 | **Alive** (decision 93) | Layered: breathing + hair + eyes + idle pool with randomness | Idle variety, no repeat pattern in 2 minutes; touch → reaction in < 100 ms; eyes follow a finger; it sways when the phone tilts (motion sensor) | Fix before anything else (it's non-negotiable) |
 | 7 | Emberspeak mouth sync | Mouth states driven by the babble's loudness | In sync to the eye | Simpler open/closed sync |
+| 8 | **Aware of its world** | HUD controls for local time, season, mood (Vitality) and "just did an action in pillar X" | Each gives its expected visible response (yawn and stretch in the morning, sleepy at night, seasonal tint, five moods, a pillar reaction); an interrupted reaction resumes cleanly | Fix (non-negotiable) |
+
+**How touch response is measured:** each touch is timestamped, then the frame on which the reaction first appears is timestamped (a presented-frame callback). Measured under the S2 load and reported as p50/p95.
+
+**Failure order for S1** (decision 97; each substitute repeats the visual, aliveness and performance checks and needs Mathis's acceptance):
+
+| Step | What it means for S1 |
+|---|---|
+| 1 · Simplify | Fewer shells, a baked fluff texture, simpler hair, simpler face sync |
+| 2 · Painted/live hybrid | Doesn't apply to the character itself (it stays live 3D); applies to the world in S2 |
+| 3 · Layered pre-rendered character | Body animation pre-rendered from Blender as layered image sequences (body, hair, face, glow) mixed live, so it still never visibly loops |
+| 4 · Unity | Only after a separately scoped Unity spike, with its own plan and Mathis's approval |
 
 ### B.4 Spikes S2 (the Sanctuary) and S3 (restoration)
+
+**The representative combined scene** (the budget is defined, not guessed):
+- **Screen:** native portrait resolution (1179 × 2556).
+- **Two camera distances:** close-up (the Flame fills about 60% of the height) and gameplay (about 20%).
+- **Counted together:** total rendered triangles **including the character and its shells**; transparent coverage (a target of at most 4 transparent layers over any pixel on average); material and texture counts; shadows; the water treatment; peak ceremony particles.
+- **The trial Flame** (B.6) runs **inside S2 and S3**, on both routes, with face, rig, hair, glow, mist and the UI all active at once.
+- **The result needs Mathis's explicit visual acceptance:** moving phone footage compared with the anchors. If only a smaller scope is accepted (e.g. "the Sanctuary at this density"), it's named as such, never reported as proof for every future stage or realm.
 **S2: a scene at expected density, with SwiftUI on top.**
 - A Sanctuary block-out at the expected density (about 40k triangles, 2 dynamic lights, a water plane with moving normals, layered mist cards, about 300 particles), the S1 Flame, and SwiftUI calls and plates over the scene.
 - Tap-to-interact on the Flame and on one object.
@@ -83,6 +119,17 @@ If Mathis says no to Blender: the test Flame is built from code-generated meshes
 - Mist, light and saturation driven by `vitality`.
 - Tested in **all four combinations**: low/high restoration × low/high vitality.
 - Plus the **Return effect**: a temporary foreground mist-lift.
+
+**Failure order for S2 and S3** (each substitute repeats the checks and needs Mathis's acceptance):
+
+| Step | S2 (the scene) | S3 (restoration) |
+|---|---|---|
+| 1 · Simplify | Fewer mist cards and particles, baked lighting, simpler water | Fewer restoring elements, simpler transitions |
+| 2 · Painted/live hybrid | The painted-layers route becomes the main one | Restoration as painted states crossfaded per area, with live water, creatures and mist |
+| 3 · Pre-rendered | Pre-rendered scene loops behind the live Flame | Pre-rendered restoration transitions |
+| 4 · Unity | Separately scoped spike only | Same |
+
+**A fallback has to pass, not just be chosen.** If every step fails for a spike, the engine conclusion is "not proven", and P3 doesn't start.
 
 ### B.5 The design round (Codex, AI-only, anchors as references)
 Every prompt passes the anchors with `--image` (Part 4 §9): one image per call, a short prompt, no other file edits. These are added to `scripts/style-tests.sh` (re-run safe).
@@ -107,8 +154,9 @@ Mathis picks; a rejected image is re-run with his notes.
 2. Claude builds the model in Blender by script (the base mesh, then the rig).
 3. Six animations: idle breathe, blink, cheer, tap-giggle, sleep, walk.
 4. Materials: fluffy fire, core, face atlas.
-5. Export to USDZ with a **reproducible export script** kept in the repo, validated with Apple's `usdchecker`/`realitytool`.
-6. Run in S1 on the phone.
+5. Export to USDZ with a **reproducible export script** kept in the repo, validated with `/usr/bin/usdchecker` and `realitytool`.
+6. Run it **in S1, S2 and S3** on the phone, on both routes.
+7. **Keep every editable source**, with tool versions: the Blender file, the rig, the animations, the material and shader sources, the sound project.
 
 What gets recorded:
 - **Time spent** per step.
@@ -131,18 +179,47 @@ What gets recorded:
 **The no-spend continuation** is written up at the end in plain words: what an AI-built Flame reached, what it lacks next to a professional animator's work, and the honest compromise (e.g. simpler animation, painted-layer realms).
 
 ### B.7 The measurement protocol (Part 9 §3.2)
-- **Tools:** Xcode Instruments (free) on the device: the RealityKit Trace, Animation Hitches and Allocations templates.
-- **Conditions, fixed:** brightness 50%, volume 50%, Low Power Mode off, Wi-Fi on, auto-lock off, battery ≥ 80% at the start, not charging, room temperature.
-- **The 30-minute scenario,** repeated: 60 s idle → 5 completions → 1 ceremony → Sanctuary → Grove → Sanctuary → background and back. Run once at full quality and once at reduced quality.
-- **Measured:**
-  - frame time p50/p95/p99;
-  - hitches per minute;
-  - total-app memory, steady and **peak** (including scene transitions);
-  - texture memory;
-  - the thermal state over time;
-  - battery used.
-- **Proposed targets (to validate, not facts):** 60 fps with p95 ≤ 16.7 ms and < 1 hitch per minute; total memory ≤ 350 MB steady and ≤ 500 MB peak; scene assets ≤ 150 MB; no "serious" thermal state within 30 minutes at full quality; ≤ 10% battery per 30 minutes.
-- **The quality-mode test:** force each R4 mode, check that hysteresis prevents flicker, and check that every mode keeps the Flame animated and the controls working.
+**Definitions (and the instrument behind each):**
+
+| Measure | Definition | Instrument |
+|---|---|---|
+| **Frame time** | The interval between presented frames | RealityKit Trace + Animation Hitches (Instruments), exported |
+| **Hitch** | A presented frame later than 2 × 16.7 ms; a **stall** is any frame over 100 ms | Animation Hitches |
+| **Memory** | The whole-app physical footprint (not just allocations), steady and peak | VM Tracker / footprint in Instruments + `os_proc_available_memory` logged by the HUD |
+| **Texture memory** | Resident texture memory in total (a target ≤ 200 MB), not only the per-texture cap | RealityKit Trace, Metal resource view |
+| **Thermal** | `ProcessInfo.thermalState` logged every 10 s | HUD log |
+| **Battery** | `UIDevice.batteryLevel` at the start and end | HUD log |
+
+**The script:**
+- **Warm-up:** 5 minutes of the scenario, not counted.
+- **Then exactly 30 minutes,** repeating this 5-minute loop six times:
+
+| Time | Event |
+|---|---|
+| 0:00 | Sanctuary idle |
+| 1:00 | Completions at 1:00, 1:15, 1:30, 1:45 and 2:00 |
+| 2:30 | A ceremony (60 s, peak particles) |
+| 3:30 | Travel to the Grove (load) |
+| 4:15 | Back to the Sanctuary (unload the Grove) |
+| 4:45 | Background for 15 s, then foreground |
+
+- Fixed fake data and a **fixed random seed**.
+- **3 runs** for each combination: route (full 3D / painted hybrid) × mode (full / reduced).
+
+**Memory pressure:** a debug control allocates ballast memory in steps until the system raises a memory warning on the device (real pressure; a simulator warning doesn't count). Pass: no crash; caches are released; the scene reloads within 2 s once the ballast is freed.
+
+**Battery runs are separate from profiling:**
+- **Setup:** unplugged, no Instruments, no wireless debugging, no screen recording.
+- **Fixed conditions:** brightness 50%, volume 50%, Low Power Mode off, Wi-Fi on, auto-lock off, a starting charge of 80–90%, room temperature (about 20–24 °C), and 20 minutes of cooling between runs.
+
+**Saved with every run:** the build and asset versions, the raw traces (in `prototypes/p2-spikes/traces/`, kept out of git), and a summary in the write-up. Report p50, p95 **and p99**, hitches per minute, and stalls.
+
+**Proposed targets (to validate, not facts):** 60 fps with p95 ≤ 16.7 ms, p99 ≤ 33 ms, < 1 hitch per minute and 0 stalls outside loading; total memory ≤ 350 MB steady and ≤ 500 MB peak; resident textures ≤ 200 MB; no "serious" thermal state within 30 minutes at full quality; ≤ 10% battery per 30 minutes.
+
+**The quality-mode test:**
+- **Define each R4 mode's effects** and the precedence of triggers (thermal > Low Power Mode > user choice).
+- **Exercise the automatic rules:** step down after 5 s below target, recover after 60 s stable, with no flicker.
+- **Check in all five modes:** the Flame stays animated; completing, **undoing** and navigating all work; and the background image **updates when the world state changes** (so it never lies about your progress).
 
 ### B.8 Order of work
 | Week | Work |
@@ -154,8 +231,9 @@ What gets recorded:
 
 ### B.9 Exit criteria (P2 is done when)
 1. S1–S3 results are written up with measured numbers for full and reduced quality, plus Mathis's recordings and verdict.
-2. Every failed feature has its fallback step chosen and shown to Mathis (decision 97).
+2. Every failed feature has a fallback that **passed** its repeated checks and was accepted by Mathis (decision 97). A partial rig result or a failed fallback chain blocks the P3 handoff.
 3. The design round is approved: all stages, the face sheet, the turnaround, the cast, the Sanctuary, Hushed/Alive, glyphs, UI kit.
 4. The asset trial is done, with the acceptance checklist and the no-spend continuation written.
-5. **Mathis has made the art decision** (no-spend continuation, or quotes).
-6. Codex has reviewed the results.
+5. **A schedule re-estimate**, built from the trial's measured work and revision time: the P3 asset workload, the approvals and phone sessions needed from Mathis, checked against his 1–2 hours a day, with the chosen no-spend compromises stated.
+6. **Mathis has made the art decision** (no-spend continuation, or quotes). **Asking for quotes never authorizes outreach or a paid trial by itself:** each contact and each spend needs his explicit yes.
+7. Codex has reviewed the results.
