@@ -130,3 +130,37 @@ Codex makes the concepts (one image per call, short prompts). Mathis picks. A hu
 - **Every new concept is generated with these images as references** (Codex `--image`), so the look doesn't drift.
 - **The evolution keeps v2's identity and arc.** The design round adds distinct details per stage (posture, markings shaped by your pillars, the crown at Kindled) on top of v2, so each stage reads as deeper, not just bigger (decision 4).
 - **A technical note for spike S2:** a world this rich is demanding on a phone. S2/S3 must show whether it runs fully in 3D, or as painted, layered scenes with live 3D elements (water, lights, mist, creatures) and your live 3D Flame. Either way it must look like these anchors and move (decision 93).
+
+---
+
+## 10. The integration and depth bar (decision 101)
+
+*Mathis, 2026-10-01, on the first painted Sanctuary: "The flame doesn't integrate well with the current world, it feels like a layer on top… things are still too stagnant overall, not 3D enough… let's make sure this portrays the ambitions for this project."*
+
+**The bar:** your Flame is *part of* the world, never a sticker on top of it, and the world has real depth and is always alive. Every scene from P2 onward is judged against this list. A screen recording on the phone must show it, and Mathis accepts it.
+
+### A. Your Flame belongs to the world
+| # | Requirement | What you see |
+|---|---|---|
+| A1 | **It lights the world** | Warm, flickering light spills onto the ground, steps, walls and water around it; brighter when it's happy; at night it's the main light |
+| A2 | **The world lights it** | The scene's light color and direction tint the Flame (a sunset rim, a cool night tone, shade under trees) |
+| A3 | **It touches the ground** | A contact glow and shade where it stands; embers puff when it lands; ripples when it's near water |
+| A4 | **It's reflected** | In water and polished stone, rippling with the surface |
+| A5 | **Things pass in front of it** | Leaves, mist wisps, fireflies, plants, pillars when it walks behind them (real occlusion) |
+| A6 | **It moves in depth** | It walks along paths on the ground's surface, closer and farther, scaling with perspective; it never floats |
+| A7 | **The world reacts to it, and it to the world** | Grass bends and lanterns brighten as it passes, creatures notice it; it looks at a butterfly, warms its hands at the hearth |
+| A8 | **One atmosphere** | The same color grade, haze and mist apply to the Flame and the world |
+
+### B. The world is 3D and alive
+| # | Requirement | What you see |
+|---|---|---|
+| B1 | **Real depth** | At least four depth layers (foreground, the Flame's plane, midground, sky) with parallax and occlusion; the camera can glide and tilt without breaking the illusion |
+| B2 | **Nothing is frozen** | Water, waterfalls, leaves, clouds, light through leaves, mist: no part of the screen is still for more than a few seconds |
+| B3 | **Wind** | Occasional gusts move everything together (trees, hair, mist, embers), which sells it as one world |
+| B4 | **Life** | Small creatures (birds, fish, fireflies, moths) with their own little behaviors |
+| B5 | **Time and weather** | Light follows the time of day; seasonal weather (rain, falling leaves, snow in Embernight) |
+
+### How it's built (whichever rendering route wins in P2)
+- **Painted route:** paintings are split into depth layers using depth maps (Codex), the Flame lives *between* layers, and shaders add light spill, reflections and motion.
+- **3D route:** the same requirements come naturally from real geometry and lights; the cost is matching the painted look.
+- Both routes are compared in S2/S3 against this bar, not just against fps.

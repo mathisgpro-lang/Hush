@@ -111,3 +111,73 @@ void glowPulse(realitykit::surface_parameters params)
     params.surface().set_emissive_color(col.rgb);
     params.surface().set_opacity(col.a * half(beat * params.uniforms().custom_parameter().x));
 }
+
+// ---------- S2 · the painted Sanctuary, alive ----------
+
+float s2hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
+float s2noise(float2 p) {
+    float2 i = floor(p), f = fract(p);
+    float2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(s2hash(i), s2hash(i + float2(1, 0)), u.x), mix(s2hash(i + float2(0, 1)), s2hash(i + float2(1, 1)), u.x), u.y);
+}
+float s2fbm(float2 p) { return s2noise(p) * 0.55 + s2noise(p * 2.1 + 3.7) * 0.3 + s2noise(p * 4.3 + 9.1) * 0.15; }
+
+// The painting comes alive: rippling water with sparkles in the lower part, falling water where the painting is
+// bright and pale in the waterfall band, and the Hush grading (R1: custom.x = vitality → mist, grey, dimming).
+[[visible]]
+void sanctuaryLive(realitykit::surface_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float t = params.uniforms().time();
+    float vitality = params.uniforms().custom_parameter().x;
+    constexpr sampler s(address::clamp_to_edge, filter::linear);
+    float2 tuv = float2(uv.x, 1.0 - uv.y);
+
+    // Water (bottom of the painting): two crossing ripple trains, stronger toward the viewer.
+    float water = 1.0 - smoothstep(0.26, 0.33, uv.y);
+    float near = saturate(1.0 - uv.y / 0.3);
+    float2 ripple = float2(sin(uv.y * 160.0 - t * 1.6 + sin(uv.x * 12.0 + t * 0.5)) * 0.0022,
+                           sin(uv.x * 70.0 + t * 1.1) * 0.0012) * water * (0.4 + near);
+
+    half4 base = params.textures().base_color().sample(s, tuv);
+    // Waterfalls: pale bright pixels in the middle band flow downward.
+    float lum = dot(float3(base.rgb), float3(0.299, 0.587, 0.114));
+    float sat = float(max(base.r, max(base.g, base.b)) - min(base.r, min(base.g, base.b)));
+    float fall = smoothstep(0.62, 0.8, lum) * (1.0 - smoothstep(0.15, 0.35, sat)) * smoothstep(0.34, 0.4, uv.y) * (1.0 - smoothstep(0.6, 0.66, uv.y));
+    float2 flow = float2((s2noise(float2(uv.x * 60.0, uv.y * 30.0 + t * 4.0)) - 0.5) * 0.002,
+                         (s2noise(float2(uv.x * 40.0, uv.y * 25.0 + t * 3.0)) - 0.5) * 0.007) * fall;
+
+    half4 col = params.textures().base_color().sample(s, tuv + ripple + flow);
+    // Sparkles on the water where the sun reflects.
+    float sp = s2noise(float2(uv.x * 140.0 + sin(t * 0.3) * 2.0, uv.y * 380.0 - t * 1.5));
+    float sparkle = smoothstep(0.93, 1.0, sp) * (0.5 + 0.5 * sin(t * 6.0 + uv.x * 50.0)) * water * near * 0.6;
+    col.rgb += half3(1.0, 0.85, 0.6) * half(sparkle);
+    // Falling water shimmer.
+    col.rgb += half3(0.08) * half(fall * (0.5 + 0.5 * sin(uv.y * 400.0 + t * 12.0)));
+
+    // The Hush: grey, cooler, misty and dimmer as vitality drops (nothing disappears).
+    float hush = 1.0 - vitality;
+    float grey = dot(float3(col.rgb), float3(0.3, 0.59, 0.11));
+    float3 c = mix(float3(col.rgb), float3(grey) * float3(0.85, 0.9, 1.05), hush * 0.75);
+    float mist = s2fbm(uv * float2(3.0, 6.0) + float2(t * 0.02, 0)) * hush * 0.45;
+    c = mix(c, float3(0.62, 0.65, 0.72), mist);
+    c *= (1.0 - hush * 0.35);
+
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(half3(c));
+    params.surface().set_opacity(1.0);
+}
+
+// A drifting mist card (opacity from custom.x; custom.y = speed; custom.z = seed).
+[[visible]]
+void mistDrift(realitykit::surface_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float4 c = params.uniforms().custom_parameter();
+    float t = params.uniforms().time();
+    float n = s2fbm(float2(uv.x * 3.0 + t * c.y + c.z, uv.y * 2.0 + c.z * 0.5));
+    float edge = smoothstep(0.0, 0.25, uv.y) * (1.0 - smoothstep(0.6, 1.0, uv.y)) * smoothstep(0.0, 0.1, uv.x) * (1.0 - smoothstep(0.9, 1.0, uv.x));
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(half3(0.8, 0.8, 0.86));
+    params.surface().set_opacity(half(saturate(n * 1.6 - 0.35) * edge * c.x));
+}

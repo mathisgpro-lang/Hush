@@ -98,6 +98,8 @@ If Mathis says no to Blender: the test Flame is built from code-generated meshes
 
 ### B.4 Spikes S2 (the Sanctuary) and S3 (restoration)
 
+**The integration and depth bar** (Part 4 §10, decision 101): S2 and S3 are judged against A1–A8 and B1–B5 on phone recordings, not just on fps. A route that runs fast but leaves the Flame looking like a sticker doesn't pass.
+
 **The representative combined scene** (the budget is defined, not guessed):
 - **Screen:** native portrait resolution (1179 × 2556).
 - **Two camera distances:** close-up (the Flame fills about 60% of the height) and gameplay (about 20%).
