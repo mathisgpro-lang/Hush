@@ -100,7 +100,7 @@ This is how long-term goals blend into the world. **A Path becomes a Journey.**
 | **Chapters** | Phases of the plan | Regions of the road with different scenery and a short story beat at each new chapter |
 | **Daily steps** | Today's session | Each completed step moves your Flame forward on the road |
 | **Rest days** | Planned rest | Campfires on the road: your Flame rests and the scene is cozy (rest is part of the journey) |
-| **The summit** | The goal reached (you ran the 5K) | **The finale**: the summit or beacon of the realm, a ceremony, a permanent landmark named after you, a keepsake, and a Keeper scene |
+| **The summit** | The goal reached (you ran the 5K) | **The finale**: the Journey's own summit in the realm (Beacons relight by full restoration, decision 96), a ceremony, a permanent landmark named after you, a keepsake, and a Keeper scene |
 | **If life happens** | Pause, reschedule | Your Flame waits at the last campfire. The road is still there |
 
 ### The Journey catalog (future; what's usable in each phase is in Part 9 §1)

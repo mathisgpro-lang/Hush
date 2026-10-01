@@ -69,7 +69,7 @@
 |---|---|
 | Every season | A Season chapter, a seasonal Gathering, seasonal keepsakes |
 | About every quarter | A **realm release** (the remaining realms), new Journeys, new Encounters |
-| Year 1 → 2 | Act II completion (all six Beacons), the Kindled stage, **Act III: the Grey Sea** with community features (other travellers' lights, letters, shared Journeys) |
+| Year 1 → 2 | Act II (any three Beacons open Act III; all six = the optional Full Circle, decision 96), the Kindled stage, **Act III: the Grey Sea** with community features (other travellers' lights, letters, shared Journeys) |
 | Year 2+ | Act IV: Beyond the Veil; Android (decision 28); partner Journeys (Strava-verified, decision 3) |
 
 ---

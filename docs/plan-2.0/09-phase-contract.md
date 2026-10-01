@@ -132,6 +132,22 @@ Rules around it:
 
 ---
 
+**R16 · Your pillars, your story; balance as a friendly reminder (finding 4, decision 96).**
+- **The story advances through the pillars you choose.** Act III opens once **any three Beacons** are relit. A Beacon relights when its realm is fully restored; a finished Journey leaves its own landmark. Lighting **all six** is the optional **Full Circle**: a special scene and a keepsake, never required. Kindled isn't required for any Beacon.
+- **Quiet pillars come back now and then, as an invitation, never an obligation.** In the world, that's:
+  - a **Keeper's visit** from a realm you haven't touched lately: *"Brakka stopped by. The Highlands remember your footsteps. A short walk, someday?"*;
+  - an occasional **Encounter** from that realm, always with a tiny 2-minute version;
+  - a quiet realm stays **gently misted on the map**, visible and never alarming;
+  - your Flame's **balanced look** (Part 3 §4) stays something to admire, never a warning.
+- **Limits:**
+  - at most **one balance reminder a week**, and the same pillar at most **once every 4 weeks**;
+  - **in the app only, never a notification**;
+  - it never affects Depth, Vitality, the story or any reward.
+- **Two calm answers, always:**
+  - **"Not now"** quiets it for 4 weeks;
+  - **"Not for me"** stops reminders for that pillar until you turn them back on in Settings. It never asks why (an injury, a disability, a season of life are nobody's business).
+- **Wording:** an invitation, never a deficit. "The Highlands remember you", never "you've neglected your body". Body reminders offer only gentle habits (R10).
+
 ## 3. The P2 phase plan must contain (gate before P2 approval)
 
 1. **A feature checklist tied to the installed Xcode and iOS versions** (finding 8):
@@ -168,5 +184,5 @@ Rules around it:
 8. **Accessible routes and the Simple view** (R7), tested with VoiceOver, the largest text and Reduce Motion.
 
 ## 5. Open for Mathis
-- **Beacons (finding 4):** must the main story require all six realms, or can it advance through the pillars you choose?
+- ~~Beacons (finding 4)~~: answered by decision 96 (R16).
 - **The fallback engine (finding 10):** Unity is a second, untested architecture, not a ready fallback.

@@ -26,7 +26,7 @@
 | **Light** | What a flame gives off when it truly lives | Every real action |
 | **The Hush** | A soft grey mist of forgetting that settles where no one lives fully | Distraction, numbness, autopilot |
 | **The Keepers** | Ancient spirits who each guard one realm's wisdom | The knowledge you need (with real, cited sources) |
-| **Beacons** | One per realm, cold for centuries; relit by completing that realm's great Journeys | Long-term goals achieved |
+| **Beacons** | One per realm, cold for centuries; relit when that realm is fully restored. Any three open Act III; all six complete the optional **Full Circle** (decision 96) | Long-term goals achieved |
 | **Embers of others** | Faint lights of other travellers seen in the distance | Community (the Gathering, later social) |
 
 **The rule of the world:** *light can't be taken, bought or borrowed. It can only be lived.*
@@ -169,7 +169,7 @@ Each realm mirrors one pillar. Each has a **Keeper**, a **look**, a **sound**, *
 
 | Place | Opens | What it holds |
 |---|---|---|
-| **The Grey Sea** | Act III (year 2): all six Beacons relit | The thickest Hush; islands of other travellers' lights; the beginning of **community** (shared journeys, letters between flames) |
+| **The Grey Sea** | Act III: **any three Beacons** relit (decision 96) | The thickest Hush; islands of other travellers' lights; the beginning of **community** (shared journeys, letters between flames) |
 | **The First Hearth** | Seen from the Summit Observatory; reached at the end of Act III | The heart of the world, slowly rekindled by everyone's light together |
 | **Beyond the Veil** | Act IV (years) | Where flames came from. Revealed to no one until someone gets there |
 
@@ -177,12 +177,12 @@ Each realm mirrors one pillar. Each has a **Keeper**, a **look**, a **sound**, *
 
 ## 7. The story in Acts (the long arc)
 
-*Durations are illustrative: Acts advance only by lived progress, never by the calendar (Part 9 R5). How Beacons gate the story is open for Mathis (Part 9 §5).*
+*Durations are illustrative: Acts advance only by lived progress, never by the calendar (Part 9 R5). Act III opens with any three Beacons; all six is the optional Full Circle (decision 96, Part 9 R16).*
 
 | Act | When (lived time, never calendar) | The story | Real-life arc |
 |---|---|---|---|
 | **I · The Waking** | Weeks 1–6 | Your Flame is born. The Lamplighter guides you. You discover the Spark, the Grove, the Keepers, the Book, and finally the Forge. The Age of Metal begins | Building your first habits |
-| **II · The Six Beacons** | Months 2–12 | Each realm's great Journeys relight its Beacon. The Keepers reveal fragments of the Hush's history. Your Flame evolves to Blaze | Achieving your first long-term goals |
+| **II · The Six Beacons** | Months 2–12 | A realm's Beacon relights when the realm is fully restored (finishing a Journey leaves its own landmark). **Act III opens with any three Beacons; all six is the optional Full Circle** (decision 96). The Keepers reveal fragments of the Hush's history. Your Flame evolves to Blaze | Achieving your first long-term goals |
 | **III · The Grey Sea** | Year 2 | You cross the Grey Sea and meet other travellers' lights. Together, flames begin to rekindle the First Hearth | Growing *with* others; helping others grow |
 | **IV · Beyond the Veil** | Years 3+ | The origin of flames, the meaning of the Hush, and what your Flame will become | A life lived fully, and passed on |
 

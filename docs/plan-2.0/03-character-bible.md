@@ -56,7 +56,7 @@ Stages are **earned by time lived** (active days) **and Depth**, and are never r
 | **Spark** | Birth | Tiny, round, enormous eyes, 3 small flame tips, no arms yet (little nubs), wobbly | Babbles, curious about everything, falls over | Wakes, sleeps, cheers |
 | **Flame** | 7 active days | Taller, real arms and legs, 4 tips, more expressive | Playful, brave, chatty | Walks the world, waves, points at things, **chooses its name** (see §5) |
 | **Blaze** | 60 active days + Depth 120 | Confident posture, 5 tips, a brighter core, first **pillar markings** (soft glowing patterns shaped by your strongest pillars) | Determined, funny, protective | Runs, leaps, carries keepsakes, visits Keepers alone |
-| **Kindled** | 300 active days + Depth 800 | A radiant form; markings complete; a unique silhouette shaped by *your* life (§4) | Wise, warm, calm, still playful | Lights Beacons, guides younger flames (Act III) |
+| **Kindled** | 300 active days + Depth 800 | A radiant form; markings complete; a unique silhouette shaped by *your* life (§4) | Wise, warm, calm, still playful | Beacon ceremonies take on its radiant form (Kindled is never required for a Beacon), guides younger flames (Act III) |
 | **Beyond** | Years | Unknown, revealed only to those who arrive | — | — |
 
 **The evolution ceremony** (once per stage):

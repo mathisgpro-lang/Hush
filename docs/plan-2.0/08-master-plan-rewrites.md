@@ -72,7 +72,7 @@
 | **Journeys** | Paths told as quest lines: a road, waypoints, chapters, a summit |
 | **Encounters** | Sparks told as creatures with a request |
 | **The Gathering** | The Ritual, held in the Whispering Grove |
-| **Beacons** | One per realm; their exact unlock rule is open for Mathis (Part 9 §5) |
+| **Beacons** | One per realm; relit when the realm is fully restored. Any three open Act III; all six = the optional Full Circle (decision 96) |
 | **Keepsakes** | Earned, dated objects (worn, carried, or kept at home). Never sold |
 | **Stages** | Your Flame's evolution: Spark, Flame, Blaze, Kindled, Beyond |
 | **Acts** | The story's long chapters: I The Waking, II The Six Beacons, III The Grey Sea, IV Beyond the Veil |
