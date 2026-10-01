@@ -76,6 +76,9 @@ struct S1View: View {
                         let hero = HeroRig()
                         do { try await hero.build() } catch { selfTest = "hero failed: \(error)"; return }
                         content.add(hero.leanPivot)
+                        hero.updates = content.subscribe(to: SceneEvents.Update.self) { e in
+                            hero.update(dt: Float(e.deltaTime))   // fluid motion, stepped every frame
+                        }
                         r = hero
                     }
 

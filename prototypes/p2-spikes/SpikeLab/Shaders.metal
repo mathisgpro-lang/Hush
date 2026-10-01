@@ -56,8 +56,11 @@ void heroLive(realitykit::geometry_parameters params)
     float lick = (sin(t * 3.3 + uv.x * 17.0) * 0.5 + 0.5) * 0.010 * hair * hair * hair * energy;
     float breath = sin(t * 1.6) * 0.012;
     float body = 1.0 - hair;
-    float bob = sin(t * 1.25) * 0.0035 + sin(t * 2.9) * 0.0012;          // never perfectly still
-    params.geometry().set_model_position_offset(float3(sway + p.x * breath * 0.6 * body, lick + p.y * breath * 0.5 * body + bob, 0));
+    float bob = sin(t * 1.25) * 0.002 + sin(t * 2.9) * 0.0008;           // never perfectly still
+    // Follow-through (custom.zw, from the body's motion): the hair trails behind and lags, then catches up.
+    float2 drag = c.zw * hair * hair;
+    params.geometry().set_model_position_offset(float3(sway + p.x * breath * 0.6 * body + drag.x,
+                                                       lick + p.y * breath * 0.5 * body + bob + drag.y, 0));
 }
 
 // Living fire inside Codex's painting: flames flow upward through the hair and fur (the face stays crisp),

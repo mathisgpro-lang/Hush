@@ -81,3 +81,14 @@
 - A constant gentle float in `heroLive`, so it's never perfectly still.
 - Livelier pacing for the painted Flame: idle tempo 0.55 (about 2.2–6.6 s between behaviors).
 - Demo: `docs/design/demos/2026-10-01-codex-hero-alive-v3.mp4`.
+
+### Preview v4: "its movement should be more fluid" (Mathis)
+- Tweens (`move(to:)` between poses) replaced by **`FluidBody`**, stepped every frame (`SceneEvents.Update`):
+  - travel follows smooth multi-octave noise, plus behavior and finger bias, through a soft spring;
+  - hops use gravity, and landing impact drives a jiggly squash spring;
+  - squash and stretch come from vertical speed (volume preserved);
+  - it leans into motion (roll from horizontal speed) with an organic sway;
+  - hair follow-through springs are fed to the shader (`custom.zw`).
+- Behaviors now only set targets and impulses; the physics makes every transition flow.
+- Measured on the recording: centroid displacement every 0.25 s over 21 s gave 83 samples, **0 nearly still**; motion amplitude rises and falls smoothly (bigger on hops and travel).
+- Demo: `docs/design/demos/2026-10-01-codex-hero-alive-v4.mp4`.
