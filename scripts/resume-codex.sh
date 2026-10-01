@@ -47,5 +47,8 @@ run_brief docs/design/briefs/vessel-bodies.md \
 run_brief docs/reviews/briefs/plan-2-review.md \
   docs/reviews/2026-10-01-codex-plan-2.md
 
+run_brief docs/reviews/briefs/p2-plan-review.md \
+  docs/reviews/2026-10-01-codex-p2-plan.md
+
 # style tests (decision 75)
 "$ROOT/scripts/style-tests.sh"
