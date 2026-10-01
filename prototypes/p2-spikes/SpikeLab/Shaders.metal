@@ -334,3 +334,52 @@ void tongueFire(realitykit::surface_parameters params)
     params.surface().set_emissive_color(col.rgb * half(c.z));
     params.surface().set_opacity(col.a);
 }
+
+// ---------- The Sanctuary in the Age of Stone (style anchor, decision 104) ----------
+// custom texture (motion mask): R = water (sea, pools), G = falling water, B = brazier flames.
+// custom: x = vitality, y/z = the Flame's position (uv), w = its light strength. roughness_scale = wind.
+[[visible]]
+void stoneLive(realitykit::surface_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float t = params.uniforms().time();
+    float4 c = params.uniforms().custom_parameter();
+    constexpr sampler s(address::clamp_to_edge, filter::linear);
+    float2 tuv = float2(uv.x, 1.0 - uv.y);
+    half4 mask = params.textures().custom().sample(s, tuv);
+    float water = float(mask.r), fall = float(mask.g), fire = float(mask.b);
+
+    float2 ripple = float2(sin(uv.y * 220.0 - t * 1.3 + sin(uv.x * 14.0 + t * 0.4)) * 0.0016,
+                           sin(uv.x * 90.0 + t * 0.9) * 0.0008) * water;
+    float2 flow = float2((s2noise(float2(uv.x * 70.0, uv.y * 30.0 + t * 4.0)) - 0.5) * 0.0015,
+                         (s2noise(float2(uv.x * 50.0, uv.y * 25.0 + t * 3.2)) - 0.5) * 0.006) * fall;
+    half4 base0 = params.textures().base_color().sample(s, tuv);
+    float wind = params.material_constants().roughness_scale();
+    float green = smoothstep(0.02, 0.12, float(base0.g) - max(float(base0.r) * 0.85, float(base0.b)));
+    float2 sway = float2(sin(t * 2.0 + uv.y * 30.0 + uv.x * 8.0) * 0.003 * wind * green * (0.3 + uv.y), 0);
+    half4 col = params.textures().base_color().sample(s, tuv + ripple + flow + sway);
+    float3 rgb = float3(col.rgb);
+
+    // Sun glints on the sea, falling water shimmer, braziers flickering.
+    float glint = smoothstep(0.94, 1.0, s2noise(float2(uv.x * 160.0 + sin(t * 0.25) * 3.0, uv.y * 420.0 - t * 1.2)));
+    rgb += float3(1.0, 0.86, 0.62) * glint * water * (0.5 + 0.5 * sin(t * 5.0 + uv.x * 40.0)) * 0.7;
+    rgb += float3(0.07) * fall * (0.5 + 0.5 * sin(uv.y * 420.0 + t * 11.0));
+    float flick = 0.85 + 0.25 * s2noise(float2(t * 6.0, uv.x * 30.0 + uv.y * 20.0));
+    rgb = mix(rgb, rgb * flick * 1.08 + float3(0.06, 0.03, 0.0), fire);
+
+    // The Flame lights the circle around it (A1).
+    float2 fd = float2((uv.x - c.y) * 0.46, uv.y - c.z);
+    float light = c.w * exp(-dot(fd, fd) / 0.004) * (fd.y < 0.0 ? 1.2 : 0.7);
+    rgb += rgb * float3(1.0, 0.55, 0.18) * light * 1.2;
+
+    // The Hush (vitality).
+    float hush = 1.0 - c.x;
+    float g = dot(rgb, float3(0.299, 0.587, 0.114));
+    rgb = mix(rgb, float3(g) * float3(0.85, 0.9, 1.05), hush * 0.75);
+    rgb = mix(rgb, float3(0.62, 0.65, 0.72), s2fbm(uv * float2(3.0, 6.0) + float2(t * 0.02, 0)) * hush * 0.45);
+    rgb *= 1.0 - hush * 0.35;
+
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(half3(rgb));
+    params.surface().set_opacity(1.0);
+}

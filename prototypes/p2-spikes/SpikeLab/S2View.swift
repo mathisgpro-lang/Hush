@@ -13,9 +13,11 @@ final class SanctuaryScene {
     private var painting: ModelEntity?
     private var vitality: Float = 1
     private var paintingW: Float = 1, paintingH: Float = 1
-    private let heroScale: Float = 0.55
+    private let heroScale: Float = 0.62     // small and cute on the circle, like the First Words frame
+    /// The stone circle's center in the painting (uv, v up): the Flame's stage.
+    private let circle = SIMD2<Float>(0.495, 0.505)
     private var mists: [ModelEntity] = []
-    let hero = HeroRig()
+    let hero = LayeredFlame()   // Codex's parts, center stage (decision 104)
     let life = SanctuaryLife()
     private var flies: Entity?
     private var heroFeet = SIMD3<Float>(0, 0, 0)
@@ -58,8 +60,9 @@ final class SanctuaryScene {
 
     func build() async throws {
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
-        let tex = try await TextureResource(named: "sanctuary-paint.png")
-        loadDepth("sanctuary-depth.png")
+        let tex = try await TextureResource(named: "stone-paint.png")
+        let motion = try await TextureResource(named: "stone-motion.png", options: .init(semantic: .raw))
+        loadDepth("stone-depth.png")
         let visibleH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180)
         let aspect = Float(tex.width) / Float(tex.height)
         let (w, h) = (visibleH * aspect * 1.08, visibleH * 1.08)     // a little overscan so parallax never shows edges
@@ -85,8 +88,9 @@ final class SanctuaryScene {
         unlit.color = .init(tint: .white, texture: .init(tex))
         var material: any RealityKit.Material = unlit
         if let lib {
-            var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: "sanctuaryLive", in: lib))
-            m.custom.value = [1, 0, 0, 0]
+            var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: "stoneLive", in: lib))
+            m.custom.texture = .init(motion)
+            m.custom.value = [1, 0.5, 0.5, 0]
             material = m
         }
         let p = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
@@ -95,7 +99,7 @@ final class SanctuaryScene {
         // Mist cards at three depths, all just behind the Flame (it must stay the warmest, clearest thing on screen),
         // driven by Vitality. The near-water mist lives in the painting's shader.
         if let lib {
-            for (k, spec) in [(z: -1.19, y: -0.08, w: 0.9, speed: 0.012), (z: -1.24, y: 0.02, w: 1.1, speed: 0.008), (z: -1.3, y: 0.1, w: 1.3, speed: 0.005)].enumerated() {
+            for (k, spec) in [(z: -1.0, y: 0.05, w: 0.9, speed: 0.012), (z: -1.2, y: 0.12, w: 1.1, speed: 0.008), (z: -1.3, y: 0.2, w: 1.3, speed: 0.005)].enumerated() {
                 var u = UnlitMaterial(); u.blending = .transparent(opacity: .init(floatLiteral: 1.0)); u.writesDepth = false
                 var m = try CustomMaterial(from: u, surfaceShader: .init(named: "mistDrift", in: lib))
                 m.custom.value = [0, Float(spec.speed), Float(k) * 13.7, 0]
@@ -114,24 +118,20 @@ final class SanctuaryScene {
         f.mainEmitter.birthRate = 6; f.mainEmitter.lifeSpan = 5; f.mainEmitter.lifeSpanVariation = 2
         f.mainEmitter.size = 0.004; f.mainEmitter.blendMode = .additive
         f.mainEmitter.color = .constant(.single(UIColor(red: 1, green: 0.85, blue: 0.45, alpha: 1)))
-        flies.components.set(f); flies.position = [0, -0.18, -0.95]
+        flies.components.set(f); flies.position = [0, 0.0, -0.95]
         root.addChild(flies); self.flies = flies
 
         // The Flame on the steps (v ≈ 0.33 in the painting), scaled to the scene.
         try await hero.build()
-        // Its feet sit exactly at the depth of the step it stands on (the painting is bent in depth), so the
-        // rows above it fall behind it and the rows below it stay below its feet.
-        let stepV: Float = 0.285
-        let stepDepth = depth == nil ? Self.depthOffset(stepV) : relief(depthAt(0.5, stepV + 0.01))
-        let d = Self.distance - stepDepth - 0.01                         // a hair in front of the step
-        let k = d / Self.distance                                      // keep its screen position and size
+        // Center stage: its feet on the middle of the stone circle, at the circle's own depth.
+        let d = Self.distance - relief(depthAt(circle.x, circle.y)) - 0.01
+        let k = d / Self.distance
         let scale = heroScale * k
-        let stepsY = (stepV - 0.5) * h * k
+        let feet = SIMD3<Float>((circle.x - 0.5) * w * k, (circle.y - 0.5) * h * k, -d)
         hero.leanPivot.scale = .init(repeating: scale)
-        hero.leanPivot.position = [0, stepsY + 0.09 * scale, -d]
-        hero.inScene = true
+        hero.leanPivot.position = feet + SIMD3(0, 0.09 * scale, 0)
         root.addChild(hero.leanPivot)
-        heroFeet = [0, stepsY, -d]; heroWorldScale = scale
+        heroFeet = feet; heroWorldScale = scale
 
         try await life.build()
         root.addChild(life.root)
@@ -162,7 +162,7 @@ final class SanctuaryScene {
     func update(dt: Float) {
         time += dt
         // Life and wind first, so the Flame can react to them this frame.
-        let chest = heroFeet + SIMD3(hero.standingX * heroWorldScale, 0.13 * heroWorldScale, 0.005)
+        let chest = heroFeet + SIMD3(hero.standingX * heroWorldScale, 0.10 * heroWorldScale, 0.005)
         let watch = life.update(dt: dt, flameAt: chest)
         hero.wind = life.wind
         if !fingerDown {
@@ -176,9 +176,9 @@ final class SanctuaryScene {
         }
         // The Flame's light on the painting follows it and flickers with the fire (A1); dimmer in the Hush.
         if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
-            let u = 0.5 + hero.standingX * heroScale / paintingW
+            let u = circle.x + hero.standingX * heroScale / paintingW
             let flicker = 0.85 + 0.15 * noise.sample(time * 7) + 0.05 * sin(time * 23)
-            m.custom.value = [vitality, u, 0.30, 0.9 * flicker * (0.5 + 0.5 * vitality)]
+            m.custom.value = [vitality, u, circle.y, 0.9 * flicker * (0.5 + 0.5 * vitality)]
             m.roughness = .init(floatLiteral: abs(life.wind))       // the shader reads wind from roughness_scale
             comp.materials = [m]; painting.model = comp
         }

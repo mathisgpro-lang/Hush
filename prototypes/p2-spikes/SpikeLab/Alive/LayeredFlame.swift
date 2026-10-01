@@ -60,7 +60,7 @@ final class LayeredFlame: FlameRig {
         }
 
         // Hair first (behind the head). Each tongue's base hides behind the round head; outer ones tilt outward.
-        let hairScale: Float = 0.645 * Self.px                     // hair painting px → meters
+        let hairScale: Float = 0.5 * Self.px                     // hair painting px → meters
         let headCenter = SIMD2<Float>(365, 290), headR: Float = 300
         for (i, dx) in [Float(-240), -130, 0, 130, 240].enumerated() {
             let n = "tongue-\(i)", t = textures[n]!
