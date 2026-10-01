@@ -97,7 +97,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
    - **In flight:** the Codex design round at 12:03 (`scripts/design-round-p2.sh`: face sheet, cast, Sanctuary Stone Age + Hushed, glyphs, UI, **rig parts** in `docs/design/rig/`, Kindled v2).
    - **Next:**
      1. the layered painted rig from Codex's parts (eyes follow, mouth, independent tongues) driven by `FluidBody`;
-     2. A6: walking in depth (paths, perspective scale);
+     2. ~~A6: walking in depth~~ (deferred, decision 103); **S3: restoration in the Grove** (lanterns relight with Depth) and **the world map alive**;
      3. relief → layers at depth edges (A5);
      4. the S2 full-3D route;
      5. S3 restoration;
