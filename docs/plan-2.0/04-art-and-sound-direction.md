@@ -123,6 +123,9 @@ Codex makes the concepts (one image per call, short prompts). Mathis picks. A hu
 | **Your Flame's evolution** | `docs/design/character/flame-evolution.png` (v2) | The character's identity across all five stages: the same face, glossy eyes, plush fluffy fire, swirling golden core, glowing markings appearing in the later stages |
 | **The character** | `docs/design/character/flame-hero.png`, `flame-expressions.png` | Proportions, materials, emotional range |
 | **The Whispering Grove** | `docs/design/world/grove-scene.png` | The world's feel: rich, painterly, luminous, hundreds of warm lights, mist, depth, golden-hour color |
+| **The Sanctuary (Age of Stone)** | `docs/design/world/sanctuary-stone-age.png` | The home: the circle and hearth where your Flame lives (decision 104) |
+| **The First Words** | `docs/design/ui/first-words-frame.png` | The first meeting: the Spark on the circle, the glowing text plate (decision 104) |
+| **The in-world UI** | `docs/design/ui/kit-calls-plates.png` | Calls as glowing scrolls by the hearth, plates, the home ember (decision 104) |
 | **The world map** | `docs/design/world/world-map.png` | The Emberlands' layout and grandeur: the Sanctuary in the sea, the Grove, the Stillwater, the floating Library, the Forge, the Veil |
 
 **What this settles:**

@@ -105,7 +105,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
      7. device measurements once the phone connects (decision 100).
    - **Waiting on Mathis (optional):** an image-to-3D account (route B).
    - ✅ The design round is complete (23 images); ✅ the living layered Flame from Codex's parts.
-5. ⏳ **P3 phase plan written** (`docs/plan-2.0/p3-phase-plan.md`), with the pacing simulation in `docs/plan-2.0/reference/pacing_simulation.py`. Codex review running (`docs/reviews/briefs/p3-plan-review.md`). **Ask Mathis, one at a time:** (1) approve P3; (2) the painted rendering route for P3; (3) the art decision (AI-only for P3).
+5. ⏳ **P3 phase plan written** (`docs/plan-2.0/p3-phase-plan.md`), with the pacing simulation in `docs/plan-2.0/reference/pacing_simulation.py`. Codex review running (`docs/reviews/briefs/p3-plan-review.md`). ✅ P3 approved (decision 104). **Ask Mathis, one at a time:** (2) the painted rendering route for P3; (3) the art decision (AI-only for P3). **Then:** build plan 1 (Universe layer).
 5. Constraints until launch: no spend (87), no paid Apple program (88), English (90), safe Paths first (91), no predetermined goals (92).
 
 **Any new session: read this block first and continue exactly from it.** Standing rule (decision 63) applies, with its exceptions.
