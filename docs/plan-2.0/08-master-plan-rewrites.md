@@ -18,7 +18,7 @@
 | 05 Daily loop | **Rewrite (presentation)** | Same day structure; told as the morning wake, calls by the hearth, Evening at the Hearth, the Hush and the Return (Part 1 §3) |
 | 06 Tracking moment | **Extend** | Same hold-to-strike and haptics; adds your Flame catching the light and carrying it to the realm (Part 1 §6) |
 | 07 Companion | **Rewrite (roles)** | The Companion's knowledge, sources and safety stay. It speaks through **the Keepers** (counsel, one per realm) and **your Flame** (feelings, never advice). Decision 70's safety fixes are done here |
-| 08 The birth | **Rewrite (scenes)** | Same steps (myth → ember → carving → dawn → first Path → first spark → reveal). Told in the Sanctuary with the Lamplighter, with a Spark hatching from the ember (Part 3 §6) |
+| 08 The birth | **Rewrite (scenes)** | Same steps (myth → ember → carving → dawn → first Path → first spark → reveal). The Spark hatches from the ember and **speaks its First Words** (Part 3 §11, decision 86): who it is, the Hush, a glimpse of what lies ahead. Then it asks the first question itself. The myth gets shorter; the Lamplighter appears later, in Act I |
 | 12 Identity | **Superseded in part** | Visual and sound direction → Part 4. Voice rules (calm, no exclamation marks, no guilt) and typography stay |
 | 16 System architecture | **Extend** | Add the Universe layer, RealityKit, On-Demand Resources (Part 5) |
 | 17 Data model | **Small extension** | No new truth for the world. Adds: the Flame's name (an attachment), worn keepsakes and home placement (settings), story beats as `momentWitnessed` keys |

@@ -121,7 +121,7 @@ birth (from an ember: Spark hatching) · the Return (waking from the Hush) · ev
 
 - **Mostly without words**: faces, gestures, sounds (a small warm "hm!", a giggle, a sleepy sigh). It's expressive like Pixar shorts.
 - **When it uses words** (short speech bubbles, never walls of text):
-  - **Spark:** single words ("Oh!" "Again!" "Warm…").
+  - **Spark:** single words ("Oh!" "Again!" "Warm…"). **One exception: the First Words at birth (§11)**, the only time a Spark speaks clearly.
   - **Flame:** short phrases ("We did it!" "Where next?").
   - **Blaze and Kindled:** short, wise, playful sentences, sometimes referencing your journey ("Remember the first summit? Look how far.").
 - **Never:** advice (that's the Keepers' job, with sources), guilt, or pressure.
@@ -165,3 +165,49 @@ birth (from an ember: Spark hatching) · the Return (waking from the Hush) · ev
 | A flat gradient | Fluffy fire shader, subsurface glow, rim light, particles |
 
 **Production path:** Part 6. The short version: Codex concept art → a final design approved by Mathis → a 3D artist models and rigs it → an animator makes the animation set → it plugs into the app's character state machine (Part 5).
+
+---
+
+## 11. The First Words: your Flame's first appearance (decision 86)
+
+*Requested by Mathis on 2026-10-01. The most important minute of the introduction: the first time you meet your Flame, it tells you who it is, why it's here, and hints at everything ahead.*
+
+### When
+Right after **the birth** (chapter 08, step 2): you hold the ember, the haptic heartbeat rises, the ember cracks open, and **your Flame appears for the first time** as a Spark. Then it talks to you.
+
+### How it "speaks"
+- **Its own language, Emberspeak:** soft babble sounds (Part 4 §6: hums, little "hm!"s, warm syllables), never human words aloud.
+- **A text box** under it, styled as a small glowing plate. Each line first appears in **ember glyphs** (an invented script), which **melt into your language** within half a second. That shows you understand it because *it's you*.
+- **Tap to advance**, one short line per box. A small "skip" appears after the first line. The whole scene takes **60–75 seconds**.
+- Its body acts every line: a tilt, a glance at the horizon, a hop, a yawn at the end.
+
+### The script (v1, in English; the tone follows chapter 12: warm, calm, no guilt, no exclamation marks)
+
+| # | Your Flame does | It says |
+|---|---|---|
+| 1 | Tumbles out of the ember, blinks, finds you | *…Hm? Oh. There you are.* |
+| 2 | Pats its glowing chest | *I'm your Flame. The part of you that's alive.* |
+| 3 | Small embers swirl around it | *Every real thing you do, a walk, a page, a kind word, becomes light. Light is what I'm made of.* |
+| 4 | Looks at its tiny hands | *I don't grow when you tap things. I grow when you grow. Slowly, truly. And what we build is never lost.* |
+| 5 | Turns toward the horizon; the camera pulls back and reveals the grey, misted world beyond the Sanctuary | *Out there, the world got very loud. Everything pulls at you. Days slip by on autopilot.* |
+| 6 | The mist drifts | *Here, we call it the Hush. It turned whole lands grey, and it makes flames forget themselves.* |
+| 7 | A single path near the Sanctuary warms with color under its light | *But light wakes things up. Even out there. Even in you.* |
+| 8 | **Foreshadowing:** its shadow on the stone flickers into taller shapes (the Blaze and Kindled silhouettes), gone in a second; far away, an unlit Beacon glints on a peak | *One day, I'll walk those roads. Climb the Highlands. Relight the old Beacons. Maybe even see what's beyond the Veil.* |
+| 9 | Looks back at you, honest | *This place is a tool, not a cage. Come for a minute, then go live. I'll carry the light.* |
+| 10 | A tiny yawn; its glyphs start blurring back into babble | *Talking is hard when you're this small. I'll learn. …Let's find your first light.* |
+
+Then the birth continues. **Your Flame asks the first question itself** (chapter 08, step 3: *"What would make this year feel truly alive?"*), in the same text box, and stays on screen for the rest of the birth.
+
+### Rules for this scene
+- **Never guilt, never fear.** The distraction message (lines 5–6) describes the world, never the user: "the world got loud," never "you waste your time."
+- **Honest about being an app** (line 9): the app wants short visits and a lived life. This matches world rule 1 (Part 2 §9: light only from real life) and the retention ethics (Part 1 §9).
+- **Foreshadow without promising dates** (line 8): no countdowns, no "in 60 days". Only glimpses.
+- **The myth before the ember** (chapter 08, step 1) gets shorter, so nothing is said twice. It keeps only *"Every person carries a flame. Most never see it."*
+- **Its speech then grows with its stages** (§7): single words at Spark, phrases at Flame, sentences at Blaze. The First Words are a promise it keeps over months: it learns to speak again as you grow.
+- **Accessibility:** VoiceOver reads each line; Reduce Motion keeps the face, glow and text but skips the camera reveal.
+- **Replayable** later from the Book of Your Flame ("The First Words").
+
+### Production notes
+- **Emberspeak glyphs:** Codex designs a 20–30-glyph ember script (concept), which a UI illustrator finalizes. The glyphs are decorative and don't encode real text.
+- **Babble voice:** part of the sound designer's Flame voice set (Part 6). 10 short phrases plus a yawn.
+- **The shadow foreshadowing:** this needs the Blaze and Kindled silhouettes early, so those designs move into P2 (the design round).

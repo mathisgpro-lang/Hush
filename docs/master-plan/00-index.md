@@ -77,13 +77,13 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-01 morning, PLAN 2.0 DRAFTED: awaiting Mathis's review, decision 84)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-01 morning, PLAN 2.0 APPROVED as direction, decisions 84–86)
 
 **Plan 2.0 is written:** `docs/plan-2.0/00-overview.md` (start there) plus Parts 1–8. **Building stays paused** until Mathis approves it (decision 83 rule).
 
 **Next steps, in order:**
-1. Ask Mathis the seven questions in `00-overview.md` §4, **one at a time** (approval first). Log each answer.
-2. Once Plan 2.0 is approved, rewrite the master-plan chapters per Part 8 (01, 02, 03, 05, 06, 07, 08, 12, 16, 17, 22, 23, 28, 29).
+1. Question 1 answered (approved, decision 85; plus the First Words, decision 86). Ask questions 2–7 in `00-overview.md` §4, **one at a time**. Log each answer.
+2. Rewrite the master-plan chapters per Part 8 (01, 02, 03, 05, 06, 07, 08, 12, 16, 17, 22, 23, 28, 29).
 3. Then start **P2** (Part 7): spikes S1–S3 (RealityKit on the iPhone 15, throwaway, in `prototypes/`), plus Codex concept rounds for the final Flame, the Lamplighter, the Sanctuary and the Grove. **Each spike gets its own short plan first.**
 4. Codex review of Parts 1, 5 and 7 (`-s read-only`, report in `docs/reviews/`).
 
