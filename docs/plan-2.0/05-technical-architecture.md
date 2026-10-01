@@ -29,7 +29,7 @@ The app now has to show **a living world** (scenes, a map, movement, weather, re
 ### A.4 What the spikes must prove (before any world building)
 | Spike | Question | Pass criteria |
 |---|---|---|
-| **S1 · The character** | Can a stylized, rigged 3D flame character with a fluffy-fire look animate smoothly in RealityKit on an iPhone 15? | 60 fps, idle + cheer + walk blending, a glowing core, embers, < 10% battery per 30 min of use |
+| **S1 · The character** | Can a stylized, rigged 3D flame character with a fluffy-fire look feel **alive** in RealityKit on an iPhone 15 (decision 93)? | 60 fps; layered live animation (breathing + continuously simulated flame hair + eyes + body mixed live, never one looped clip); idle variety with no visible repetition over 2 minutes; touch response < 100 ms; eyes follow a finger; tilt response to the motion sensor; a glowing core and embers; < 10% battery per 30 min |
 | **S2 · A diorama** | Can a realm scene (the Sanctuary) with lights, fog, water, particles and the character run alongside SwiftUI UI? | 60 fps, < 150 MB memory, tap-to-interact |
 | **S3 · Restoration** | Can a scene blend smoothly between "Hushed" and "Alive" per area from the engine's Depth? | Visible, smooth, cheap (a shader/material parameter) |
 

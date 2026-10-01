@@ -70,6 +70,7 @@ At the start of **every** session (including after a restart), open `docs/master
 - **No manipulation, no scams.** Rewards are scarce because they took effort, not because of fear of missing out.
 - **Users never feel they've lost it all.**
 - **The Flame drives the whole app's look** through a theme engine designed in from day one. Full transformations happen only at big milestones.
+- **Alive, always** (decision 93): the Flame is never a still picture in the app. It's rendered live everywhere, breathing, reacting to touch instantly, never visibly looping. Every scene always has motion. Concept images are sketches, never what ships.
 - **The universe is the core of the project** (decision 81): the personified Flame and the world it explores. The world only moves forward when the user does in real life: no in-app grinding, no paid progress.
 
 ## Architecture foundations (Phase B, decisions 28–39)

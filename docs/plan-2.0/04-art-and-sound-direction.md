@@ -23,7 +23,7 @@
 | **Warm light first** | Every scene has a warm light source; your Flame is always the warmest thing on screen |
 | **Soft shapes** | Rounded forms, no sharp aggression; even ruins have soft edges |
 | **Readable at a glance** | Clear silhouettes, strong value contrast between characters and backgrounds |
-| **Alive, always** | Something is always moving: embers, leaves, water, lanterns, breathing |
+| **Alive, always** (decision 93) | Your Flame is never a still picture; something is always moving: embers, leaves, water, lanterns, breathing. See Part 3 §12 |
 | **Restoration is visible** | Grey (Hush) ↔ color (alive) is the main visual language of progress |
 | **One family** | The Flame, the Keepers, creatures and places all share proportions, shading and palette |
 

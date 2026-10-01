@@ -179,7 +179,7 @@ Right after **the birth** (chapter 08, step 2): you hold the ember, the haptic h
 - **Its own language, Emberspeak:** soft babble sounds (Part 4 §6: hums, little "hm!"s, warm syllables), never human words aloud.
 - **A text box** under it, styled as a small glowing plate. Each line first appears in **ember glyphs** (an invented script), which **melt into your language** within half a second. That shows you understand it because *it's you*.
 - **Tap to advance**, one short line per box. A small "skip" appears after the first line. The whole scene takes **60–75 seconds**.
-- Its body acts every line: a tilt, a glance at the horizon, a hop, a yawn at the end.
+- **It is fully animated, live, from its very first second** (§12): it hatches, blinks, breathes, and its mouth moves with the Emberspeak babble. Its body acts every line: a tilt, a glance at the horizon, a hop, a yawn at the end. Never a still picture.
 
 ### The script (v1, in English; the tone follows chapter 12: warm, calm, no guilt, no exclamation marks)
 
@@ -211,3 +211,36 @@ Then the birth continues. **Your Flame asks the first question itself** (chapter
 - **Emberspeak glyphs:** Codex designs a 20–30-glyph ember script (concept), which a UI illustrator finalizes. The glyphs are decorative and don't encode real text.
 - **Babble voice:** part of the sound designer's Flame voice set (Part 6). 10 short phrases plus a yawn.
 - **The shadow foreshadowing:** this needs the Blaze and Kindled silhouettes early, so those designs move into P2 (the design round).
+
+---
+
+## 12. Alive, always (decision 93)
+
+*Mathis, 2026-10-01: "The flame in the introduction should be animated, not just a picture, so that it really feels alive, and it should remain like this throughout the whole game. I want this game to feel alive."*
+
+**The rule: your Flame is never a still picture inside the app.** From the First Words to year ten, wherever it appears (the birth, the Sanctuary, the map, the realms, every ceremony), it's rendered live, moving every frame and reacting to you. The concept art in `docs/design/` is design sketches only, never what ships.
+
+### What "alive" means (testable, so builders can't fake it)
+| Quality | Requirement |
+|---|---|
+| **Always breathing** | A constant breath, a heartbeat glow in its core, and flame hair that flickers continuously (simulated, not a short looped clip) |
+| **Never visibly looping** | Idle behaviors come from a pool (blink, glance, stretch, look around, scratch, hum, watch an ember float away), picked with randomness every 4–12 seconds, never in the same order |
+| **Instant response** | A touch gets a reaction in under 100 ms. It looks toward your finger, giggles when tapped, and leans into a long press |
+| **Eye contact** | It sometimes looks right at you, and its eyes follow your finger as you move it |
+| **Aware of your world** | Your local time (sleepy at night, stretching in the morning), the season, your Vitality (mood), what you just did (a Body action → a determined little flex) |
+| **Physical** | It tilts and sways slightly when you tilt your phone (motion sensor); it lights the ground where it stands; embers rise from it |
+| **Talking** | Its mouth moves in sync with its Emberspeak babble |
+| **Memory** | It remembers small things: it reacts to your return after a few days differently than after a few hours |
+
+### The world too
+The same rule holds for every scene (Part 4, "Alive, always"): something always moves (embers, leaves, water, lanterns, creatures), and day and night follow your real local time.
+
+### Where iOS limits motion (honest exceptions)
+- **The home-screen widget, notifications and the app icon** can't run live animation (Apple's rule). There it appears in a **pose matching its current mood**, refreshed through the day, so even there it isn't frozen in one state.
+- **Low Power Mode or older phones:** it falls back to the lighter 2D version, which is **still animated**, never a still.
+- **Reduce Motion:** it stays alive through its face, eyes, breathing and glow; only big movements and camera moves are toned down.
+
+### Consequences for the plan
+- **Spike S1** (Part 5) must prove these qualities on the iPhone 15, not just playback of a few animations.
+- **The animation set** (§6) is a set of layers (breathing, flame hair, eyes, face, body) mixed live, so it never plays one fixed clip at a time.
+- **Every P3 build plan** includes an "alive check": screenshots aren't enough, so a screen recording on the device is reviewed for motion, response and variety.
