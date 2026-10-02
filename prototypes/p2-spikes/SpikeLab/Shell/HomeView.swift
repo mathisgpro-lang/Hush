@@ -13,9 +13,17 @@ struct HomeView: View {
     @State private var strand: (from: CGPoint, t: CGFloat)?
     @State private var toast: String?
     @State private var dragStartPan: SIMD2<Float>?
+    @State private var satchelOpen = false
+    @State private var fullSize: CGSize = .zero
 
-    // Where the calls float (fractions of the screen), around the circle like the UI kit.
-    private let slots: [CGPoint] = [CGPoint(x: 0.3, y: 0.3), CGPoint(x: 0.72, y: 0.335), CGPoint(x: 0.5, y: 0.6)]
+    /// Where the quests you take wait in the Sanctuary (home painting uv, v up): on the ground around the circle.
+    private let questSpots: [SIMD2<Float>] = [[0.30, 0.425], [0.775, 0.44], [0.42, 0.33]]
+    private var chosen: [Call] { model.calls.filter { $0.chosen && !$0.done } }
+    /// Each quest keeps its spot for the day (finishing one never moves the others).
+    private func spotFor(_ call: Call) -> SIMD2<Float> {
+        let i = model.calls.filter { $0.chosen }.firstIndex { $0.id == call.id } ?? 0
+        return questSpots[i % questSpots.count]
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -35,24 +43,27 @@ struct HomeView: View {
                 .onTapGesture { director?.tapped() }
                 .simultaneousGesture(lookAround(geo.size))
 
-                // Today's calls by the hearth: they stay with the world when you look around.
-                TimelineView(.animation) { _ in
-                    let shift = CGFloat(-scene.pan.x) * ppm(geo.size), lift = CGFloat(scene.pan.y) * ppm(geo.size)
-                    ZStack {
-                        ForEach(Array(model.calls.enumerated()), id: \.element.id) { i, call in
-                            if !call.done {
-                                CallTag(call: call)
-                                    .position(x: slots[i].x * geo.size.width + shift, y: slots[i].y * geo.size.height + lift)
+                // The quests you took, waiting in the world as small glowing objects (they stay attached to their
+                // spot when you look around). Tap one to do it.
+                GeometryReader { full in
+                    TimelineView(.animation) { _ in
+                        ZStack {
+                            ForEach(chosen) { call in
+                                QuestObject(call: call)
+                                    .position(scene.screenPoint(homeUV: spotFor(call), in: full.size))
                                     .onTapGesture { withAnimation(.spring(duration: 0.4)) { open = call } }
-                                    .transition(.scale(scale: 0.3).combined(with: .opacity))
+                                    .transition(.scale(scale: 0.2).combined(with: .opacity))
                             }
                         }
+                        .frame(width: full.size.width, height: full.size.height)
                     }
+                    .onAppear { fullSize = full.size }
                 }
+                .ignoresSafeArea()
 
-                // The light flying from a finished call to your Flame.
+                // The light flying from a finished quest to your Flame.
                 if let s = strand {
-                    let to = CGPoint(x: geo.size.width * 0.5, y: geo.size.height * 0.47)
+                    let to = scene.screenPoint(homeUV: [0.54, 0.49], in: fullSize)
                     let p = CGPoint(x: s.from.x + (to.x - s.from.x) * s.t, y: s.from.y + (to.y - s.from.y) * s.t - sin(s.t * .pi) * 80)
                     Circle().fill(RadialGradient(colors: [.white, Color(red: 1, green: 0.8, blue: 0.4), .clear], center: .center, startRadius: 1, endRadius: 22))
                         .frame(width: 44, height: 44).position(p).allowsHitTesting(false)
@@ -69,6 +80,7 @@ struct HomeView: View {
                 .padding(.horizontal, 16)
 
                 if let call = open { card(call, size: geo.size) }
+                if satchelOpen { QuestJournal(model: model, isOpen: $satchelOpen).transition(.move(edge: .bottom).combined(with: .opacity)) }
             }
         }
         .onAppear { meter.start() }
@@ -116,7 +128,20 @@ struct HomeView: View {
     }
 
     @ViewBuilder private var hint: some View {
-        if let r = model.newHere.first {
+        if chosen.isEmpty && model.calls.contains(where: { !$0.done }) {
+            Button { withAnimation(.spring(duration: 0.5)) { satchelOpen = true } } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "bag.fill").foregroundStyle(Color(red: 1, green: 0.78, blue: 0.42))
+                    Text("Choose today's quests from your satchel").font(.system(size: 14, design: .serif))
+                    Image(systemName: "chevron.up").font(.caption)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 9)
+                .background(Capsule().fill(.black.opacity(0.55)))
+                .overlay(Capsule().stroke(Color(red: 1, green: 0.78, blue: 0.42).opacity(0.7), lineWidth: 1))
+                .foregroundStyle(.white)
+            }
+            .padding(.bottom, 10)
+        } else if let r = model.newHere.first {
             Button { withAnimation(.easeInOut(duration: 0.6)) { model.go(.map) } } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "sparkles").foregroundStyle(r.color)
@@ -135,6 +160,9 @@ struct HomeView: View {
     private var cockpitBar: some View {
         HStack(spacing: 0) {
             barButton("map.fill", "World", badge: !model.newHere.isEmpty) { withAnimation(.easeInOut(duration: 0.6)) { model.go(.map) } }
+            barButton("bag.fill", "Satchel", badge: chosen.isEmpty && model.calls.contains(where: { !$0.done })) {
+                withAnimation(.spring(duration: 0.5)) { satchelOpen = true }
+            }
             barButton("book.closed.fill", "Book", badge: false) { flash("The Book of Your Flame opens after 10 days lived.") }
             barButton("flame.fill", "Your Flame", badge: false) { director?.tapped() }
         }
@@ -157,32 +185,47 @@ struct HomeView: View {
         }
     }
 
+    /// A quest you tapped in the world: the same parchment as the satchel's journal.
     private func card(_ call: Call, size: CGSize) -> some View {
-        ZStack(alignment: .bottom) {
-            Color.black.opacity(0.25).ignoresSafeArea().onTapGesture { withAnimation { open = nil } }
+        let ink = Color(red: 0.27, green: 0.17, blue: 0.1)
+        return ZStack(alignment: .bottom) {
+            Color.black.opacity(0.3).ignoresSafeArea().onTapGesture { withAnimation(.spring(duration: 0.4)) { open = nil } }
             VStack(spacing: 10) {
-                HStack { Spacer(); Button { withAnimation { open = nil } } label: { Image(systemName: "xmark.circle").font(.title2) } }
-                Image(systemName: call.symbol).font(.system(size: 28)).foregroundStyle(call.realm.color)
-                Text(call.title).font(.system(size: 26, design: .serif))
-                Text(call.detail).font(.system(size: 15, design: .serif)).multilineTextAlignment(.center).foregroundStyle(.white.opacity(0.8))
-                Text("Light goes to \(call.realm.name)").font(.caption).foregroundStyle(call.realm.color.opacity(0.9))
-                Button { finish(call, size: size) } label: {
-                    Text("I did it").font(.system(size: 18, design: .serif)).frame(maxWidth: .infinity).padding(.vertical, 12)
-                        .background(Capsule().fill(LinearGradient(colors: [Color(red: 0.45, green: 0.55, blue: 0.2), Color(red: 0.3, green: 0.4, blue: 0.12)], startPoint: .top, endPoint: .bottom)))
-                        .overlay(Capsule().stroke(Color(red: 0.9, green: 0.85, blue: 0.5).opacity(0.6), lineWidth: 1))
+                HStack {
+                    Spacer()
+                    Button { withAnimation(.spring(duration: 0.4)) { open = nil } } label: {
+                        Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(ink.opacity(0.6))
+                            .frame(width: 30, height: 30).background(Circle().fill(ink.opacity(0.08)))
+                    }
                 }
+                Image(systemName: call.symbol).font(.system(size: 24, weight: .semibold)).foregroundStyle(call.realm.color)
+                    .frame(width: 54, height: 54).background(Circle().fill(Color(red: 0.2, green: 0.13, blue: 0.08)))
+                    .shadow(color: call.realm.color.opacity(0.5), radius: 10)
+                Text(call.title).font(.system(size: 26, design: .serif)).foregroundStyle(ink)
+                Text(call.detail).font(.system(size: 15, design: .serif)).multilineTextAlignment(.center).foregroundStyle(ink.opacity(0.8))
+                Text("\(call.minutes) min · light goes to \(call.realm.name)").font(.system(size: 12, weight: .medium, design: .serif)).foregroundStyle(ink.opacity(0.55))
+                Button { finish(call, size: size) } label: {
+                    Text("I did it").font(.system(size: 18, weight: .semibold, design: .serif)).frame(maxWidth: .infinity).padding(.vertical, 13)
+                        .background(Capsule().fill(LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.42), Color(red: 0.93, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
+                        .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
+                }
+                .padding(.top, 4)
             }
-            .foregroundStyle(.white).padding(20)
-            .background(RoundedRectangle(cornerRadius: 26).fill(Color(red: 0.12, green: 0.14, blue: 0.08).opacity(0.94)))
-            .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color(red: 0.8, green: 0.75, blue: 0.4).opacity(0.5), lineWidth: 1))
-            .padding(.horizontal, 18).padding(.bottom, 30)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(LinearGradient(colors: [Color(red: 0.98, green: 0.93, blue: 0.82), Color(red: 0.93, green: 0.85, blue: 0.7)], startPoint: .top, endPoint: .bottom))
+                    .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.7), lineWidth: 1.5))
+                    .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.3), lineWidth: 1).padding(6))
+                    .shadow(color: .black.opacity(0.4), radius: 20, y: 6)
+            )
+            .padding(.horizontal, 14).padding(.bottom, 24)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 
     private func finish(_ call: Call, size: CGSize) {
-        let i = model.calls.firstIndex(where: { $0.id == call.id }) ?? 0
-        let from = CGPoint(x: slots[i].x * size.width, y: slots[i].y * size.height)
+        let from = scene.screenPoint(homeUV: spotFor(call), in: fullSize)
         withAnimation { open = nil }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         withAnimation(.spring(duration: 0.4)) { model.complete(call.id) }
@@ -218,4 +261,111 @@ struct CallTag: View {
         .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: bob)
         .onAppear { bob = true }
     }
+}
+
+/// A quest waiting in the world: a small glowing token in its realm's color with its symbol, breathing and bobbing,
+/// with its name beneath. (Codex's painted objects replace the token when they arrive.)
+struct QuestObject: View {
+    let call: Call
+    @State private var bob = false
+    var body: some View {
+        VStack(spacing: 4) {
+            ZStack {
+                Circle().fill(RadialGradient(colors: [call.realm.color.opacity(0.75), call.realm.color.opacity(0.0)], center: .center, startRadius: 2, endRadius: 34))
+                    .frame(width: 68, height: 68).scaleEffect(bob ? 1.12 : 0.92)
+                Circle().fill(LinearGradient(colors: [Color(red: 0.2, green: 0.14, blue: 0.1), Color(red: 0.08, green: 0.06, blue: 0.05)], startPoint: .top, endPoint: .bottom))
+                    .frame(width: 34, height: 34)
+                    .overlay(Circle().stroke(LinearGradient(colors: [Color(red: 1, green: 0.85, blue: 0.55), call.realm.color], startPoint: .top, endPoint: .bottom), lineWidth: 1.5))
+                Image(systemName: call.symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(call.realm.color)
+                    .shadow(color: call.realm.color, radius: 4)
+            }
+            Text(call.title).font(.system(size: 11, weight: .semibold, design: .serif)).foregroundStyle(.white)
+                .padding(.horizontal, 7).padding(.vertical, 2).background(Capsule().fill(.black.opacity(0.45)))
+        }
+        .offset(y: bob ? -3 : 2)
+        .animation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true), value: bob)
+        .onAppear { bob = true }
+        .contentShape(Rectangle())
+    }
+}
+
+/// The Quest Satchel (iteration 2, decision 124): a parchment journal with today's offered quests. Take up to three;
+/// each one then waits for you in the Sanctuary.
+struct QuestJournal: View {
+    let model: ShellModel
+    @Binding var isOpen: Bool
+    private let ink = Color(red: 0.27, green: 0.17, blue: 0.1)
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Color.black.opacity(0.35).ignoresSafeArea().onTapGesture { close() }
+            VStack(spacing: 0) {
+                Capsule().fill(ink.opacity(0.3)).frame(width: 40, height: 5).padding(.top, 10)
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Today's quests").font(.system(size: 26, design: .serif)).foregroundStyle(ink)
+                    Spacer()
+                    Text("\(model.chosenCount) of \(ShellModel.maxChosen) taken").font(.system(size: 13, design: .serif)).foregroundStyle(ink.opacity(0.7))
+                }
+                .padding(.horizontal, 22).padding(.top, 10)
+                Text("Choose what you'll do today. Each one waits for you in the Sanctuary.")
+                    .font(.system(size: 14, design: .serif)).foregroundStyle(ink.opacity(0.75))
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 22).padding(.top, 2).padding(.bottom, 12)
+                ScrollView {
+                    VStack(spacing: 10) {
+                        ForEach(model.calls) { call in row(call) }
+                    }
+                    .padding(.horizontal, 16).padding(.bottom, 12)
+                }
+                .frame(maxHeight: 430)
+                Button { close() } label: {
+                    Text(model.chosenCount == 0 ? "Close" : "Into the Sanctuary").font(.system(size: 17, weight: .semibold, design: .serif))
+                        .frame(maxWidth: .infinity).padding(.vertical, 13)
+                        .background(Capsule().fill(LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.42), Color(red: 0.93, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
+                        .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
+                }
+                .padding(.horizontal, 18).padding(.bottom, 18)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(LinearGradient(colors: [Color(red: 0.98, green: 0.93, blue: 0.82), Color(red: 0.93, green: 0.85, blue: 0.7)], startPoint: .top, endPoint: .bottom))
+                    .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.7), lineWidth: 1.5))
+                    .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.3), lineWidth: 1).padding(6))
+                    .shadow(color: .black.opacity(0.4), radius: 20, y: 6)
+            )
+            .padding(.horizontal, 10).padding(.bottom, 8)
+        }
+    }
+
+    private func row(_ call: Call) -> some View {
+        let full = model.chosenCount >= ShellModel.maxChosen && !call.chosen
+        return HStack(spacing: 12) {
+            Image(systemName: call.symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(call.realm.color)
+                .frame(width: 40, height: 40).background(Circle().fill(Color(red: 0.2, green: 0.13, blue: 0.08)))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(call.title).font(.system(size: 17, design: .serif)).foregroundStyle(ink)
+                Text(call.detail).font(.system(size: 13, design: .serif)).foregroundStyle(ink.opacity(0.72)).lineLimit(2)
+                Text("\(call.minutes) min · light to \(call.realm.name)").font(.system(size: 11, weight: .medium, design: .serif)).foregroundStyle(ink.opacity(0.55))
+            }
+            Spacer(minLength: 4)
+            if call.done {
+                Image(systemName: "checkmark.seal.fill").font(.system(size: 22)).foregroundStyle(Color(red: 0.55, green: 0.45, blue: 0.15))
+            } else {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(duration: 0.35)) { model.toggleChosen(call.id) }
+                } label: {
+                    Text(call.chosen ? "Taken" : "Take").font(.system(size: 14, weight: .semibold, design: .serif))
+                        .padding(.horizontal, 12).padding(.vertical, 7)
+                        .background(Capsule().fill(call.chosen ? Color(red: 0.45, green: 0.32, blue: 0.15) : Color.clear))
+                        .overlay(Capsule().stroke(Color(red: 0.45, green: 0.32, blue: 0.15), lineWidth: 1.2))
+                        .foregroundStyle(call.chosen ? Color(red: 1, green: 0.93, blue: 0.8) : ink)
+                }
+                .disabled(full).opacity(full ? 0.4 : 1)
+            }
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 16).fill(.white.opacity(call.chosen ? 0.55 : 0.32)))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(call.chosen ? call.realm.color.opacity(0.8) : Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.35), lineWidth: call.chosen ? 1.5 : 1))
+    }
+
+    private func close() { withAnimation(.spring(duration: 0.45)) { isOpen = false } }
 }

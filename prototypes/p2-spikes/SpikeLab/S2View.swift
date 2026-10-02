@@ -291,6 +291,18 @@ final class SanctuaryScene {
         return rest * (d / Self.distance)
     }
 
+    /// Where a spot of the home painting (uv, v up) shows on screen (points), following the camera (look-around,
+    /// breathing): quest objects and labels stay attached to the world.
+    func screenPoint(homeUV p: SIMD2<Float>, in size: CGSize) -> CGPoint {
+        let w = spot(hx(p.x), p.y)
+        let m = camera.transformMatrix(relativeTo: nil)
+        let rel = m.inverse * SIMD4<Float>(w.x, w.y, w.z, 1)
+        let dz = max(0.01, -rel.z)
+        let t = tan(Self.fov / 2 * .pi / 180), aspect = Float(size.width / size.height)
+        return CGPoint(x: CGFloat(0.5 + rel.x / dz / (t * aspect) * 0.5) * size.width,
+                       y: CGFloat(0.5 - rel.y / dz / t * 0.5) * size.height)
+    }
+
     /// For the intro: the Flame isn't born yet.
     func hideFlameInstantly() { appear = Spring(0, stiffness: 90, damping: 9); flameTarget = 0 }
     /// Where the Flame's chest is, to focus the camera on it.

@@ -89,6 +89,10 @@ struct Call: Identifiable, Equatable {
     let title: String, detail: String, symbol: String
     let realm: RealmID
     var done = false
+    /// Taken from the satchel for today: it then waits in the Sanctuary as an object.
+    var chosen = false
+    /// How long it takes, shown in the journal.
+    var minutes: Int = 5
 }
 
 @MainActor @Observable
@@ -119,9 +123,23 @@ final class ShellModel {
         case "Spend time in nature": Call(id: "a", title: "Notice something alive", detail: "Step outside and find one living thing to look at closely.", symbol: "leaf.fill", realm: .wilds)
         default: Call(id: "a", title: "A lantern for someone", detail: "Tell someone you love one thing you admire about them.", symbol: "heart.fill", realm: .grove)
         }
+        // The day's quests, offered in the satchel (iteration 2): you choose up to three; they wait in the world.
         calls = [first,
-                 Call(id: "b", title: "A small challenge", detail: "A little fox is curious about kindness: thank someone who rarely hears it.", symbol: "sparkle", realm: .grove),
-                 Call(id: "c", title: "A quiet moment", detail: "Two minutes of silence by the hearth before bed.", symbol: "moon.fill", realm: .stillwater)]
+                 Call(id: "b", title: "A small challenge", detail: "A little fox is curious about kindness: thank someone who rarely hears it.", symbol: "sparkle", realm: .grove, minutes: 3),
+                 Call(id: "c", title: "A quiet moment", detail: "Two minutes of silence by the hearth before bed.", symbol: "moon.fill", realm: .stillwater, minutes: 2),
+                 Call(id: "d", title: "Ten minutes outside", detail: "Step out and walk at an easy pace. Notice the sky.", symbol: "figure.walk", realm: .highlands, minutes: 10),
+                 Call(id: "e", title: "One page", detail: "Read a single page of something you've been meaning to read.", symbol: "book.fill", realm: .library, minutes: 5)]
+    }
+
+    static let maxChosen = 3
+    var chosenCount: Int { calls.filter { $0.chosen && !$0.done }.count }
+    func toggleChosen(_ id: String) {
+        guard let i = calls.firstIndex(where: { $0.id == id }), !calls[i].done else { return }
+        if calls[i].chosen {
+            // Put back in the satchel: it goes to the end, so the quests still out keep their spots.
+            var c = calls.remove(at: i); c.chosen = false; calls.append(c)
+        }
+        else if chosenCount < Self.maxChosen { calls[i].chosen = true }
     }
 
     func complete(_ id: String) {
