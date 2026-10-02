@@ -363,27 +363,72 @@ void stoneLive(realitykit::surface_parameters params)
     half4 col = params.textures().base_color().sample(s, tuv + ripple + flow + sway + cloud);
     float3 rgb = float3(col.rgb);
 
-    // Sun glints on the sea, falling water shimmer, braziers flickering.
-    float glint = smoothstep(0.94, 1.0, s2noise(float2(uv.x * 160.0 + sin(t * 0.25) * 3.0, uv.y * 420.0 - t * 1.2)));
-    rgb += float3(1.0, 0.86, 0.62) * glint * water * (0.5 + 0.5 * sin(t * 5.0 + uv.x * 40.0)) * 0.7;
-    rgb += float3(0.07) * fall * (0.5 + 0.5 * sin(uv.y * 420.0 + t * 11.0));
-    float flick = 0.85 + 0.25 * s2noise(float2(t * 6.0, uv.x * 30.0 + uv.y * 20.0));
-    rgb = mix(rgb, rgb * flick * 1.08 + float3(0.06, 0.03, 0.0), fire);
+    // ---- Time of day (metallic_scale = hour / 24): night, morning, day, dusk (the painting is dusk). ----
+    float hour = params.material_constants().metallic_scale() * 24.0;
+    float night = 1.0 - smoothstep(5.0, 7.0, hour) + smoothstep(20.5, 22.5, hour);
+    night = saturate(night);
+    float morning = smoothstep(5.0, 7.0, hour) * (1.0 - smoothstep(9.5, 11.5, hour));
+    float day = smoothstep(9.5, 11.5, hour) * (1.0 - smoothstep(16.0, 18.0, hour));
+    float dusk = saturate(1.0 - night - morning - day);
 
-    // Sun rays: soft shafts fanning from the low sun (upper right), slowly sweeping and breathing.
+    // ---- Water that moves: rolling swell bands, shimmering glints, foam where waterfalls land. ----
+    float swell = sin(uv.y * 140.0 - t * 1.1 + sin(uv.x * 9.0 + t * 0.3) * 2.0) * 0.5 + 0.5;
+    float swell2 = sin(uv.y * 260.0 + uv.x * 40.0 - t * 2.0) * 0.5 + 0.5;
+    rgb *= 1.0 + water * ((swell - 0.5) * 0.10 + (swell2 - 0.5) * 0.05);
+    float glint = smoothstep(0.93, 1.0, s2noise(float2(uv.x * 160.0 + sin(t * 0.25) * 3.0, uv.y * 420.0 - t * 1.6)));
+    float3 glintCol = mix(float3(1.0, 0.86, 0.62), float3(0.75, 0.85, 1.0), night);
+    rgb += glintCol * glint * water * (0.5 + 0.5 * sin(t * 6.0 + uv.x * 40.0)) * (0.9 - 0.5 * night);
+    // Waterfalls: bright streaks racing down, and churning foam at their feet.
+    float col2 = floor(uv.x * 260.0);
+    float streak = fract(uv.y * 18.0 + t * (1.6 + fract(sin(col2 * 12.9) * 43758.5) * 0.8));
+    rgb += float3(0.95, 0.97, 1.0) * fall * smoothstep(0.75, 1.0, streak) * 0.35;
+    float foamN = s2noise(float2(uv.x * 120.0 + t * 1.5, uv.y * 120.0 - t * 2.0));
+    rgb += float3(0.9) * fall * water * smoothstep(0.55, 0.9, foamN) * 0.4;
+
+    // ---- Braziers that burn: flames lick upward, flicker, and throw a warm halo around them. ----
+    float halo = 0.0;
+    for (int k = 0; k < 8; k++) {
+        float a = float(k) * 0.785398;
+        halo += float(params.textures().custom().sample(s, tuv + float2(cos(a) * 0.022, sin(a) * 0.012)).b);
+    }
+    halo /= 8.0;
+    float flick = 0.75 + 0.45 * s2noise(float2(t * 7.0, uv.x * 30.0 + uv.y * 20.0)) + 0.15 * sin(t * 13.0 + uv.x * 50.0);
+    float lick = s2noise(float2(uv.x * 80.0, uv.y * 40.0 - t * 5.0));
+    rgb = mix(rgb, rgb * flick * 1.15 + float3(0.25, 0.1, 0.0) * lick, fire);
+    float glowK = 0.35 + 0.9 * night + 0.2 * dusk;
+    rgb += float3(1.0, 0.55, 0.18) * halo * flick * glowK;
+
+    // ---- The light of the hour. ----
+    float g0 = dot(rgb, float3(0.299, 0.587, 0.114));
+    // Day: brighter, cooler, the sky turns blue.
+    float3 dayRGB = mix(rgb, float3(g0) * float3(0.95, 1.0, 1.05), 0.25) * 1.12 + float3(0.0, 0.02, 0.05);
+    float3 daySky = mix(float3(0.45, 0.66, 0.92), float3(0.85, 0.92, 1.0), saturate(uv.y * 1.3 - 0.4)) * (0.85 + 0.25 * g0);
+    dayRGB = mix(dayRGB, daySky + (rgb - g0) * 0.15, skyM * 0.85);
+    // Morning: soft pink-gold, gentle haze.
+    float3 mornRGB = mix(rgb, float3(g0) * float3(1.05, 0.95, 1.0), 0.3) * 1.05 + float3(0.04, 0.02, 0.05);
+    // Night: deep blue, the world falls asleep; stars and a moon glow; fires and the Flame shine.
+    float3 nightRGB = float3(g0) * float3(0.32, 0.40, 0.66) * 0.62 + rgb * 0.08;
+    float star = smoothstep(0.985, 1.0, s2hash(floor(uv * float2(220.0, 470.0)))) * (0.6 + 0.4 * sin(t * 3.0 + uv.x * 90.0));
+    float3 nightSky = mix(float3(0.05, 0.07, 0.18), float3(0.16, 0.2, 0.38), saturate(1.0 - (uv.y - 0.7) * 3.0));
+    float2 moonD = float2((uv.x - 0.78) * 0.46, uv.y - 0.86);
+    nightSky += float3(0.95, 0.95, 1.0) * (smoothstep(0.018, 0.014, length(moonD)) + exp(-length(moonD) * 18.0) * 0.25);
+    nightRGB = mix(nightRGB, nightSky + star, skyM);
+    rgb = rgb * dusk + dayRGB * day + mornRGB * morning + nightRGB * night;
+
+    // Sun rays (low sun at dusk and morning, softer at midday, none at night).
     float2 sunP = float2(0.88, 0.82);
     float2 dv = uv - sunP; dv.x *= 0.46;
     float ang = atan2(dv.y, dv.x);
     float shafts = s2noise(float2(ang * 9.0 + t * 0.06, 1.7)) * 0.65 + s2noise(float2(ang * 23.0 - t * 0.04, 4.2)) * 0.35;
     shafts = smoothstep(0.45, 1.0, shafts);
     float fall2 = exp(-length(dv) * 2.6);
-    rgb += float3(1.0, 0.78, 0.5) * shafts * fall2 * (0.14 + 0.04 * sin(t * 0.7));
+    rgb += float3(1.0, 0.78, 0.5) * shafts * fall2 * (0.14 + 0.04 * sin(t * 0.7)) * (dusk + morning * 0.8 + day * 0.35);
 
-    // The Flame lights the circle around it (A1).
+    // The Flame lights the circle around it (A1); at night its light carries much further.
     float2 fd = float2((uv.x - c.y) * 0.46, uv.y - c.z);
-    // c.w is signed: the Flame's flicker brightens and dims the warm light it casts on the stones.
-    float light = c.w * exp(-dot(fd, fd) / 0.006) * (fd.y < 0.0 ? 1.2 : 0.8);
-    rgb += rgb * float3(1.0, 0.62, 0.28) * light;
+    float reach = 0.006 + 0.02 * night;
+    float light = (c.w + night * 0.9) * exp(-dot(fd, fd) / reach) * (fd.y < 0.0 ? 1.2 : 0.8);
+    rgb += mix(rgb, float3(0.4, 0.22, 0.08), night) * float3(1.0, 0.62, 0.28) * light;
 
     // The Hush (vitality).
     float hush = 1.0 - c.x;

@@ -28,6 +28,8 @@ final class SanctuaryScene {
     var autoDrift = true
     var updates: EventSubscription?
     var fingerDown = false
+    /// The hour shown (0–24). Follows the real clock unless a test overrides it.
+    var hourOverride: Float?
     /// The intro hatches the Flame: 0 = not there yet, 1 = present (springs in with an overshoot).
     var flameTarget: Float = 1
     private var appear = Spring(1, stiffness: 90, damping: 9)
@@ -216,6 +218,12 @@ final class SanctuaryScene {
             let flicker = 0.85 + 0.15 * noise.sample(time * 7) + 0.05 * sin(time * 23)
             m.custom.value = [vitality, u - 0.03, circle.y + 0.01, (flicker - 0.9) * 1.4 * max(0, min(1, appear.value))]   // the painted glow breathes with the Flame's fire (±)
             m.roughness = .init(floatLiteral: abs(life.wind))       // the shader reads wind from roughness_scale
+            let comps = Calendar.current.dateComponents([.hour, .minute], from: Date())
+            let args = CommandLine.arguments
+            if args.contains("-hourcycle") { hourOverride = (6 + time * 0.8).truncatingRemainder(dividingBy: 24) }
+            else if let i = args.firstIndex(of: "-hour"), i + 1 < args.count, let h = Float(args[i + 1]) { hourOverride = h }
+            let hour = hourOverride ?? (Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60)
+            m.metallic = .init(floatLiteral: hour / 24)              // and the time of day from metallic_scale
             comp.materials = [m]; painting.model = comp
         }
         // The camera breathes very slowly (an alive world), and follows the phone's tilt for parallax.
