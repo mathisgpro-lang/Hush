@@ -20,6 +20,8 @@ final class SanctuaryScene {
     private var mists: [ModelEntity] = []
     let hero = HeroRig(base: "d", footInset: 22.0 / 426.0, reflection: false, glows: false, wander: 0.004)   // the root frame's own Flame, on its own pixels
     let life = SanctuaryLife()
+    let elements = WorldElements()
+    private var currentHour: Float = 18
     private var flies: Entity?
     private var heroFeet = SIMD3<Float>(0, 0, 0)
     private var heroWorldScale: Float = 0.55
@@ -160,6 +162,8 @@ final class SanctuaryScene {
 
         try await life.build()
         root.addChild(life.root)
+        try await elements.build(spot: { [unowned self] u, v in self.spot(u, v) }, paintingW: w)
+        root.addChild(elements.root)
 
         // Soft glowing motes drifting close to the camera, in front of the whole world (depth and air).
         let motes = Entity()
@@ -223,6 +227,7 @@ final class SanctuaryScene {
             else if watching { hero.look(at: nil); watching = false }   // reset once when the moth leaves
         }
         hero.update(dt: dt)
+        elements.update(dt: dt, hour: currentHour, wind: life.wind)
         if let flies, var f = flies.components[ParticleEmitterComponent.self] {
             f.mainEmitter.acceleration = [life.wind * 0.02, 0, 0]
             flies.components.set(f)
@@ -238,6 +243,7 @@ final class SanctuaryScene {
             if args.contains("-hourcycle") { hourOverride = (6 + time * 0.8).truncatingRemainder(dividingBy: 24) }
             else if let i = args.firstIndex(of: "-hour"), i + 1 < args.count, let h = Float(args[i + 1]) { hourOverride = h }
             let hour = hourOverride ?? (Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60)
+            currentHour = hour
             m.metallic = .init(floatLiteral: hour / 24)              // and the time of day from metallic_scale
             if let backdrop, var bc = backdrop.model, var bm = bc.materials.first as? CustomMaterial {
                 bm.custom.value = [m.custom.value.x, 2, 2, 0]; bm.metallic = m.metallic; bm.roughness = m.roughness

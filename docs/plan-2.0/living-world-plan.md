@@ -18,6 +18,9 @@ One flat painting with effects on top. Real animated worlds (Ori, Alba, Sky, Hol
 4. **A camera that reveals space:** gentle drift and phone-tilt parallax; **swipe to look around** the wider panorama; a slow establishing move when you arrive.
 5. **No edges, ever:** the world always extends past the screen (the backdrop safeguard is already in place).
 
-## Free options to go further
-- **Image-to-video tools** (Kling, Luma Dream Machine, Runway, free tiers; Mathis's account needed): can turn a layer into a seamless looping animation (waves, foliage, clouds). Evaluate on one layer.
-- **Rive / Lottie** (free): small looping UI and creature animations.
+## Rule: real code, never video (decision 119)
+Everything that moves is **computed live in code** (shaders, particles, physics), never a pre-rendered video loop. This is how every world, creature and ceremony in the app will be built: the same living mechanics reused everywhere, reacting to the time of day, the weather, the Hush and the user.
+
+## Progress
+- ✅ Real particle flames in the six braziers (they lean in the wind), spray and rolling mist at four waterfall feet, clouds drifting behind the ruins (hidden by nearer stone), fish glints on the sea, fireflies at night, the moon crossing the sky through the night.
+- Next: the wide panorama (Codex) → real layers (sky, sea, cliffs, island, foreground) → a moving sea surface layer, foliage bending from its roots, birds and butterflies with their own paths, swipe to look around.

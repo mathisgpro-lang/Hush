@@ -410,7 +410,10 @@ void stoneLive(realitykit::surface_parameters params)
     float3 nightRGB = float3(g0) * float3(0.32, 0.40, 0.66) * 0.62 + rgb * 0.08;
     float star = smoothstep(0.985, 1.0, s2hash(floor(uv * float2(220.0, 470.0)))) * (0.6 + 0.4 * sin(t * 3.0 + uv.x * 90.0));
     float3 nightSky = mix(float3(0.05, 0.07, 0.18), float3(0.16, 0.2, 0.38), saturate(1.0 - (uv.y - 0.7) * 3.0));
-    float2 moonD = float2((uv.x - 0.78) * 0.46, uv.y - 0.86);
+    // The moon crosses the sky through the night (20:00 → 06:00).
+    float moonT = saturate(fmod(hour - 20.0 + 24.0, 24.0) / 10.0);
+    float2 moonP = float2(mix(0.95, 0.55, moonT), 0.8 + 0.09 * sin(moonT * 3.14159));
+    float2 moonD = float2((uv.x - moonP.x) * 0.46, uv.y - moonP.y);
     nightSky += float3(0.95, 0.95, 1.0) * (smoothstep(0.018, 0.014, length(moonD)) + exp(-length(moonD) * 18.0) * 0.25);
     nightRGB = mix(nightRGB, nightSky + star, skyM);
     rgb = rgb * dusk + dayRGB * day + mornRGB * morning + nightRGB * night;
