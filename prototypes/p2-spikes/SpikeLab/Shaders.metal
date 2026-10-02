@@ -335,6 +335,60 @@ void tongueFire(realitykit::surface_parameters params)
     params.surface().set_opacity(col.a);
 }
 
+// The light of the hour, shared by every layer of the world (land, sea, sky): day, morning, night (stars and a
+// moon crossing the sky) and dusk (the painting itself), plus sun shafts. skyM = how much this pixel is sky.
+float3 s2hourLight(float3 rgb, float2 uv, float skyM, float hour, float sunU, float ratio, float t)
+{
+    float asp = 0.4615 / ratio;
+    float night = saturate(1.0 - smoothstep(5.0, 7.0, hour) + smoothstep(20.5, 22.5, hour));
+    float morning = smoothstep(5.0, 7.0, hour) * (1.0 - smoothstep(9.5, 11.5, hour));
+    float day = smoothstep(9.5, 11.5, hour) * (1.0 - smoothstep(16.0, 18.0, hour));
+    float dusk = saturate(1.0 - night - morning - day);
+    // ---- The light of the hour. ----
+    float g0 = dot(rgb, float3(0.299, 0.587, 0.114));
+    // Day: brighter, cooler, the sky turns blue.
+    float3 dayRGB = mix(rgb, float3(g0) * float3(0.95, 1.0, 1.05), 0.25) * 1.12 + float3(0.0, 0.02, 0.05);
+    float3 daySky = mix(float3(0.45, 0.66, 0.92), float3(0.85, 0.92, 1.0), saturate(uv.y * 1.3 - 0.4)) * (0.85 + 0.25 * g0);
+    dayRGB = mix(dayRGB, daySky + (rgb - g0) * 0.15, skyM * 0.85);
+    // Morning: soft pink-gold, gentle haze.
+    float3 mornRGB = mix(rgb, float3(g0) * float3(1.05, 0.95, 1.0), 0.3) * 1.05 + float3(0.04, 0.02, 0.05);
+    // Night: deep blue, the world falls asleep; stars and a moon glow; fires and the Flame shine.
+    float3 nightRGB = float3(g0) * float3(0.32, 0.40, 0.66) * 0.62 + rgb * 0.08;
+    float star = smoothstep(0.985, 1.0, s2hash(floor(uv * float2(220.0, 470.0)))) * (0.6 + 0.4 * sin(t * 3.0 + uv.x * 90.0));
+    float3 nightSky = mix(float3(0.05, 0.07, 0.18), float3(0.16, 0.2, 0.38), saturate(1.0 - (uv.y - 0.7) * 3.0));
+    // The moon crosses the sky through the night (20:00 → 06:00).
+    float moonT = saturate(fmod(hour - 20.0 + 24.0, 24.0) / 10.0);
+    float2 moonP = float2(sunU + mix(0.07, -0.33, moonT) * ratio, 0.8 + 0.09 * sin(moonT * 3.14159));
+    float2 moonD = float2((uv.x - moonP.x) * asp, uv.y - moonP.y);
+    nightSky += float3(0.95, 0.95, 1.0) * (smoothstep(0.018, 0.014, length(moonD)) + exp(-length(moonD) * 18.0) * 0.25);
+    nightRGB = mix(nightRGB, nightSky + star, skyM);
+    rgb = rgb * dusk + dayRGB * day + mornRGB * morning + nightRGB * night;
+
+    // Sun rays (low sun at dusk and morning, softer at midday, none at night).
+    float2 sunP = float2(sunU, 0.82);
+    float2 dv = uv - sunP; dv.x *= asp;
+    float ang = atan2(dv.y, dv.x);
+    float shafts = s2noise(float2(ang * 9.0 + t * 0.06, 1.7)) * 0.65 + s2noise(float2(ang * 23.0 - t * 0.04, 4.2)) * 0.35;
+    shafts = smoothstep(0.45, 1.0, shafts);
+    float fall2 = exp(-length(dv) * 2.6);
+    rgb += float3(1.0, 0.78, 0.5) * shafts * fall2 * (0.14 + 0.04 * sin(t * 0.7)) * (dusk + morning * 0.8 + day * 0.35);
+
+    return rgb;
+}
+
+/// How dark the hour is (0 day … 1 night), for lights that carry further at night.
+float s2night(float hour) { return saturate(1.0 - smoothstep(5.0, 7.0, hour) + smoothstep(20.5, 22.5, hour)); }
+
+// The Hush (vitality): grey, cooler, misty and dimmer as vitality drops (nothing disappears).
+float3 s2hush(float3 rgb, float2 uv, float vitality, float t)
+{
+    float hush = 1.0 - vitality;
+    float g = dot(rgb, float3(0.299, 0.587, 0.114));
+    rgb = mix(rgb, float3(g) * float3(0.85, 0.9, 1.05), hush * 0.75);
+    rgb = mix(rgb, float3(0.62, 0.65, 0.72), s2fbm(uv * float2(3.0, 6.0) + float2(t * 0.02, 0)) * hush * 0.45);
+    return rgb * (1.0 - hush * 0.35);
+}
+
 // ---------- The Sanctuary in the Age of Stone (style anchor, decision 104) ----------
 // custom texture (motion mask): R = water (sea, pools), G = falling water, B = brazier flames.
 // custom: x = vitality, y/z = the Flame's position (uv), w = its light strength. roughness_scale = wind.
@@ -404,34 +458,7 @@ void stoneLive(realitykit::surface_parameters params)
     float glowK = 0.35 + 0.9 * night + 0.2 * dusk;
     rgb += float3(1.0, 0.55, 0.18) * halo * flick * glowK;
 
-    // ---- The light of the hour. ----
-    float g0 = dot(rgb, float3(0.299, 0.587, 0.114));
-    // Day: brighter, cooler, the sky turns blue.
-    float3 dayRGB = mix(rgb, float3(g0) * float3(0.95, 1.0, 1.05), 0.25) * 1.12 + float3(0.0, 0.02, 0.05);
-    float3 daySky = mix(float3(0.45, 0.66, 0.92), float3(0.85, 0.92, 1.0), saturate(uv.y * 1.3 - 0.4)) * (0.85 + 0.25 * g0);
-    dayRGB = mix(dayRGB, daySky + (rgb - g0) * 0.15, skyM * 0.85);
-    // Morning: soft pink-gold, gentle haze.
-    float3 mornRGB = mix(rgb, float3(g0) * float3(1.05, 0.95, 1.0), 0.3) * 1.05 + float3(0.04, 0.02, 0.05);
-    // Night: deep blue, the world falls asleep; stars and a moon glow; fires and the Flame shine.
-    float3 nightRGB = float3(g0) * float3(0.32, 0.40, 0.66) * 0.62 + rgb * 0.08;
-    float star = smoothstep(0.985, 1.0, s2hash(floor(uv * float2(220.0, 470.0)))) * (0.6 + 0.4 * sin(t * 3.0 + uv.x * 90.0));
-    float3 nightSky = mix(float3(0.05, 0.07, 0.18), float3(0.16, 0.2, 0.38), saturate(1.0 - (uv.y - 0.7) * 3.0));
-    // The moon crosses the sky through the night (20:00 → 06:00).
-    float moonT = saturate(fmod(hour - 20.0 + 24.0, 24.0) / 10.0);
-    float2 moonP = float2(sunU + mix(0.07, -0.33, moonT) * ratio, 0.8 + 0.09 * sin(moonT * 3.14159));
-    float2 moonD = float2((uv.x - moonP.x) * asp, uv.y - moonP.y);
-    nightSky += float3(0.95, 0.95, 1.0) * (smoothstep(0.018, 0.014, length(moonD)) + exp(-length(moonD) * 18.0) * 0.25);
-    nightRGB = mix(nightRGB, nightSky + star, skyM);
-    rgb = rgb * dusk + dayRGB * day + mornRGB * morning + nightRGB * night;
-
-    // Sun rays (low sun at dusk and morning, softer at midday, none at night).
-    float2 sunP = float2(sunU, 0.82);
-    float2 dv = uv - sunP; dv.x *= asp;
-    float ang = atan2(dv.y, dv.x);
-    float shafts = s2noise(float2(ang * 9.0 + t * 0.06, 1.7)) * 0.65 + s2noise(float2(ang * 23.0 - t * 0.04, 4.2)) * 0.35;
-    shafts = smoothstep(0.45, 1.0, shafts);
-    float fall2 = exp(-length(dv) * 2.6);
-    rgb += float3(1.0, 0.78, 0.5) * shafts * fall2 * (0.14 + 0.04 * sin(t * 0.7)) * (dusk + morning * 0.8 + day * 0.35);
+    rgb = s2hourLight(rgb, uv, skyM, hour, sunU, ratio, t);
 
     // The Flame lights the circle around it (A1); at night its light carries much further.
     float2 fd = float2((uv.x - c.y) * asp, uv.y - c.z);
@@ -440,13 +467,101 @@ void stoneLive(realitykit::surface_parameters params)
     rgb += mix(rgb, float3(0.4, 0.22, 0.08), night) * float3(1.0, 0.62, 0.28) * light;
 
     // The Hush (vitality).
-    float hush = 1.0 - c.x;
-    float g = dot(rgb, float3(0.299, 0.587, 0.114));
-    rgb = mix(rgb, float3(g) * float3(0.85, 0.9, 1.05), hush * 0.75);
-    rgb = mix(rgb, float3(0.62, 0.65, 0.72), s2fbm(uv * float2(3.0, 6.0) + float2(t * 0.02, 0)) * hush * 0.45);
-    rgb *= 1.0 - hush * 0.35;
+    rgb = s2hush(rgb, uv, c.x, t);
 
     params.surface().set_base_color(half3(0));
     params.surface().set_emissive_color(half3(rgb));
+    params.surface().set_opacity(col.a);      // the land layer is cut out where the sky and the sea show
+}
+
+// ---------- The living layers of the Sanctuary world (decision 121) ----------
+// Both layers share the land's parameters: custom.x = vitality, metallic_scale = hour / 24, specular_scale = the sun's u,
+// clearcoat_scale = home width ÷ world width. Their uv is the world's uv (Codex's plates are painted on the same frame).
+
+// The sky, far behind everything: the clouds really drift (slowly, to the right), billowing as they go, while the
+// sun and its glow stay where they are. custom texture = the plate's blurred light (so only the clouds' detail moves).
+[[visible]]
+void skyLive(realitykit::surface_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float t = params.uniforms().time();
+    float4 c = params.uniforms().custom_parameter();
+    float hour = params.material_constants().metallic_scale() * 24.0;
+    float sunU = params.material_constants().specular_scale();
+    float ratio = max(0.05, params.material_constants().clearcoat_scale());
+    constexpr sampler s(address::clamp_to_edge, filter::linear);
+    constexpr sampler sm(address::mirrored_repeat, filter::linear);
+    float2 tuv = float2(uv.x, 1.0 - uv.y);
+
+    // Drift: about a screen width every few minutes; the billow changes the clouds' shapes as they travel.
+    float2 drift = float2(t * 0.0012, 0.0);
+    float2 billow = float2(s2noise(float2(uv.x * 4.0 - t * 0.02, uv.y * 5.0)) - 0.5,
+                           s2noise(float2(uv.x * 3.0 + 7.0, uv.y * 4.0 - t * 0.015)) - 0.5) * 0.010;
+    float2 cuv = tuv - drift + billow;
+    float3 detail = float3(params.textures().base_color().sample(sm, cuv).rgb) - float3(params.textures().custom().sample(sm, cuv).rgb);
+    float3 light = float3(params.textures().custom().sample(s, tuv).rgb);
+    float3 rgb = light + detail;
+    // The sun itself never drifts.
+    float asp = 0.4615 / ratio;
+    float2 sd = float2((uv.x - sunU) * asp, uv.y - 0.82);
+    float sun = exp(-dot(sd, sd) / 0.0012);
+    rgb = mix(rgb, float3(params.textures().base_color().sample(s, tuv).rgb), sun);
+
+    rgb = s2hourLight(rgb, uv, 1.0, hour, sunU, ratio, t);
+    rgb = s2hush(rgb, uv, c.x, t);
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(half3(rgb));
     params.surface().set_opacity(1.0);
+}
+
+// The open sea, between the sky and the land: Codex's painted water really moves. Its waves roll in toward the
+// shore (bigger and faster near us, tiny and slow at the horizon), swell bands travel in, and the sun's path
+// glitters. Alpha comes from the plate (0 above the horizon, where the sky shows).
+constant float seaHorizon = 0.7931;      // the horizon's v in the world (tools/cut_layers.py)
+[[visible]]
+void seaLive(realitykit::surface_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float t = params.uniforms().time();
+    float4 c = params.uniforms().custom_parameter();
+    float hour = params.material_constants().metallic_scale() * 24.0;
+    float sunU = params.material_constants().specular_scale();
+    float ratio = max(0.05, params.material_constants().clearcoat_scale());
+    float wind = params.material_constants().roughness_scale();
+    constexpr sampler s(address::clamp_to_edge, filter::linear);
+    float2 tuv = float2(uv.x, 1.0 - uv.y);
+    float near = saturate((seaHorizon - uv.y) / seaHorizon);      // 0 at the horizon, 1 at the bottom of the world
+    float persp = 0.08 + 0.92 * near * near;
+
+    // Waves rolling in: two copies of the water, each sliding toward us and fading in and out in turn (a flow map),
+    // with the phase broken up by noise so no pulse is ever visible.
+    float jitter = s2noise(uv * float2(9.0, 22.0)) * 0.6;
+    float speed = 0.22 + 0.1 * wind;
+    float p0 = fract(t * speed + jitter), p1 = fract(t * speed + jitter + 0.5);
+    float2 dir = float2(0.18, 1.0) * 0.010 * persp;                   // down the screen = toward the shore
+    float2 wob = float2(s2noise(float2(uv.x * 30.0, uv.y * 80.0 - t * 0.6)) - 0.5, 0.0) * 0.004 * persp;
+    half4 c0 = params.textures().base_color().sample(s, tuv - dir * (p0 - 0.5) + wob);
+    half4 c1 = params.textures().base_color().sample(s, tuv - dir * (p1 - 0.5) + wob);
+    float w0 = 1.0 - abs(2.0 * p0 - 1.0);
+    half4 col = c0 * half(w0) + c1 * half(1.0 - w0);
+    col.a = params.textures().base_color().sample(s, tuv).a;
+    float3 rgb = float3(col.rgb);
+
+    // Swell bands travelling in (spaced by perspective: crowded at the horizon, wide near us).
+    float z = 1.0 / (0.06 + near);
+    float swell = sin(z * 2.2 - t * 0.9 + s2noise(float2(uv.x * 3.0, t * 0.05)) * 2.5);
+    rgb *= 1.0 + swell * 0.05 * (0.3 + near);
+    // Glitter: concentrated on the sun's path, twinkling; scattered and blue-white under the moon.
+    float night = s2night(hour);
+    float path = exp(-pow((uv.x - sunU) / (0.012 + 0.05 * near), 2.0));
+    float g = s2noise(float2(uv.x * 420.0 + sin(t * 0.3) * 4.0, uv.y * 900.0 * (1.2 - near) - t * 2.4));
+    float glit = smoothstep(0.86, 1.0, g) * (0.5 + 0.5 * sin(t * 7.0 + uv.x * 300.0 + uv.y * 500.0));
+    float3 glitCol = mix(float3(1.0, 0.85, 0.6), float3(0.8, 0.88, 1.0), night);
+    rgb += glitCol * glit * (0.15 + 0.85 * path) * (0.9 - 0.4 * night);
+
+    rgb = s2hourLight(rgb, uv, 0.0, hour, sunU, ratio, t);
+    rgb = s2hush(rgb, uv, c.x, t);
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(half3(rgb));
+    params.surface().set_opacity(col.a);
 }

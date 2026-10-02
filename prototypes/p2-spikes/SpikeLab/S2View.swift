@@ -21,6 +21,21 @@ final class SanctuaryScene {
               let data = try? Data(contentsOf: url) else { return nil }
         return try? JSONDecoder().decode(WorldLayout.self, from: data)
     }()
+    /// The living layers (decision 121): when present, the land is cut out and a real sky and sea live behind it.
+    private struct Layers: Decodable { let horizonV: Float; let seaDepth: [Float] }
+    private lazy var layers: Layers? = {
+        guard layout != nil, let url = Bundle.main.url(forResource: "world-layers", withExtension: "json"),
+              let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(Layers.self, from: data)
+    }()
+    private var sky: ModelEntity?
+    private var sea: ModelEntity?
+    /// The sea's depth (0…1, white = near) at world v, from its curve.
+    private func seaDepth(_ v: Float) -> Float {
+        guard let c = layers?.seaDepth, c.count > 1 else { return 0 }
+        let x = max(0, min(1, v)) * Float(c.count - 1), i = min(c.count - 2, Int(x)), f = x - Float(i)
+        return c[i] * (1 - f) + c[i + 1] * f
+    }
     /// Home-image u → world u.
     func hx(_ u: Float) -> Float { layout.map { ($0.homeX0 + u * $0.homeW) / $0.total } ?? u }
     /// Home width as a fraction of the world (1 without the wider world).
@@ -96,7 +111,7 @@ final class SanctuaryScene {
     func build() async throws {
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
         let prefix = layout == nil ? "home" : "world"
-        let tex = try await TextureResource(named: "\(prefix)-paint.png")
+        let tex = try await TextureResource(named: layers == nil ? "\(prefix)-paint.png" : "world-land.png")
         let motion = try await TextureResource(named: "\(prefix)-motion.png", options: .init(semantic: .raw))
         loadDepth("\(prefix)-depth.png")
         let visibleH = 2 * Self.distance * tan(Self.paintFov / 2 * .pi / 180)
@@ -132,10 +147,49 @@ final class SanctuaryScene {
             var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: "stoneLive", in: lib))
             m.custom.texture = .init(motion)
             m.custom.value = [1, 0.5, 0.5, 0]
+            if layers != nil {        // the land is cut out where the sky and the sea live (soft edges, still writes depth)
+                m.blending = .transparent(opacity: .init(floatLiteral: 1.0)); m.writesDepth = true
+            }
             material = m
         }
         let p = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
         root.addChild(p); painting = p
+
+        if let lib, layers != nil {
+            // The sky, far away (so it drifts behind the land when you look around), its clouds alive.
+            let skyTex = try await TextureResource(named: "world-sky.png")
+            let skyBase = try await TextureResource(named: "world-sky-base.png")
+            var su = UnlitMaterial(); su.color = .init(tint: .white, texture: .init(skyTex))
+            var sm = try CustomMaterial(from: su, surfaceShader: .init(named: "skyLive", in: lib))
+            sm.custom.texture = .init(skyBase); sm.custom.value = [1, 0, 0, 0]
+            let skyD: Float = 3.5, ks = skyD / Self.distance
+            let sk = ModelEntity(mesh: .generatePlane(width: w * ks * 1.06, height: h * ks * 1.06), materials: [sm])
+            sk.position = [0, 0, -skyD]
+            root.addChild(sk); sky = sk
+
+            // The open sea: its own surface, lying at the sea's depth (a little behind the land, so rocks and
+            // shores always sit on top of it), its waves rolling in.
+            let seaTex = try await TextureResource(named: "world-sea.png")
+            var qu = UnlitMaterial(); qu.color = .init(tint: .white, texture: .init(seaTex))
+            var qm = try CustomMaterial(from: qu, surfaceShader: .init(named: "seaLive", in: lib))
+            qm.custom.value = [1, 0, 0, 0]; qm.blending = .transparent(opacity: .init(floatLiteral: 1.0)); qm.writesDepth = true
+            let (sx, sy) = (40, 120)
+            var spos: [SIMD3<Float>] = [], suv: [SIMD2<Float>] = [], sidx: [UInt32] = []
+            for j in 0...sy { for i in 0...sx {
+                let u = Float(i) / Float(sx), v = Float(j) / Float(sy)
+                let rest = SIMD3<Float>((u - 0.5) * w, (v - 0.5) * h, -Self.distance)
+                let d = Self.distance - (relief(seaDepth(v)) - 0.05)
+                spos.append(rest * (d / Self.distance)); suv.append([u, v])
+            } }
+            for j in 0..<sy { for i in 0..<sx {
+                let a = UInt32(j * (sx + 1) + i), b = a + 1, c = a + UInt32(sx + 1), d = c + 1
+                sidx += [a, b, d, a, d, c]
+            } }
+            var sdesc = MeshDescriptor(name: "sea")
+            sdesc.positions = .init(spos); sdesc.textureCoordinates = .init(suv); sdesc.primitives = .triangles(sidx)
+            let se = ModelEntity(mesh: try MeshResource.generate(from: [sdesc]), materials: [qm])
+            root.addChild(se); sea = se
+        }
 
         // The world doesn't end at the painting's edge: a softly continued backdrop behind it, much larger,
         // graded by the same light (time of day, the Hush), so no edge or black can ever show.
@@ -144,7 +198,7 @@ final class SanctuaryScene {
             var u = UnlitMaterial(); u.color = .init(tint: .white, texture: .init(bTex))
             var m = try CustomMaterial(from: u, surfaceShader: .init(named: "stoneLive", in: lib))
             m.custom.texture = .init(blank); m.custom.value = [1, 0.5, 0.5, 0]
-            let back: Float = 0.5, k = (Self.distance + back) / Self.distance
+            let back: Float = layers == nil ? 0.5 : 3.0, k = (Self.distance + back) / Self.distance   // behind the sky when it exists
             let bw = layout.map { w * $0.backdropW / $0.total * k } ?? w * (1618.0 / 852.0) * k
             let bh = layout.map { h * $0.backdropH / $0.height * k } ?? h * (2768.0 / 1846.0) * k
             let b = ModelEntity(mesh: .generatePlane(width: bw, height: bh), materials: [m])
@@ -281,6 +335,12 @@ final class SanctuaryScene {
             if let backdrop, var bc = backdrop.model, var bm = bc.materials.first as? CustomMaterial {
                 bm.custom.value = [m.custom.value.x, 2, 2, 0]; bm.metallic = m.metallic; bm.roughness = m.roughness; bm.specular = .init(floatLiteral: 2); bm.clearcoat = m.clearcoat
                 bc.materials = [bm]; backdrop.model = bc
+            }
+            for layer in [sky, sea].compactMap({ $0 }) {
+                guard var lc = layer.model, var lm = lc.materials.first as? CustomMaterial else { continue }
+                lm.custom.value = [m.custom.value.x, 0, 0, 0]; lm.metallic = m.metallic; lm.roughness = m.roughness
+                lm.specular = m.specular; lm.clearcoat = m.clearcoat
+                lc.materials = [lm]; layer.model = lc
             }
             comp.materials = [m]; painting.model = comp
         }
