@@ -78,15 +78,14 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-02 afternoon, decisions 112–122)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-02 evening, decisions 121–125)
 
-**Current work: P2.5 on the painted 2D route in Swift** (SpikeLab, `prototypes/p2-spikes`). Home = the swipeable living Sanctuary world.
-- ✅ Stitched world (120), Clash of Clans–style look-around with rubber-band edges (122), living layers (121): sky plate (clouds drift), sea plate (waves roll in), land cut out (`tools/cut_layers.py`). Demo: `docs/design/demos/2026-10-02-living-layers.mp4`.
-- **Next:**
-  1. Install on Mathis's iPhone when it's connected (the Release build is in the scratchpad `dd-spikelab-dev`; `xcrun devicectl device install app --device 00008120-001411043639A01E <app>`).
-  2. Ask Mathis: taller world from Codex (vertical peeking at the old size) vs keep the slight zoom.
-  3. More life per layer: a near foliage layer bending from its roots; birds and butterflies; the sea at night (moon path); the sun's position following the hour on the sky layer.
-  4. Later: fix the 11 P3 review findings before building P3; the six task objects in the style; sound from free libraries (ask before downloads).
+**Current work: P2.5 iteration 2** (plan `docs/plan-2.0/p25-iteration-2.md`, approved "do all of this", Mathis reviews at the end). SpikeLab, `prototypes/p2-spikes`.
+- ✅ Built (simulator-verified, installed on the iPhone): the Spark (teardrop, hovering, hour-lit); the Sanctuary sharp and vibrant; the Quest Satchel; the living world map (Clash of Clans movement, realm cards, bird's dive); the vivid Grove with the Spark; the intro (ember on the circle, one-shot hatching, evolution glimpse, guided tour). Steady 60 fps measured on the phone before these; re-measure (`-perf` flag) once unlocked.
+- **In flight (Codex, auto after its limit resets at 18:47):** `scripts/spark-v3.sh` (spark-a-happy) and `scripts/p25-iter2.sh` (satchel icon, journal page, 4 quest props, Grove side panels). Both are in `scripts/resume-codex.sh`.
+- **Next when they land:** key the props with `tools/magenta_key.py` and swap them into `QuestObject`/the journal; key spark-a-happy into `spark-happy.png`; stitch the Grove panels (adapt `tools/build_world.py` + `tools/cut_layers.py`) so the Grove is swipeable with a living sky; re-measure smoothness on the phone; then show Mathis everything for corrections.
+- Test flags: `-skipintro`, `-autointro`, `-map`, `-grove`, `-hour N`, `-perf`, `-noelements`, `-onlyland`.
+- Later: the 11 P3 review findings before building P3; sound from free libraries (ask before downloads).
 
 ---
 
