@@ -21,6 +21,7 @@ final class MapScene {
     private var depth: (w: Int, h: Int, px: [UInt8])?
     private var clouds: [(e: Entity, speed: Float, baseX: Float, span: Float)] = []
     private var hushMists: [(e: Entity, phase: Float, base: SIMD3<Float>)] = []
+    private var borderClouds: [(e: Entity, phase: Float, base: SIMD3<Float>)] = []
     private var pathLights: [(e: Entity, phase: Float)] = []
     private var beacons: [(e: Entity, phase: Float)] = []
     private var spark: Entity?
@@ -67,7 +68,8 @@ final class MapScene {
     func panLimit(zoom z: Float) -> SIMD2<Float> {
         let d = Self.distance / z
         let halfH = d * tan(Self.fov / 2 * .pi / 180), halfW = halfH * screenAspect
-        return [max(0, planeW / 2 - halfW * 1.02), max(0, planeH / 2 - halfH * 1.02)]
+        // (Up and down keeps a wider margin: the near rocks at the bottom stand out in relief and shift more.)
+        return [max(0, planeW / 2 - halfW * 1.02), max(0, planeH / 2 - halfH * 1.1 - 0.02)]
     }
 
     // MARK: Build
@@ -148,6 +150,23 @@ final class MapScene {
             let x = Float.random(in: -span...span, using: &rng)
             e.position = [x, y, z]
             root.addChild(e); clouds.append((e, Float.random(in: 0.004...0.012, using: &rng), x, span))
+        }
+
+        // The world's border (Clash of Clans): beyond the map's sides, the land dissolves into banks of cloud that
+        // slowly roll and drift, so moving sideways never finds an edge, only more sky.
+        for side in [-1, 1] as [Float] {
+            for k in 0..<22 {
+                let z = -Self.distance + 0.06 + Float(k % 3) * 0.02
+                let kz = -z / Self.distance
+                let size = Float.random(in: 0.15...0.22, using: &rng) * kz
+                let y = (Float(k) / 21 - 0.5) * planeH * 1.02 * kz
+                let x = side * (planeW / 2 + Float.random(in: 0.015...0.07, using: &rng)) * kz
+                // Warm and bright like the clouds painted on the map (never a grey fog).
+                let tint = UIColor(red: 1, green: CGFloat.random(in: 0.9...0.96, using: &rng), blue: CGFloat.random(in: 0.86...0.93, using: &rng), alpha: 1)
+                let e = card(cloudTex, [size, size * 0.62], tint: tint)
+                e.position = [x, y, z]
+                root.addChild(e); borderClouds.append((e, Float(k) * 1.7 + side, [x, y, z]))
+            }
         }
 
         // The Hush: soft grey mist resting over the realms not opened yet (nothing destroyed, only quiet).
@@ -258,6 +277,9 @@ final class MapScene {
             p.x += clouds[i].speed * dt
             if p.x > clouds[i].span { p.x = -clouds[i].span }
             clouds[i].e.position = p
+        }
+        for c in borderClouds {        // the border breathes: clouds roll slowly in and out
+            c.e.position = c.base + SIMD3(sin(time * 0.12 + c.phase) * 0.02, sin(time * 0.09 + c.phase * 1.3) * 0.01, 0)
         }
         for h in hushMists {
             h.e.position = h.base + SIMD3(sin(time * 0.25 + h.phase) * 0.015, sin(time * 0.19 + h.phase) * 0.006, 0)
