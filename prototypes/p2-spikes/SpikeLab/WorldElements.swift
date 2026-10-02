@@ -12,6 +12,7 @@ final class WorldElements {
     private var flames: [Entity] = []
     private var time: Float = 0
     private var cloudBounds: Float = 0.5
+    private var lastWind: Float = -9, lastFireflyRate: Float = -9
 
     /// Painting uv → a point on the relief (from the scene).
     func build(spot: (Float, Float) -> SIMD3<Float>, paintingW: Float, withClouds: Bool = true) async throws {
@@ -122,13 +123,19 @@ final class WorldElements {
             }
             clouds[i] = c
         }
-        if let ff = fireflies, var f = ff.components[ParticleEmitterComponent.self] {
-            f.mainEmitter.birthRate = 9 * n; ff.components.set(f)
+        // Particle emitters are only touched when something really changed: re-setting them every frame costs
+        // time and can make the particles hiccup.
+        if abs(9 * n - lastFireflyRate) > 0.5, let ff = fireflies, var f = ff.components[ParticleEmitterComponent.self] {
+            lastFireflyRate = 9 * n
+            f.mainEmitter.birthRate = lastFireflyRate; ff.components.set(f)
         }
-        for e in flames {
-            guard var f = e.components[ParticleEmitterComponent.self] else { continue }
-            f.mainEmitter.acceleration = [wind * 0.03, 0, 0]
-            e.components.set(f)
+        if abs(wind - lastWind) > 0.06 {
+            lastWind = wind
+            for e in flames {
+                guard var f = e.components[ParticleEmitterComponent.self] else { continue }
+                f.mainEmitter.acceleration = [wind * 0.03, 0, 0]
+                e.components.set(f)
+            }
         }
     }
 }

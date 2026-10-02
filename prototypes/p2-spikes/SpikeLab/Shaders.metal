@@ -381,11 +381,14 @@ float3 s2hourLight(float3 rgb, float2 uv, float skyM, float seaM, float hour, fl
     // Sun rays (low sun at dusk and morning, softer at midday, none at night).
     float2 sunP = float2(sunU, 0.82);
     float2 dv = uv - sunP; dv.x *= asp;
-    float ang = atan2(dv.y, dv.x);
-    float shafts = s2noise(float2(ang * 9.0 + t * 0.06, 1.7)) * 0.65 + s2noise(float2(ang * 23.0 - t * 0.04, 4.2)) * 0.35;
-    shafts = smoothstep(0.45, 1.0, shafts);
     float fall2 = exp(-length(dv) * 2.6);
-    rgb += float3(1.0, 0.78, 0.5) * shafts * fall2 * (0.14 + 0.04 * sin(t * 0.7)) * (dusk + morning * 0.8 + day * 0.35);
+    float rays = (dusk + morning * 0.8 + day * 0.35) * fall2;
+    if (rays > 0.01) {          // only where the rays can show (saves the work everywhere else)
+        float ang = atan2(dv.y, dv.x);
+        float shafts = s2noise(float2(ang * 9.0 + t * 0.06, 1.7)) * 0.65 + s2noise(float2(ang * 23.0 - t * 0.04, 4.2)) * 0.35;
+        shafts = smoothstep(0.45, 1.0, shafts);
+        rgb += float3(1.0, 0.78, 0.5) * shafts * rays * (0.14 + 0.04 * sin(t * 0.7));
+    }
 
     return rgb;
 }
@@ -397,6 +400,7 @@ float s2night(float hour) { return saturate(1.0 - smoothstep(5.0, 7.0, hour) + s
 float3 s2hush(float3 rgb, float2 uv, float vitality, float t)
 {
     float hush = 1.0 - vitality;
+    if (hush < 0.01) return rgb;
     float g = dot(rgb, float3(0.299, 0.587, 0.114));
     rgb = mix(rgb, float3(g) * float3(0.85, 0.9, 1.05), hush * 0.75);
     rgb = mix(rgb, float3(0.62, 0.65, 0.72), s2fbm(uv * float2(3.0, 6.0) + float2(t * 0.02, 0)) * hush * 0.45);
@@ -460,12 +464,9 @@ void stoneLive(realitykit::surface_parameters params)
     rgb += float3(0.9) * fall * water * smoothstep(0.55, 0.9, foamN) * 0.4;
 
     // ---- Braziers that burn: flames lick upward, flicker, and throw a warm halo around them. ----
-    float halo = 0.0;
-    for (int k = 0; k < 8; k++) {
-        float a = float(k) * 0.785398;
-        halo += float(params.textures().custom().sample(s, tuv + float2(cos(a) * 0.022, sin(a) * 0.012)).b);
-    }
-    halo /= 8.0;
+    // The halo is the fire mask blurred: one read from a small mip level (the GPU's own blur) instead of 8 reads.
+    constexpr sampler sb(address::clamp_to_edge, filter::linear, mip_filter::linear);
+    float halo = float(params.textures().custom().sample(sb, tuv, level(4.5)).b) * 1.6;
     float flick = 0.75 + 0.45 * s2noise(float2(t * 7.0, uv.x * 30.0 + uv.y * 20.0)) + 0.15 * sin(t * 13.0 + uv.x * 50.0);
     float lick = s2noise(float2(uv.x * 80.0, uv.y * 40.0 - t * 5.0));
     rgb = mix(rgb, rgb * flick * 1.15 + float3(0.25, 0.1, 0.0) * lick, fire);
@@ -550,10 +551,10 @@ void seaLive(realitykit::surface_parameters params)
     // Waves rolling in: two copies of the water, each sliding toward us and fading in and out in turn (a flow map),
     // with the phase broken up by noise so no pulse is ever visible.
     float jitter = s2noise(uv * float2(9.0, 22.0)) * 0.6;
-    float speed = 0.22 + 0.1 * wind;
-    float p0 = fract(t * speed + jitter), p1 = fract(t * speed + jitter + 0.5);
+    // A constant speed: multiplying time by a changing number would make the waves jump. Wind adds wobble instead.
+    float p0 = fract(t * 0.25 + jitter), p1 = fract(t * 0.25 + jitter + 0.5);
     float2 dir = float2(0.18, 1.0) * 0.010 * persp;                   // down the screen = toward the shore
-    float2 wob = float2(s2noise(float2(uv.x * 30.0, uv.y * 80.0 - t * 0.6)) - 0.5, 0.0) * 0.004 * persp;
+    float2 wob = float2(s2noise(float2(uv.x * 30.0, uv.y * 80.0 - t * 0.6)) - 0.5, 0.0) * (0.004 + 0.002 * wind) * persp;
     half4 c0 = params.textures().base_color().sample(s, tuv - dir * (p0 - 0.5) + wob);
     half4 c1 = params.textures().base_color().sample(s, tuv - dir * (p1 - 0.5) + wob);
     float w0 = 1.0 - abs(2.0 * p0 - 1.0);

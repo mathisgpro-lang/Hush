@@ -193,7 +193,8 @@ final class SanctuaryScene {
 
         // The world doesn't end at the painting's edge: a softly continued backdrop behind it, much larger,
         // graded by the same light (time of day, the Hush), so no edge or black can ever show.
-        if let lib, let bTex = try? await TextureResource(named: "\(prefix)-backdrop.png") {
+        // (Not needed with the living layers: the sky covers everything behind the land.)
+        if let lib, layers == nil, let bTex = try? await TextureResource(named: "\(prefix)-backdrop.png") {
             let blank = try await TextureResource(named: "blank-mask.png", options: .init(semantic: .raw))
             var u = UnlitMaterial(); u.color = .init(tint: .white, texture: .init(bTex))
             var m = try CustomMaterial(from: u, surfaceShader: .init(named: "stoneLive", in: lib))
@@ -293,12 +294,32 @@ final class SanctuaryScene {
             guard var comp = e.model, var m = comp.materials.first as? CustomMaterial else { continue }
             m.custom.value.x = 0.03 + (1 - v) * (k == 0 ? 0.55 : 0.7)   // a faint veil when you're living fully; the Hush thickens it (never in front of the Flame)
             comp.materials = [m]; e.model = comp
+            e.isEnabled = v < 0.95          // at full vitality the veil is invisible anyway: don't draw three full-screen sheets
         }
 
     }
 
+    /// -perf: frame timing as RealityKit renders it (frames per second, hitches over 20 ms, the worst frame).
+    private var perf = (frames: 0, hitches: 0, worst: Float(0), elapsed: Float(0))
+    private let perfOn = CommandLine.arguments.contains("-perf")
+    private var fliesWind: Float = -9, layersAt: Float = 0, clockReadAt: Float = 0, clockHour: Float = 18
+    private static let hourCycle = CommandLine.arguments.contains("-hourcycle")
+    private static let hourArg: Float? = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-hour"), i + 1 < a.count else { return nil }
+        return Float(a[i + 1])
+    }()
+
     func update(dt: Float) {
         time += dt
+        if perfOn {
+            perf.frames += 1; perf.elapsed += dt; perf.worst = max(perf.worst, dt)
+            if dt > 0.020 { perf.hitches += 1 }
+            if perf.elapsed >= 2 {
+                print(String(format: "PERF fps %.1f  hitches %d  worst %.1f ms", Float(perf.frames) / perf.elapsed, perf.hitches, perf.worst * 1000))
+                perf = (0, 0, 0, 0)
+            }
+        }
         // The Flame's birth: it springs into being (with a little overshoot) when flameTarget becomes 1.
         appear.step(toward: flameTarget, dt: dt)
         hero.leanPivot.scale = .init(repeating: heroWorldScale * max(0, appear.value))
@@ -313,7 +334,8 @@ final class SanctuaryScene {
         }
         hero.update(dt: dt)
         elements.update(dt: dt, hour: currentHour, wind: life.wind)
-        if let flies, var f = flies.components[ParticleEmitterComponent.self] {
+        if abs(life.wind - fliesWind) > 0.06, let flies, var f = flies.components[ParticleEmitterComponent.self] {
+            fliesWind = life.wind
             f.mainEmitter.acceleration = [life.wind * 0.02, 0, 0]
             flies.components.set(f)
         }
@@ -323,11 +345,13 @@ final class SanctuaryScene {
             let flicker = 0.85 + 0.15 * noise.sample(time * 7) + 0.05 * sin(time * 23)
             m.custom.value = [vitality, u - 0.03 * homeRatio, circle.y + 0.01, (flicker - 0.9) * 1.4 * max(0, min(1, appear.value))]   // the painted glow breathes with the Flame's fire (±)
             m.roughness = .init(floatLiteral: abs(life.wind))       // the shader reads wind from roughness_scale
-            let comps = Calendar.current.dateComponents([.hour, .minute], from: Date())
-            let args = CommandLine.arguments
-            if args.contains("-hourcycle") { hourOverride = (6 + time * 0.8).truncatingRemainder(dividingBy: 24) }
-            else if let i = args.firstIndex(of: "-hour"), i + 1 < args.count, let h = Float(args[i + 1]) { hourOverride = h }
-            let hour = hourOverride ?? (Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60)
+            if Self.hourCycle { hourOverride = (6 + time * 0.8).truncatingRemainder(dividingBy: 24) }
+            else if let h = Self.hourArg { hourOverride = h }
+            if time - clockReadAt > 5 || clockReadAt == 0 {       // the clock is read every few seconds, not every frame
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: Date())
+                clockHour = Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60; clockReadAt = time
+            }
+            let hour = hourOverride ?? clockHour
             currentHour = hour
             m.metallic = .init(floatLiteral: hour / 24)              // and the time of day from metallic_scale
             m.specular = .init(floatLiteral: hx(0.88))               // the painted sun's u (sun rays, moon path)
@@ -336,7 +360,10 @@ final class SanctuaryScene {
                 bm.custom.value = [m.custom.value.x, 2, 2, 0]; bm.metallic = m.metallic; bm.roughness = m.roughness; bm.specular = .init(floatLiteral: 2); bm.clearcoat = m.clearcoat
                 bc.materials = [bm]; backdrop.model = bc
             }
-            for layer in [sky, sea].compactMap({ $0 }) {
+            // The sky and sea only need slow values (vitality, hour, wind): refreshed twice a second.
+            let refreshLayers = time - layersAt > 0.5
+            if refreshLayers { layersAt = time }
+            for layer in [sky, sea].compactMap({ $0 }) where refreshLayers {
                 guard var lc = layer.model, var lm = lc.materials.first as? CustomMaterial else { continue }
                 lm.custom.value = [m.custom.value.x, 0, 0, 0]; lm.metallic = m.metallic; lm.roughness = m.roughness
                 lm.specular = m.specular; lm.clearcoat = m.clearcoat
