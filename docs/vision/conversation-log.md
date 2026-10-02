@@ -261,3 +261,10 @@ Phase B conversation complete. Next: draft chapters 16, 17, 20 and 22 (first pas
 - **Stepping back (107):** Mathis asked for a thorough plan focused on cohesion (the feeling of one experience), tasks incorporated into the world, a tutorial, and free third-party help. Claude wrote Part 10, the Cohesion Plan, and a new phase P2.5 Design & Feel before P3 continues.
 - **Unity (110):** Mathis proposed Unity for the complexity and refinement he wants. Claude gave an honest comparison (Unity's 2D lights, Cinemachine and VFX directly address the cohesion and movement problems, and Ori was made in it; the costs are more friction for AI-driven building, porting the engine, and a heavier app) and recommended a 2–3 day side-by-side test. Mathis agreed.
 - **Unity and the 3D world (111):** after the Unity test on his phone and studying Sky, Mathis chose Unity and a Sky-like 3D world. Step 1: the Sanctuary island in 3D with atmosphere, the Flame as a light, and an authored camera rise.
+
+---
+
+## Session 5 — 2026-10-02 — Back to the painted world
+
+- **Unity shelved (112):** the 3D block-out looked far more basic than the painted Sanctuary; Mathis chose to go back to the 2D painted route and push it as far as possible, keeping the Sky lessons (depth, light, atmosphere, camera, life).
+- **Arrived overnight:** Codex's five cohesion frames (B painterly, D luminous, C anime, A diorama, E luminous 3D), and Codex's P3 review ("not build-ready against Part 9 §4": 11 findings, e.g. safety tables and the backup gate still promised rather than done).
