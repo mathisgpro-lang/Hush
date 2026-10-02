@@ -268,3 +268,4 @@ Phase B conversation complete. Next: draft chapters 16, 17, 20 and 22 (first pas
 
 - **Unity shelved (112):** the 3D block-out looked far more basic than the painted Sanctuary; Mathis chose to go back to the 2D painted route and push it as far as possible, keeping the Sky lessons (depth, light, atmosphere, camera, life).
 - **Arrived overnight:** Codex's five cohesion frames (B painterly, D luminous, C anime, A diorama, E luminous 3D), and Codex's P3 review ("not build-ready against Part 9 §4": 11 findings, e.g. safety tables and the backup gate still promised rather than done).
+- **Style root (113):** Mathis loves how the Flame sits in the middle, incorporated, and how the world matches. D (luminous) becomes the root, with B as its sibling. Style Bible v2 written; Codex regenerates the home scene without the Flame and the Flame's layers in this style.

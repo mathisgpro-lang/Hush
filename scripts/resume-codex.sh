@@ -50,6 +50,9 @@ run_brief docs/reviews/briefs/plan-2-review.md \
 run_brief docs/reviews/briefs/p2-plan-review.md \
   docs/reviews/2026-10-01-codex-p2-plan.md
 
+# Style v2 assets (decision 113)
+"$ROOT/scripts/style-v2.sh"
+
 # Design & Feel cohesion frames first (decision 106)
 "$ROOT/scripts/cohesion-frames.sh"
 
