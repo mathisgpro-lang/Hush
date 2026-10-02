@@ -59,7 +59,14 @@ struct RealmView: View {
                 VStack {
                     header
                     Spacer()
-                    if let s = focused { spotCard(s) } else if ready { footer }
+                    if model.tour == .grove && ready {
+                        TourBubble(text: "The Whispering Grove. Every kind word you send relights one of its lanterns. Come, let's go home and begin.",
+                                   button: "Home", next: {
+                                       model.tour = nil
+                                       withAnimation(.easeInOut(duration: 0.6)) { model.go(.home) }
+                                   }, skip: { withAnimation { model.tour = nil } })
+                        .padding(.bottom, 24)
+                    } else if let s = focused { spotCard(s) } else if ready { footer }
                 }
                 .padding(.horizontal, 16)
             }

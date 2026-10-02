@@ -80,6 +80,7 @@ struct HomeView: View {
                 .padding(.horizontal, 16)
 
                 if let call = open { card(call, size: geo.size) }
+                tourLayer
                 if satchelOpen { QuestJournal(model: model, isOpen: $satchelOpen).transition(.move(edge: .bottom).combined(with: .opacity)) }
             }
         }
@@ -127,8 +128,34 @@ struct HomeView: View {
         .padding(.top, 8)
     }
 
+    /// The tour's first stops: the satchel, then the world.
+    @ViewBuilder private var tourLayer: some View {
+        if model.tour == .satchel || model.tour == .world {
+            VStack {
+                Spacer()
+                Group {
+                    if model.tour == .satchel {
+                        TourBubble(text: "This is your satchel. Each day I'll fill it with quests made for you. Take the ones you'll do: they'll wait for you right here.",
+                                   button: "Next", next: { withAnimation(.spring(duration: 0.5)) { model.tour = .world } },
+                                   skip: { withAnimation { model.tour = nil } })
+                    } else {
+                        TourBubble(text: "And this is the World. Out there, most of it sleeps in the Hush. Every light you send wakes a piece of it.",
+                                   button: "Show me", next: {
+                                       model.tour = .map
+                                       withAnimation(.easeInOut(duration: 0.6)) { model.go(.map) }
+                                   }, skip: { withAnimation { model.tour = nil } })
+                    }
+                }
+                .padding(.horizontal, 16).padding(.bottom, 118)
+            }
+            .id(model.tour == .satchel ? 0 : 1)
+        }
+    }
+
     @ViewBuilder private var hint: some View {
-        if chosen.isEmpty && model.calls.contains(where: { !$0.done }) {
+        if model.tour != nil {
+            EmptyView()
+        } else if chosen.isEmpty && model.calls.contains(where: { !$0.done }) {
             Button { withAnimation(.spring(duration: 0.5)) { satchelOpen = true } } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "bag.fill").foregroundStyle(Color(red: 1, green: 0.78, blue: 0.42))

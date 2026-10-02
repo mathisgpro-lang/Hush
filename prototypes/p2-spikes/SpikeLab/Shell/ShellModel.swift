@@ -106,6 +106,9 @@ final class ShellModel {
     var light: Int = 0                                // today's light sent into the world
     /// Set when a realm is entered by the map's dive: the realm then opens out of the dive's light.
     var arrivingByDive = false
+    /// The guided tour right after the introduction: the Sanctuary's options, the world map, the Grove.
+    enum TourStep { case satchel, world, map, grove }
+    var tour: TourStep?
 
     init() { makeCalls() }
 

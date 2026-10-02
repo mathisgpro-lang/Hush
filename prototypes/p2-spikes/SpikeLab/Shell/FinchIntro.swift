@@ -60,6 +60,15 @@ struct FinchIntro: View {
     @State private var flameReady = false
     @State private var bubble: String?
     @FocusState private var typing: Bool
+    @State private var full: CGSize = .zero
+    /// The ember dissolving into light as the Spark is born (0 = whole, 1 = gone).
+    @State private var emberGone: CGFloat = 0
+    /// The glimpse of what the Spark will become: the stage shown (nil = the living Spark itself) and a flash.
+    @State private var morph: Int?
+    @State private var morphFlash: Double = 0
+    @State private var glimpseDone = false
+    private static let stages = ["stage-spark", "stage-flame", "stage-blaze", "stage-kindled", "stage-beyond"]
+    private static let stageHeights: [CGFloat] = [282, 464, 602, 681, 716]
 
     private var flameVisible: Bool { step.rawValue >= IntroStep.born.rawValue }
 
@@ -79,7 +88,38 @@ struct FinchIntro: View {
             .ignoresSafeArea()
             .allowsHitTesting(false)
             DuskBackground().opacity(flameReady ? 0 : 1).animation(.easeOut(duration: 1.2), value: flameReady).allowsHitTesting(false)
-            BirthBloom(on: rays).allowsHitTesting(false)
+            // Everything that belongs to the Flame's spot follows it on screen: the ember you warm sits on the stone
+            // circle, the Spark is born from it in the same place, and the glimpse of its future appears there too.
+            GeometryReader { g in
+                TimelineView(.animation) { _ in
+                    let f = scene.flameScreen(in: g.size)
+                    ZStack {
+                        if step == .warm || (step == .born && emberGone < 1) {
+                            EmberOrb(color: ember?.color ?? gold, size: max(60, f.height * 0.55), warmth: warmth, cracks: warmth)
+                                .scaleEffect((holding ? 1.06 + warmth * 0.08 : 1) * (1 + emberGone * 0.6))
+                                .opacity(1 - emberGone)
+                                .offset(x: holding ? CGFloat.random(in: -1...1) * warmth * 3 : 0)
+                                .position(x: f.feet.x, y: f.feet.y - max(60, f.height * 0.55) * 0.5)
+                                .gesture(DragGesture(minimumDistance: 0).onChanged { _ in if !holding { startWarming() } }.onEnded { _ in stopWarming() })
+                        }
+                        if let m = morph {
+                            let h = f.height * Self.stageHeights[m] / Self.stageHeights[0] * 0.95
+                            Image(uiImage: UIImage(named: "\(Self.stages[m]).png") ?? UIImage()).resizable().scaledToFit()
+                                .frame(height: h)
+                                .position(x: f.feet.x, y: f.feet.y - h * 0.5 + f.height * 0.08)
+                                .id(m).transition(.scale(scale: 0.8).combined(with: .opacity))
+                                .allowsHitTesting(false)
+                        }
+                        Circle().fill(RadialGradient(colors: [.white.opacity(morphFlash), Color(red: 1, green: 0.8, blue: 0.45).opacity(morphFlash * 0.6), .clear], center: .center, startRadius: 0, endRadius: f.height * 1.6))
+                            .frame(width: f.height * 3.2, height: f.height * 3.2)
+                            .position(x: f.feet.x, y: f.feet.y - f.height * 0.5).allowsHitTesting(false)
+                    }
+                    .frame(width: g.size.width, height: g.size.height)
+                }
+                .onAppear { full = g.size }
+            }
+            .ignoresSafeArea()
+            BirthBloom(on: rays, center: full == .zero ? nil : scene.flameScreen(in: full).feet).allowsHitTesting(false)
             // Soft shade behind the words so they read on the painting (top for the Flame's speech, bottom for choices).
             LinearGradient(colors: [.black.opacity(0.45), .clear, .clear, .black.opacity(0.62)], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea().allowsHitTesting(false)
@@ -122,15 +162,9 @@ struct FinchIntro: View {
             }
         case .warm:
             VStack(spacing: 16) {
-                Spacer().frame(height: 300)
-                EmberOrb(color: ember?.color ?? gold, size: 120, warmth: warmth, cracks: warmth)
-                    .scaleEffect(holding ? 1.06 + warmth * 0.08 : 1)
-                    .offset(x: holding ? CGFloat.random(in: -1...1) * warmth * 3 : 0)
-                    .gesture(DragGesture(minimumDistance: 0).onChanged { _ in if !holding { startWarming() } }.onEnded { _ in stopWarming() })
-                Spacer()
                 title(warmth > 0.66 ? "Almost…" : "Hold it close. Keep it warm.")
-                body2("Touch and hold the ember.")
-                Spacer().frame(height: 60)
+                body2("Touch and hold the ember on the stone circle.")
+                Spacer().frame(height: 20)
             }
         case .born:
             VStack(spacing: 14) {
@@ -154,9 +188,12 @@ struct FinchIntro: View {
             }
         case .growing:
             VStack(spacing: 16) {
-                stageStrip
-                body2("It takes real days. That's the point.")
-                primary("Next") { go(.world) }
+                if glimpseDone {
+                    body2("It takes real days. That's the point.")
+                    primary("Next") { go(.world) }
+                } else {
+                    Spacer().frame(height: 60)
+                }
             }
         case .world:
             VStack(spacing: 16) {
@@ -376,10 +413,11 @@ struct FinchIntro: View {
         typing = false
         withAnimation(.spring(duration: 0.5)) { step = s }
         switch s {
+        case .warm: scene.focus = scene.flameFocus          // the camera leans in to the circle, where the ember waits
         case .born: bubble = nil
         case .hello: say("…Oh! There you are. I'm your Flame. What's your name?")
         case .whatAmI: say("Nice to meet you, \(name.trimmingCharacters(in: .whitespaces)). Do you know what I am?")
-        case .growing: say("I'm tiny now. But I'll grow as you grow."); scene.hero.look(at: [0, -0.6])
+        case .growing: say("I'm tiny now. But one day…"); glimpse()
         case .world: say("Out there, the world went quiet."); scene.hero.look(at: [0.5, -0.5])
         case .mornings: say("Can I bring you your day each morning?"); scene.hero.look(at: nil)
         case .q1: say("Let's learn a little about you.")
@@ -421,6 +459,7 @@ struct FinchIntro: View {
         FeelHaptics.shared.stopCharge(); FeelSound.shared.stopCharge()
         FeelHaptics.shared.ignite(); FeelSound.shared.ignite(pitch: 2)
         withAnimation(.easeOut(duration: 0.4)) { rays = true }
+        withAnimation(.easeOut(duration: 0.7)) { emberGone = 1 }
         go(.born)
         // Your Flame is born on the stone circle, and color floods back into the Sanctuary.
         scene.flameTarget = 1
@@ -428,9 +467,38 @@ struct FinchIntro: View {
         Task { @MainActor in
             for k in 1...40 { try? await Task.sleep(for: .milliseconds(40)); scene.setVitality(0.12 + 0.88 * Float(k) / 40) }
             try? await Task.sleep(for: .milliseconds(600))
-            scene.focus = scene.flameFocus            // the camera leans in close to your Flame
         }
         Task { try? await Task.sleep(for: .seconds(2.2)); withAnimation(.easeOut(duration: 1.2)) { rays = false } }
+    }
+
+    /// A glimpse of what the Spark will become: light gathers, it transforms through its stages (a breath each),
+    /// then settles back into the little Spark it is today.
+    private func glimpse() {
+        glimpseDone = false
+        Task { @MainActor in
+            func wait(_ s: Double) async { try? await Task.sleep(for: .seconds(s)) }
+            await wait(1.6)
+            FeelHaptics.shared.startCharge(duration: 1.0); FeelSound.shared.startCharge(duration: 1.0, pitch: 3)
+            withAnimation(.easeIn(duration: 0.5)) { morphFlash = 0.95 }
+            await wait(0.5)
+            scene.flameTarget = 0                                     // the living Spark gives way to the vision
+            FeelHaptics.shared.stopCharge(); FeelSound.shared.stopCharge()
+            for m in 1..<Self.stages.count {
+                withAnimation(.easeInOut(duration: 0.35)) { morph = m; morphFlash = 0.35 }
+                FeelHaptics.shared.nudge(); FeelSound.shared.chime(m + 1)
+                await wait(m == Self.stages.count - 1 ? 1.4 : 0.9)
+                withAnimation(.easeIn(duration: 0.2)) { morphFlash = 0.8 }
+                await wait(0.2)
+            }
+            withAnimation(.easeOut(duration: 0.4)) { morph = nil; morphFlash = 0.9 }
+            scene.flameTarget = 1                                     // back to the Spark, with its little spring
+            FeelHaptics.shared.ignite(); FeelSound.shared.ignite(pitch: 3)
+            withAnimation(.easeOut(duration: 0.9)) { morphFlash = 0 }
+            scene.hero.react(.giggle)
+            await wait(0.6)
+            say("…but I'll grow as you grow.")
+            withAnimation(.spring(duration: 0.5)) { glimpseDone = true }
+        }
     }
 
     private func gotLight() {
@@ -468,6 +536,7 @@ struct FinchIntro: View {
         scene.focus = nil                            // the camera pulls back: the whole Sanctuary
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(1.6))
+            model.tour = .satchel                      // the guided tour: the Sanctuary, the map, the Grove
             withAnimation(.easeInOut(duration: 0.8)) { model.go(.home) }
         }
     }
@@ -479,9 +548,10 @@ struct FinchIntro: View {
             await w(2); go(.chooseEmber); await w(1.5); ember = emberChoices[0]; await w(1.5); go(.warm)
             await w(1); startWarming(); await w(3)
             await w(3); go(.hello); await w(2); name = "Mathis"; await w(1); go(.whatAmI); await w(2.5); gotLight()
-            await w(5); go(.world); await w(3.5); go(.mornings); await w(2); go(.q1)
+            await w(12); go(.world); await w(3.5); go(.mornings); await w(2); go(.q1)
             await w(2); answers[1] = ["Be closer to people I love", "Read again"]; await w(1); go(.q2)
             await w(1.5); answers[2] = ["About 15 minutes"]; go(.q3); await w(1.5); answers[3] = ["Just starting out"]; go(.preparing)
+            await w(4.5); finish()
         }
     }
 }
@@ -575,12 +645,13 @@ struct LightRays: View {
 /// while embers drift upward like sparks from a fire waking up.
 struct BirthBloom: View {
     let on: Bool
+    var center: CGPoint? = nil
     @State private var t: Double = 0
     var body: some View {
         TimelineView(.animation(paused: !on && t == 0)) { tl in
             Canvas { ctx, size in
                 guard t > 0 else { return }
-                let c = CGPoint(x: size.width / 2, y: size.height * 0.5)
+                let c = center ?? CGPoint(x: size.width / 2, y: size.height * 0.5)
                 let k = min(1, t / 1.8)
                 // The bloom: grows quickly, then softly fades.
                 let r = 40 + 380 * (1 - pow(1 - k, 3))

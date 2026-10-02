@@ -41,7 +41,15 @@ struct LivingMapView: View {
             VStack {
                 header
                 Spacer()
-                if let r = selected, !diving { card(r).transition(.move(edge: .bottom).combined(with: .opacity)) }
+                if model.tour == .map && !diving {
+                    TourBubble(text: "The Emberlands. Each realm wakes as you grow in its part of life. Our first journey is the Whispering Grove.",
+                               button: "Fly there", next: {
+                                   model.tour = .grove
+                                   withAnimation(.spring(duration: 0.4)) { selected = .grove }
+                                   enter(.grove)
+                               }, skip: { withAnimation { model.tour = nil } })
+                    .padding(.bottom, 24)
+                } else if let r = selected, !diving { card(r).transition(.move(edge: .bottom).combined(with: .opacity)) }
             }
             .padding(.horizontal, 16)
         }
@@ -233,10 +241,10 @@ struct LivingMapView: View {
         scene.startDive(to: r.mapPoint)
         model.arrivingByDive = true
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(700))
+            try? await Task.sleep(for: .milliseconds(1250))          // the swoop itself, seen
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            withAnimation(.easeIn(duration: 0.55)) { flash = 1 }
-            try? await Task.sleep(for: .milliseconds(560))
+            withAnimation(.easeIn(duration: 0.45)) { flash = 1 }     // the realm's light takes over at the very end
+            try? await Task.sleep(for: .milliseconds(470))
             model.go(r == .sanctuary ? .home : .realm(r))
         }
     }

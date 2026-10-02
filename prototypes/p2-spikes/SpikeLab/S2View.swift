@@ -303,6 +303,18 @@ final class SanctuaryScene {
                        y: CGFloat(0.5 - rel.y / dz / t * 0.5) * size.height)
     }
 
+    /// Where the Flame stands on screen: its feet (points) and its height (points), for the intro's overlays
+    /// (the ember warmed on the circle, the glimpse of later stages).
+    func flameScreen(in size: CGSize) -> (feet: CGPoint, height: CGFloat) {
+        func project(_ w: SIMD3<Float>) -> CGPoint {
+            let rel = camera.transformMatrix(relativeTo: nil).inverse * SIMD4<Float>(w.x, w.y, w.z, 1)
+            let dz = max(0.01, -rel.z), t = tan(Self.fov / 2 * .pi / 180), aspect = Float(size.width / size.height)
+            return CGPoint(x: CGFloat(0.5 + rel.x / dz / (t * aspect) * 0.5) * size.width, y: CGFloat(0.5 - rel.y / dz / t * 0.5) * size.height)
+        }
+        let feet = project(heroFeet), top = project(heroFeet + SIMD3(0, 0.27 * heroWorldScale, 0))
+        return (feet, max(1, feet.y - top.y))
+    }
+
     /// For the intro: the Flame isn't born yet.
     func hideFlameInstantly() { appear = Spring(0, stiffness: 90, damping: 9); flameTarget = 0 }
     /// Where the Flame's chest is, to focus the camera on it.

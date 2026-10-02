@@ -30,11 +30,14 @@ struct DiveArrival: View {
     let model: ShellModel
     @State private var light: Double = 1
     var body: some View {
-        Color.white.opacity(model.arrivingByDive ? light : 0).ignoresSafeArea().allowsHitTesting(false)
+        Color(red: 1, green: 0.96, blue: 0.9).opacity(model.arrivingByDive ? light : 0).ignoresSafeArea().allowsHitTesting(false)
             .onAppear {
                 guard model.arrivingByDive else { return }
-                withAnimation(.easeOut(duration: 1.1)) { light = 0 }
-                Task { @MainActor in try? await Task.sleep(for: .milliseconds(1150)); model.arrivingByDive = false }
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(900))        // the realm finishes appearing under the light
+                    withAnimation(.easeOut(duration: 1.2)) { light = 0 }
+                    try? await Task.sleep(for: .milliseconds(1250)); model.arrivingByDive = false
+                }
             }
     }
 }

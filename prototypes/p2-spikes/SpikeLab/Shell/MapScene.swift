@@ -215,22 +215,23 @@ final class MapScene {
         zoomVel += (w0 * w0 * (zoomTarget - zoom) - 2 * w0 * zoomVel) * dt
         zoom += zoomVel * dt
         // The dive follows its own slower spring (a smooth, accelerating swoop).
-        let wd: Float = 3.2
+        let wd: Float = 3.6
         diveVel += (wd * wd * (diveTarget - dive) - 2 * wd * diveVel) * dt
         dive += diveVel * dt
 
         var camXY = pan, camZ = Self.distance - Self.distance / zoom
         if dive > 0.001 {
+            // The swoop: forward and down onto the realm, accelerating (never backward: the map's edge stays hidden).
             let k = min(1, dive)
-            let rise = sin(min(1, k * 2.2) * .pi) * 0.12 * (1 - k)            // a little lift before the swoop
-            let ease = k * k * (3 - 2 * k)
-            camXY = diveFrom + (diveTo - diveFrom) * ease
-            camZ = camZ - rise + ease * (Self.distance - 0.12 - camZ)         // down to just above the realm
+            let ease = k * k * k * (k * (6 * k - 15) + 10)                    // smootherstep: soft start, rushing end
+            camXY = diveFrom + (diveTo - diveFrom) * min(1, ease * 1.4)
+            camZ = camZ + ease * (Self.distance - 0.12 - camZ)                // down to just above the realm
+            let effectiveZoom = Self.distance / max(0.05, Self.distance - camZ)
+            camXY = simd_clamp(camXY, -panLimit(zoom: effectiveZoom), panLimit(zoom: effectiveZoom))
         }
         let breathe = SIMD3<Float>(sin(time * 0.21) * 0.004, sin(time * 0.17) * 0.003, 0)
-        let pos = SIMD3<Float>(camXY.x, camXY.y, camZ) + breathe
+        let pos = SIMD3<Float>(camXY.x, camXY.y, -camZ) + breathe        // closer = toward the map (−z)
         camera.look(at: pos + SIMD3(0, 0, -1), from: pos, relativeTo: nil)
-        if Int(time * 2) != Int((time - dt) * 2), time < 6 { print("MAP CAM", pos, pan, zoom, dive, planeW, planeH) }
 
         // The light of the hour on the whole map.
         if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
