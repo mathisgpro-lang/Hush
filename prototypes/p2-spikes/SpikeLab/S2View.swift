@@ -51,18 +51,22 @@ final class SanctuaryScene {
     var focus: SIMD3<Float>?
     private var camPos = SIMD3<Float>(0, 0, 0), camLook = SIMD3<Float>(0, 0, -1.2)
     private var camVel = SIMD3<Float>(0, 0, 0), lookVel = SIMD3<Float>(0, 0, 0)
-    /// Looking around: the camera slides sideways along the world (meters). The view sets the target; the camera
-    /// follows on a smooth spring. `panLimit` is how far the world extends beyond the screen on each side.
-    var panTarget: Float = 0
-    private(set) var pan: Float = 0
-    private var panVel: Float = 0
-    var panLimit: Float = 0
+    /// Looking around (Clash of Clans–style): the camera slides a little in any direction (meters), but the
+    /// Sanctuary always stays in view. The view sets the target; the camera follows on a smooth spring.
+    /// `panLimit` is how far you may peek from the home view (x sideways, y up and down).
+    var panTarget = SIMD2<Float>(0, 0)
+    private(set) var pan = SIMD2<Float>(0, 0)
+    private var panVel = SIMD2<Float>(0, 0)
+    var panLimit = SIMD2<Float>(0, 0)
     /// Points per meter at the painting's depth (for the view to convert finger movement and to move its overlays).
     static let visibleHeight: Float = 2 * distance * tan(fov / 2 * .pi / 180)
     private var watching = false
 
     static let distance: Float = 1.2
-    static let fov: Float = 40
+    /// The painting is sized for a 40° view; the camera looks a little closer (35°), which leaves room to peek
+    /// up and down as well as sideways.
+    static let paintFov: Float = 40
+    static let fov: Float = 35
 
     /// Depth from Apple's Depth Anything V2 (tools/depthmap), white = near. Read once into memory.
     private var depth: (w: Int, h: Int, px: [UInt8])?
@@ -95,13 +99,15 @@ final class SanctuaryScene {
         let tex = try await TextureResource(named: "\(prefix)-paint.png")
         let motion = try await TextureResource(named: "\(prefix)-motion.png", options: .init(semantic: .raw))
         loadDepth("\(prefix)-depth.png")
-        let visibleH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180)
+        let visibleH = 2 * Self.distance * tan(Self.paintFov / 2 * .pi / 180)
         let aspect = Float(tex.width) / Float(tex.height)
         let (w, h) = (visibleH * aspect * 1.08, visibleH * 1.08)     // a little overscan so parallax never shows edges
         paintingW = w; paintingH = h
         let screen = UIScreen.main.bounds.size
-        let visibleW = visibleH * Float(screen.width / screen.height)
-        panLimit = max(0, (w - visibleW * 1.04) / 2)
+        let camH = Self.visibleHeight, camW = camH * Float(screen.width / screen.height)
+        // Sideways: up to ~28% of a screen, so the stone circle never leaves the view (and never past the world).
+        // Up and down: whatever the painting holds beyond the screen, minus a margin for the camera's breathing.
+        panLimit = [min(camW * 0.28, max(0, (w - camW * 1.04) / 2)), max(0, (h - camH) / 2 - 0.03)]
 
         // The painting, bent in depth. Each vertex keeps its rest screen position (scaled along the camera ray),
         // so from the rest camera the painting looks untouched; moving the camera reveals the depth.
@@ -289,18 +295,19 @@ final class SanctuaryScene {
             return (f * 0.42 + offset * 0.3, f) }
             ?? (offset, [offset.x * 0.3, offset.y * 0.3, -Self.distance])
         // Looking around: a critically damped spring toward the target (glides, never jerks, no overshoot).
-        let pt = max(-panLimit - 0.03, min(panLimit + 0.03, panTarget))
+        let pt = simd_clamp(panTarget, -panLimit - 0.05, panLimit + 0.05)
         let w0: Float = 7.5
         panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
         pan += panVel * dt
-        let panV = SIMD3<Float>(pan, 0, 0)
+        let panV = SIMD3<Float>(pan.x, pan.y, 0)
         // The camera itself moves on springs too (fluid: smooth starts and stops, no sudden changes of speed).
         let wc: Float = 3.4
-        camVel += (wc * wc * (wantPos + panV - camPos) - 2 * wc * camVel) * dt
+        // (The look-around pan is added after, so the world and the calls floating on it move exactly together.)
+        camVel += (wc * wc * (wantPos - camPos) - 2 * wc * camVel) * dt
         camPos += camVel * dt
-        lookVel += (wc * wc * (wantLook + panV - camLook) - 2 * wc * lookVel) * dt
+        lookVel += (wc * wc * (wantLook - camLook) - 2 * wc * lookVel) * dt
         camLook += lookVel * dt
-        camera.look(at: camLook, from: camPos, relativeTo: nil)
+        camera.look(at: camLook + panV, from: camPos + panV, relativeTo: nil)
     }
 }
 
