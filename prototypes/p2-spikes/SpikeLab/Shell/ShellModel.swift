@@ -93,13 +93,15 @@ struct Call: Identifiable, Equatable {
 
 @MainActor @Observable
 final class ShellModel {
-    var screen: Screen = CommandLine.arguments.contains("-skipintro") ? .home : .intro
+    var screen: Screen = CommandLine.arguments.contains("-grove") ? .realm(.grove) : CommandLine.arguments.contains("-map") ? .map : (CommandLine.arguments.contains("-skipintro") ? .home : .intro)
     var interest: String = "Be closer to people I love"
     var open: Set<RealmID> = [.sanctuary, .grove]
     var newHere: Set<RealmID> = [.grove]              // the glow + badge: "something new waits here"
     var flameAt: RealmID = .sanctuary
     var calls: [Call] = []
     var light: Int = 0                                // today's light sent into the world
+    /// Set when a realm is entered by the map's dive: the realm then opens out of the dive's light.
+    var arrivingByDive = false
 
     init() { makeCalls() }
 

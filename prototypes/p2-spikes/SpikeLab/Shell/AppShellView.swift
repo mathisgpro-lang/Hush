@@ -11,14 +11,30 @@ struct AppShellView: View {
             case .intro:
                 FinchIntro(model: model).transition(.opacity)
             case .home:
-                HomeView(model: model).transition(.asymmetric(insertion: .scale(scale: 1.15).combined(with: .opacity), removal: .opacity))
+                HomeView(model: model).overlay(DiveArrival(model: model))
+                    .transition(.asymmetric(insertion: .scale(scale: 1.15).combined(with: .opacity), removal: .opacity))
             case .map:
-                RoadMapView(model: model).transition(.asymmetric(insertion: .scale(scale: 0.85).combined(with: .opacity), removal: .opacity))
+                LivingMapView(model: model).transition(.asymmetric(insertion: .scale(scale: 0.85).combined(with: .opacity), removal: .opacity))
             case .realm(let r):
-                RealmView(model: model, realm: r).transition(.opacity)
+                RealmView(model: model, realm: r).overlay(DiveArrival(model: model)).transition(.opacity)
             }
         }
         .preferredColorScheme(.dark)
         .statusBarHidden(model.screen == .intro)
+    }
+}
+
+/// The end of the map's dive: the realm opens out of a wash of light (the screen starts white and clears while the
+/// world settles from a little closer), so flying in feels like one continuous move.
+struct DiveArrival: View {
+    let model: ShellModel
+    @State private var light: Double = 1
+    var body: some View {
+        Color.white.opacity(model.arrivingByDive ? light : 0).ignoresSafeArea().allowsHitTesting(false)
+            .onAppear {
+                guard model.arrivingByDive else { return }
+                withAnimation(.easeOut(duration: 1.1)) { light = 0 }
+                Task { @MainActor in try? await Task.sleep(for: .milliseconds(1150)); model.arrivingByDive = false }
+            }
     }
 }

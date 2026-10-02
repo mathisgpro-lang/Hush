@@ -258,20 +258,22 @@ void groveRestore(realitykit::surface_parameters params)
     float flicker = 0.92 + 0.08 * sin(t * 9.0 + order * 300.0) * sin(t * 3.7 + order * 91.0);
     float flare = (1.0 - smoothstep(0.0, 0.006, abs(order - c.z))) * exp(-c.w * 2.5);
 
-    // The Hushed Grove: grey, cool and dim; color returns with restoration, and early around lit lanterns.
+    // The Grove is always vivid (Mathis: never grey); while it sleeps, it is only a little dimmer and cooler, and
+    // its lanterns are dark. Restoring it warms it up and lights them one by one.
     float localLight = lit * pool;
-    float sat = max(0.1 + 0.9 * smoothstep(0.0, 0.9, r), localLight * 0.85);
-    float3 graded = mix(float3(lum) * float3(0.82, 0.88, 1.02), rgb, sat);
-    graded *= max(0.42 + 0.58 * smoothstep(0.0, 0.8, r), 0.42 + 0.5 * localLight);
+    float sat = max(0.8 + 0.25 * smoothstep(0.0, 0.9, r), localLight);
+    float3 graded = mix(float3(lum), rgb, sat);
+    graded *= mix(float3(0.86, 0.9, 1.0), float3(1.04, 1.02, 0.98), smoothstep(0.0, 0.8, r));
+    graded *= max(0.8 + 0.25 * smoothstep(0.0, 0.8, r), 0.8 + 0.3 * localLight);
     // Unlit lanterns dim their own painted glow; lit ones shine (flickering, flaring right after relighting).
-    float3 dark = float3(lum * 0.22) * float3(0.8, 0.85, 1.0);
+    float3 dark = rgb * float3(0.32, 0.3, 0.34);          // an unlit lantern: its own colors, just without fire
     float3 shining = rgb * flicker * 1.12 + float3(1.0, 0.8, 0.45) * flare * 1.4;
     graded = mix(graded, mix(dark, shining, lit), core);
     graded += float3(1.0, 0.7, 0.35) * pool * lit * 0.06 * flicker + float3(1.0, 0.75, 0.4) * pool * flare * 0.35;
     float m0 = 0.0;
 
     // Mist: thick when Hushed, lifting with restoration; vitality thickens or thins it day to day.
-    float mistAmount = (1.0 - smoothstep(0.0, 0.85, r)) * 0.55 + (1.0 - vitality) * 0.25;
+    float mistAmount = (1.0 - smoothstep(0.0, 0.85, r)) * 0.14 + (1.0 - vitality) * 0.25;   // a light veil, never a fog
     float m = s2fbm(uv * float2(3.0, 5.0) + float2(t * 0.015, 0)) * mistAmount * (1.0 - localLight * 0.8) + m0;
     graded = mix(graded, float3(0.6, 0.63, 0.7), m);
 

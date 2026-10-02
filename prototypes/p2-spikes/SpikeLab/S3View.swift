@@ -32,7 +32,8 @@ enum Restoration {
 final class GroveScene {
     @ObservationIgnored let root = Entity()
     @ObservationIgnored let camera = PerspectiveCamera()
-    @ObservationIgnored let hero = LayeredFlame()
+    /// The Spark (decision 125), hovering over the Grove's stone circle.
+    @ObservationIgnored let hero = HeroRig(base: "spark", footInset: 0.045, reflection: false, glows: true, wander: 0.004, spirit: true)
     @ObservationIgnored let life = SanctuaryLife()
     @ObservationIgnored private var painting: ModelEntity?
     @ObservationIgnored private var flies: Entity?
@@ -45,11 +46,14 @@ final class GroveScene {
     @ObservationIgnored private var heroScale: Float = 0.42
     @ObservationIgnored private var flareOrder: Float = -1
     @ObservationIgnored private var flareAge: Float = 10
+    @ObservationIgnored private var fliesRate: Float = -1
     @ObservationIgnored private var flight: (from: SIMD3<Float>, to: SIMD3<Float>, t: Float, lightTo: Float, flare: Float)?
     @ObservationIgnored var updates: EventSubscription?
     @ObservationIgnored var focus: SIMD3<Float>?
     @ObservationIgnored private var camPos = SIMD3<Float>(0, 0, 0)
     @ObservationIgnored private var camLook = SIMD3<Float>(0, 0, -1.2)
+    @ObservationIgnored private var camVel = SIMD3<Float>(0, 0, 0)
+    @ObservationIgnored private var lookVel = SIMD3<Float>(0, 0, 0)
     @ObservationIgnored private var pw: Float = 1
     @ObservationIgnored private var ph: Float = 1
 
@@ -60,7 +64,7 @@ final class GroveScene {
 
     static let distance: Float = 1.2, fov: Float = 40
 
-    private func relief(_ g: Float) -> Float { 0.45 * pow(g, 0.6) - 0.15 }
+    private func relief(_ g: Float) -> Float { 0.2 * pow(g, 0.6) - 0.065 }      // gentle: no smeared gaps (as the Sanctuary)
     private func depthAt(_ u: Float, _ v: Float) -> Float {
         guard let d = depthMap else { return 0.3 }
         let cx = Int(u * Float(d.w - 1)), cy = Int((1 - v) * Float(d.h - 1))
@@ -159,9 +163,10 @@ final class GroveScene {
         let circle = point(0.5, 0.335, nearer: 0.012)
         try await hero.build()
         let k = -circle.z / Self.distance
-        heroScale = 0.55 * k
+        heroScale = 0.105 * h * k / 0.27                            // the Spark's size, as in the Sanctuary
         hero.leanPivot.scale = .init(repeating: heroScale)
         hero.leanPivot.position = circle + SIMD3(0, 0.09 * heroScale, 0)
+        hero.stationary = true
         root.addChild(hero.leanPivot)
         heroFeet = circle
 
@@ -194,6 +199,8 @@ final class GroveScene {
         let chest = heroFeet + SIMD3(hero.standingX * heroScale, 0.13 * heroScale, 0.005)
         if let watch = life.update(dt: dt, flameAt: chest) { hero.look(at: watch) }
         hero.wind = life.wind
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: Date())
+        hero.hour = Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60
         hero.update(dt: dt)
         flareAge += dt
 
@@ -218,20 +225,22 @@ final class GroveScene {
             m.roughness = .init(floatLiteral: abs(life.wind))
             comp.materials = [m]; painting.model = comp
         }
-        if let flies, var f = flies.components[ParticleEmitterComponent.self] {
-            f.mainEmitter.birthRate = r < 0.25 ? 0 : (r - 0.25) * 18
-            f.mainEmitter.acceleration = [life.wind * 0.02, 0, 0]
-            flies.components.set(f)
+        let rate: Float = r < 0.25 ? 0 : ((r - 0.25) * 18).rounded()
+        if rate != fliesRate, let flies, var f = flies.components[ParticleEmitterComponent.self] {   // only on change (smooth)
+            fliesRate = rate; f.mainEmitter.birthRate = rate; flies.components.set(f)
         }
-        let drift = SIMD2(noise.sample(time * 0.09), noise.sample(time * 0.07 + 30)) * 0.05
+        flies?.position.x = life.wind * 0.03
+        let drift = SIMD2(noise.sample(time * 0.09), noise.sample(time * 0.07 + 30)) * 0.025
         let offset = SIMD3<Float>(drift.x, drift.y * 0.6, 0)
         let (wantPos, wantLook): (SIMD3<Float>, SIMD3<Float>) = focus.map { f0 in
             // Glide toward the spot but keep the view inside the painting (side spots would show its edge).
             let f = SIMD3<Float>(max(-0.09, min(0.09, f0.x)), f0.y, f0.z)
             return (f * 0.42 + offset * 0.3, f) }
             ?? (offset, [offset.x * 0.3, offset.y * 0.3, -Self.distance])
-        let k = 1 - exp(-dt * 3.2)
-        camPos += (wantPos - camPos) * k; camLook += (wantLook - camLook) * k
+        // Critically damped springs (fluid starts and stops), as in the Sanctuary.
+        let wc: Float = 3.4
+        camVel += (wc * wc * (wantPos - camPos) - 2 * wc * camVel) * dt; camPos += camVel * dt
+        lookVel += (wc * wc * (wantLook - camLook) - 2 * wc * lookVel) * dt; camLook += lookVel * dt
         camera.look(at: camLook, from: camPos, relativeTo: nil)
     }
 
