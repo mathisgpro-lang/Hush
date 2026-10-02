@@ -41,7 +41,6 @@ struct HomeView: View {
                 }
                 .ignoresSafeArea()
                 .onTapGesture { director?.tapped() }
-                .simultaneousGesture(lookAround(geo.size))
 
                 // The quests you took, waiting in the world as small glowing objects (they stay attached to their
                 // spot when you look around). Tap one to do it.
@@ -83,6 +82,7 @@ struct HomeView: View {
                 tourLayer
                 if satchelOpen { QuestJournal(model: model, isOpen: $satchelOpen).transition(.move(edge: .bottom).combined(with: .opacity)) }
             }
+            .simultaneousGesture(lookAround(geo.size), including: satchelOpen || open != nil ? .subviews : .all)
         }
         .onAppear { meter.start() }
         .onDisappear { meter.stop(); director?.stop() }

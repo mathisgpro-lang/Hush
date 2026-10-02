@@ -26,6 +26,7 @@ struct RealmView: View {
     @State private var focused: Spot?
     @State private var ready = false
     @State private var appear = false
+    @State private var dragStart: SIMD2<Float>?
 
     var body: some View {
         GeometryReader { geo in
@@ -46,14 +47,22 @@ struct RealmView: View {
                 .scaleEffect(appear ? 1 : 1.25)
                 .onTapGesture { if focused == nil { director?.tapped() } else { unfocus() } }
 
+                // The spots to explore, attached to their place in the Grove (they move with it as you look around).
                 if ready && focused == nil {
-                    ForEach(groveSpots) { s in
-                        SpotMarker(spot: s)
-                            .position(x: (0.5 + CGFloat(s.uv.x - 0.5) * 1.08) * geo.size.width,
-                                      y: (0.5 - CGFloat(s.uv.y - 0.5) * 1.08) * geo.size.height)
-                            .onTapGesture { focus(s) }
-                            .transition(.scale.combined(with: .opacity))
+                    GeometryReader { full in
+                        TimelineView(.animation) { _ in
+                            ZStack {
+                                ForEach(groveSpots) { s in
+                                    SpotMarker(spot: s)
+                                        .position(scene.screenPoint(s.uv.x, s.uv.y, in: full.size))
+                                        .onTapGesture { focus(s) }
+                                        .transition(.scale.combined(with: .opacity))
+                                }
+                            }
+                            .frame(width: full.size.width, height: full.size.height)
+                        }
                     }
+                    .ignoresSafeArea()
                 }
 
                 VStack {
@@ -70,9 +79,35 @@ struct RealmView: View {
                 }
                 .padding(.horizontal, 16)
             }
+            .simultaneousGesture(lookAround(geo.size))     // the whole screen: drags anywhere look around
         }
         .onAppear { meter.start(); withAnimation(.easeOut(duration: 1.0)) { appear = true } }
         .onDisappear { meter.stop(); director?.stop() }
+    }
+
+    /// Drag to look around the Grove (Clash of Clans: a little in every direction, rubber-band edges, a glide).
+    private func lookAround(_ size: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { v in
+                guard focused == nil else { return }
+                if dragStart == nil { dragStart = scene.pan }
+                let ppm = Float(size.height) / (2 * GroveScene.distance * tan(GroveScene.fov / 2 * .pi / 180))
+                let raw = (dragStart ?? .zero) + SIMD2(-Float(v.translation.width), Float(v.translation.height)) / ppm
+                scene.panTarget = SIMD2(rubber(raw.x, scene.panLimit.x), rubber(raw.y, scene.panLimit.y))
+            }
+            .onEnded { v in
+                guard focused == nil else { return }
+                let ppm = Float(size.height) / (2 * GroveScene.distance * tan(GroveScene.fov / 2 * .pi / 180))
+                let projected = (dragStart ?? .zero) + SIMD2(-Float(v.predictedEndTranslation.width), Float(v.predictedEndTranslation.height)) / ppm
+                scene.panTarget = simd_clamp(projected, -scene.panLimit, scene.panLimit)
+                dragStart = nil
+            }
+    }
+    private func rubber(_ x: Float, _ lim: Float) -> Float {
+        let over = abs(x) - lim
+        guard over > 0 else { return x }
+        let k: Float = 0.05
+        return (lim + k * (1 - exp(-over / k))) * (x < 0 ? -1 : 1)
     }
 
     private var header: some View {
@@ -129,6 +164,7 @@ struct RealmView: View {
 
     private func focus(_ s: Spot) {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        scene.panTarget = .zero                      // the spot's close-up is framed from the home view
         scene.focus = scene.spot(s.uv.x, s.uv.y)
         scene.hero.look(at: [s.uv.x < 0.5 ? -0.7 : 0.7, s.uv.y > 0.36 ? 0.5 : -0.3])
         withAnimation(.spring(duration: 0.5)) { focused = s }

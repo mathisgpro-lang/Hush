@@ -64,6 +64,21 @@ final class GroveScene {
 
     static let distance: Float = 1.2, fov: Float = 40
 
+    /// The swipeable Grove (iteration 2): Codex's side panels stitched around the painting (tools/build_grove.py).
+    @ObservationIgnored private lazy var layout: (total: Float, homeX0: Float, homeW: Float)? = {
+        guard let url = Bundle.main.url(forResource: "grove-layout", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let d = try? JSONSerialization.jsonObject(with: data) as? [String: Double] else { return nil }
+        return (Float(d["total"]!), Float(d["homeX0"]!), Float(d["homeW"]!))
+    }()
+    /// Grove painting u → wide world u.
+    func hx(_ u: Float) -> Float { layout.map { ($0.homeX0 + u * $0.homeW) / $0.total } ?? u }
+    /// Looking around: the view slides sideways (and a little up and down) on a spring; the view sets the target.
+    @ObservationIgnored var panTarget = SIMD2<Float>(0, 0)
+    @ObservationIgnored private(set) var pan = SIMD2<Float>(0, 0)
+    @ObservationIgnored private var panVel = SIMD2<Float>(0, 0)
+    @ObservationIgnored private(set) var panLimit = SIMD2<Float>(0, 0)
+
     private func relief(_ g: Float) -> Float { 0.2 * pow(g, 0.6) - 0.065 }      // gentle: no smeared gaps (as the Sanctuary)
     private func depthAt(_ u: Float, _ v: Float) -> Float {
         guard let d = depthMap else { return 0.3 }
@@ -78,9 +93,10 @@ final class GroveScene {
 
     func build() async throws {
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
-        let tex = try await TextureResource(named: "grove-paint.png")
-        let lanternTex = try await TextureResource(named: "grove-lanterns.png", options: .init(semantic: .raw))
-        if let img = UIImage(named: "grove-depth.png")?.cgImage {
+        let wide = layout != nil
+        let tex = try await TextureResource(named: wide ? "grove-world-paint.png" : "grove-paint.png")
+        let lanternTex = try await TextureResource(named: wide ? "grove-world-lanterns.png" : "grove-lanterns.png", options: .init(semantic: .raw))
+        if let img = UIImage(named: wide ? "grove-world-depth.png" : "grove-depth.png")?.cgImage {
             var px = [UInt8](repeating: 0, count: img.width * img.height)
             let ctx = CGContext(data: &px, width: img.width, height: img.height, bitsPerComponent: 8, bytesPerRow: img.width,
                                 space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue)!
@@ -91,13 +107,17 @@ final class GroveScene {
         let aspect = Float(tex.width) / Float(tex.height)
         let (w, h) = (visibleH * aspect * 1.08, visibleH * 1.08)
         pw = w; ph = h
+        let screen = UIScreen.main.bounds.size
+        let camH = visibleH, camW = camH * Float(screen.width / screen.height)
+        // Sideways: up to ~45% of a screen each way (Clash of Clans: the stone circle stays in reach); never past the world.
+        panLimit = [min(camW * 0.45, max(0, (w - camW * 1.04) / 2)), max(0, (h - camH) / 2 - 0.02)]
         func point(_ u: Float, _ v: Float, nearer extra: Float = 0) -> SIMD3<Float> {
             let rest = SIMD3<Float>((u - 0.5) * w, (v - 0.5) * h, -Self.distance)
             let d = Self.distance - relief(depthAt(u, v)) - extra
             return rest * (d / Self.distance)
         }
 
-        let (nx, ny) = (72, 162)
+        let (nx, ny) = (wide ? 150 : 72, 162)
         var pos: [SIMD3<Float>] = [], uvs: [SIMD2<Float>] = [], idx: [UInt32] = []
         for j in 0...ny { for i in 0...nx {
             let u = Float(i) / Float(nx), v = Float(j) / Float(ny)
@@ -128,7 +148,7 @@ final class GroveScene {
             let n = list.count
             lanterns = list.enumerated().map { k, l in
                 let order = Float(1 + Int(254 * Double(k) / Double(max(1, n - 1)))) / 255
-                return (point(Float(l["u"]!), Float(l["v"]!), nearer: 0.01), order)
+                return (point(hx(Float(l["u"]!)), Float(l["v"]!), nearer: 0.01), order)
             }
             lanternTotal = lanterns.count
         }
@@ -160,7 +180,7 @@ final class GroveScene {
         }
 
         // The Flame on the stone circle.
-        let circle = point(0.5, 0.335, nearer: 0.012)
+        let circle = point(hx(0.5), 0.335, nearer: 0.012)
         try await hero.build()
         let k = -circle.z / Self.distance
         heroScale = 0.105 * h * k / 0.27                            // the Spark's size, as in the Sanctuary
@@ -176,10 +196,20 @@ final class GroveScene {
         root.addChild(camera)
     }
 
-    func spot(_ u: Float, _ v: Float) -> SIMD3<Float> {
+    /// A point of the Grove painting (its own uv, v up) on the relief, in world space.
+    func spot(_ u0: Float, _ v: Float) -> SIMD3<Float> {
+        let u = hx(u0)
         let rest = SIMD3<Float>((u - 0.5) * pw, (v - 0.5) * ph, -Self.distance)
         let d = Self.distance - relief(depthAt(u, v))
         return rest * (d / Self.distance)
+    }
+
+    /// Where a spot of the Grove painting shows on screen (points), following the camera.
+    func screenPoint(_ u: Float, _ v: Float, in size: CGSize) -> CGPoint {
+        let w = spot(u, v)
+        let rel = camera.transformMatrix(relativeTo: nil).inverse * SIMD4<Float>(w.x, w.y, w.z, 1)
+        let dz = max(0.01, -rel.z), t = tan(Self.fov / 2 * .pi / 180), aspect = Float(size.width / size.height)
+        return CGPoint(x: CGFloat(0.5 + rel.x / dz / (t * aspect) * 0.5) * size.width, y: CGFloat(0.5 - rel.y / dz / t * 0.5) * size.height)
     }
 
     /// A real Heart action: the Flame cheers and sends a strand of light to the next unlit lanterns.
@@ -241,7 +271,13 @@ final class GroveScene {
         let wc: Float = 3.4
         camVel += (wc * wc * (wantPos - camPos) - 2 * wc * camVel) * dt; camPos += camVel * dt
         lookVel += (wc * wc * (wantLook - camLook) - 2 * wc * lookVel) * dt; camLook += lookVel * dt
-        camera.look(at: camLook, from: camPos, relativeTo: nil)
+        // Looking around, added on top so the spots floating over the Grove move exactly with it.
+        let pt = simd_clamp(panTarget, -panLimit - 0.05, panLimit + 0.05)
+        let w0: Float = 7.5
+        panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
+        pan += panVel * dt
+        let pv = SIMD3<Float>(pan.x, pan.y, 0)
+        camera.look(at: camLook + pv, from: camPos + pv, relativeTo: nil)
     }
 
     private func setStrand(opacity: Float, emitting: Bool) {
