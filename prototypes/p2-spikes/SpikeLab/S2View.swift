@@ -247,7 +247,7 @@ final class SanctuaryScene {
 
         try await life.build()
         root.addChild(life.root)
-        try await elements.build(spot: { [unowned self] u, v in self.spot(self.hx(u), v) }, paintingW: w)
+        try await elements.build(spot: { [unowned self] u, v in self.spot(self.hx(u), v) }, paintingW: w, withClouds: layers == nil)
         root.addChild(elements.root)
 
         // Soft glowing motes drifting close to the camera, in front of the whole world (depth and air).
@@ -291,7 +291,7 @@ final class SanctuaryScene {
         vitality = v
         for (k, e) in mists.enumerated() {
             guard var comp = e.model, var m = comp.materials.first as? CustomMaterial else { continue }
-            m.custom.value.x = 0.14 + (1 - v) * (k == 0 ? 0.45 : 0.6)   // mist always drifts far behind; never in front of the Flame
+            m.custom.value.x = 0.03 + (1 - v) * (k == 0 ? 0.55 : 0.7)   // a faint veil when you're living fully; the Hush thickens it (never in front of the Flame)
             comp.materials = [m]; e.model = comp
         }
 

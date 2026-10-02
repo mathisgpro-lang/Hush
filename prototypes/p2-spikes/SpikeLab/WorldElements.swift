@@ -14,7 +14,7 @@ final class WorldElements {
     private var cloudBounds: Float = 0.5
 
     /// Painting uv → a point on the relief (from the scene).
-    func build(spot: (Float, Float) -> SIMD3<Float>, paintingW: Float) async throws {
+    func build(spot: (Float, Float) -> SIMD3<Float>, paintingW: Float, withClouds: Bool = true) async throws {
         // Brazier flames (uv of each flame's base, and its size).
         for (u, v, s) in [(0.139, 0.573, 1.0), (0.397, 0.579, 0.8), (0.737, 0.575, 1.0), (0.816, 0.548, 1.1), (0.308, 0.431, 1.1), (0.109, 0.378, 1.6)] as [(Float, Float, Float)] {
             let e = Entity()
@@ -50,7 +50,9 @@ final class WorldElements {
         f.mainEmitter.opacityCurve = .gradualFadeInOut
         ff.components.set(f); ff.position = spot(0.5, 0.42) + SIMD3(0, 0.05, 0.08)
         root.addChild(ff); fireflies = ff
-        // Clouds drifting across the sky, just in front of it and behind everything nearer.
+        // Clouds drifting across the sky, just in front of it and behind everything nearer. Not needed when the
+        // world has a real sky layer (its own clouds drift): cards in front of the land read as grey fog.
+        guard withClouds else { return }
         let tex = try await TextureResource(named: "cloud.png")
         let sky = spot(0.75, 0.78)
         cloudBounds = paintingW * 0.7
