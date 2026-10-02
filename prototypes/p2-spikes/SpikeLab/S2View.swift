@@ -11,6 +11,7 @@ final class SanctuaryScene {
     let root = Entity()
     let camera = PerspectiveCamera()
     private var painting: ModelEntity?
+    private var backdrop: ModelEntity?
     private var vitality: Float = 1
     private var paintingW: Float = 1, paintingH: Float = 1
     private let heroScale: Float = 0.62     // small and cute on the circle, like the First Words frame
@@ -103,6 +104,20 @@ final class SanctuaryScene {
         }
         let p = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
         root.addChild(p); painting = p
+
+        // The world doesn't end at the painting's edge: a softly continued backdrop behind it, much larger,
+        // graded by the same light (time of day, the Hush), so no edge or black can ever show.
+        if let lib, let bTex = try? await TextureResource(named: "home-backdrop.png") {
+            let blank = try await TextureResource(named: "blank-mask.png", options: .init(semantic: .raw))
+            var u = UnlitMaterial(); u.color = .init(tint: .white, texture: .init(bTex))
+            var m = try CustomMaterial(from: u, surfaceShader: .init(named: "stoneLive", in: lib))
+            m.custom.texture = .init(blank); m.custom.value = [1, 0.5, 0.5, 0]
+            let back: Float = 0.5, k = (Self.distance + back) / Self.distance
+            let bw = w * (1618.0 / 852.0) * k, bh = h * (2768.0 / 1846.0) * k
+            let b = ModelEntity(mesh: .generatePlane(width: bw, height: bh), materials: [m])
+            b.position = [0, 0, -(Self.distance + back)]
+            root.addChild(b); backdrop = b
+        }
 
         // Mist cards at three depths, all just behind the Flame (it must stay the warmest, clearest thing on screen),
         // driven by Vitality. The near-water mist lives in the painting's shader.
@@ -224,11 +239,17 @@ final class SanctuaryScene {
             else if let i = args.firstIndex(of: "-hour"), i + 1 < args.count, let h = Float(args[i + 1]) { hourOverride = h }
             let hour = hourOverride ?? (Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60)
             m.metallic = .init(floatLiteral: hour / 24)              // and the time of day from metallic_scale
+            if let backdrop, var bc = backdrop.model, var bm = bc.materials.first as? CustomMaterial {
+                bm.custom.value = [m.custom.value.x, 2, 2, 0]; bm.metallic = m.metallic; bm.roughness = m.roughness
+                bc.materials = [bm]; backdrop.model = bc
+            }
             comp.materials = [m]; painting.model = comp
         }
         // The camera breathes very slowly (an alive world), and follows the phone's tilt for parallax.
         let drift = autoDrift ? SIMD2(noise.sample(time * 0.08), noise.sample(time * 0.06 + 30)) * 0.12 : SIMD2(noise.sample(time * 0.08), noise.sample(time * 0.06 + 30)) * 0.04
-        let offset = SIMD3<Float>(tilt.x * 0.11 + drift.x, -tilt.y * 0.07 + drift.y * 0.6, sin(time * 0.11) * 0.05)
+        var offset = SIMD3<Float>(tilt.x * 0.11 + drift.x, -tilt.y * 0.07 + drift.y * 0.6, sin(time * 0.11) * 0.05)
+        if CommandLine.arguments.contains("-camtest") { offset = SIMD3(sin(time * 1.2) > 0 ? 0.1 : -0.1, cos(time * 0.9) > 0 ? 0.07 : -0.07, 0.05) }
+        offset.x = max(-0.1, min(0.1, offset.x)); offset.y = max(-0.07, min(0.07, offset.y))
         let (wantPos, wantLook): (SIMD3<Float>, SIMD3<Float>) = focus.map { f0 in
             // Glide toward the spot but keep the view inside the painting (side spots would show its edge).
             let f = SIMD3<Float>(max(-0.09, min(0.09, f0.x)), f0.y, f0.z)
