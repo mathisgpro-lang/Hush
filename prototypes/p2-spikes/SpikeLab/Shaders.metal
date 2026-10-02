@@ -359,12 +359,18 @@ void stoneLive(realitykit::surface_parameters params)
     half4 base0 = params.textures().base_color().sample(s, tuv);
     float wind = params.material_constants().roughness_scale();
     float green = smoothstep(0.02, 0.12, float(base0.g) - max(float(base0.r) * 0.85, float(base0.b)));
-    float2 sway = float2(sin(t * 2.0 + uv.y * 30.0 + uv.x * 8.0) * 0.003 * wind * green * (0.3 + uv.y), 0);
+    // Foliage breathes all the time and bends further when a gust rolls across the scene (a travelling wave).
+    float gust = 0.5 + 0.5 * sin(uv.x * 7.0 - t * 1.4);
+    float sw = sin(t * 1.7 + uv.y * 14.0 + uv.x * 6.0) * 0.6 + sin(t * 3.1 + uv.y * 31.0) * 0.4;
+    float2 sway = float2(sw * 0.0022 * green * (0.3 + uv.y) * (0.35 + wind * 1.3 * gust), sw * 0.0006 * green);
     half4 col = params.textures().base_color().sample(s, tuv + ripple + flow + sway + cloud);
     float3 rgb = float3(col.rgb);
 
     // ---- Time of day (metallic_scale = hour / 24): night, morning, day, dusk (the painting is dusk). ----
     float hour = params.material_constants().metallic_scale() * 24.0;
+    float sunU = params.material_constants().specular_scale();
+    float ratio = max(0.05, params.material_constants().clearcoat_scale());
+    float asp = 0.4615 / ratio;          // width ÷ height of what this texture shows
     float night = 1.0 - smoothstep(5.0, 7.0, hour) + smoothstep(20.5, 22.5, hour);
     night = saturate(night);
     float morning = smoothstep(5.0, 7.0, hour) * (1.0 - smoothstep(9.5, 11.5, hour));
@@ -412,15 +418,15 @@ void stoneLive(realitykit::surface_parameters params)
     float3 nightSky = mix(float3(0.05, 0.07, 0.18), float3(0.16, 0.2, 0.38), saturate(1.0 - (uv.y - 0.7) * 3.0));
     // The moon crosses the sky through the night (20:00 → 06:00).
     float moonT = saturate(fmod(hour - 20.0 + 24.0, 24.0) / 10.0);
-    float2 moonP = float2(mix(0.95, 0.55, moonT), 0.8 + 0.09 * sin(moonT * 3.14159));
-    float2 moonD = float2((uv.x - moonP.x) * 0.46, uv.y - moonP.y);
+    float2 moonP = float2(sunU + mix(0.07, -0.33, moonT) * ratio, 0.8 + 0.09 * sin(moonT * 3.14159));
+    float2 moonD = float2((uv.x - moonP.x) * asp, uv.y - moonP.y);
     nightSky += float3(0.95, 0.95, 1.0) * (smoothstep(0.018, 0.014, length(moonD)) + exp(-length(moonD) * 18.0) * 0.25);
     nightRGB = mix(nightRGB, nightSky + star, skyM);
     rgb = rgb * dusk + dayRGB * day + mornRGB * morning + nightRGB * night;
 
     // Sun rays (low sun at dusk and morning, softer at midday, none at night).
-    float2 sunP = float2(0.88, 0.82);
-    float2 dv = uv - sunP; dv.x *= 0.46;
+    float2 sunP = float2(sunU, 0.82);
+    float2 dv = uv - sunP; dv.x *= asp;
     float ang = atan2(dv.y, dv.x);
     float shafts = s2noise(float2(ang * 9.0 + t * 0.06, 1.7)) * 0.65 + s2noise(float2(ang * 23.0 - t * 0.04, 4.2)) * 0.35;
     shafts = smoothstep(0.45, 1.0, shafts);
@@ -428,7 +434,7 @@ void stoneLive(realitykit::surface_parameters params)
     rgb += float3(1.0, 0.78, 0.5) * shafts * fall2 * (0.14 + 0.04 * sin(t * 0.7)) * (dusk + morning * 0.8 + day * 0.35);
 
     // The Flame lights the circle around it (A1); at night its light carries much further.
-    float2 fd = float2((uv.x - c.y) * 0.46, uv.y - c.z);
+    float2 fd = float2((uv.x - c.y) * asp, uv.y - c.z);
     float reach = 0.006 + 0.02 * night;
     float light = (c.w + night * 0.9) * exp(-dot(fd, fd) / reach) * (fd.y < 0.0 ? 1.2 : 0.8);
     rgb += mix(rgb, float3(0.4, 0.22, 0.08), night) * float3(1.0, 0.62, 0.28) * light;

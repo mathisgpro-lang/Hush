@@ -14,6 +14,17 @@ final class SanctuaryScene {
     private var backdrop: ModelEntity?
     private var vitality: Float = 1
     private var paintingW: Float = 1, paintingH: Float = 1
+    /// The swipeable world (decision 120): when the stitched world exists, the home image is a window in its middle.
+    private struct WorldLayout: Decodable { let total: Float; let height: Float; let homeX0: Float; let homeW: Float; let backdropW: Float; let backdropH: Float }
+    private lazy var layout: WorldLayout? = {
+        guard let url = Bundle.main.url(forResource: "world-layout", withExtension: "json"),
+              let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(WorldLayout.self, from: data)
+    }()
+    /// Home-image u → world u.
+    func hx(_ u: Float) -> Float { layout.map { ($0.homeX0 + u * $0.homeW) / $0.total } ?? u }
+    /// Home width as a fraction of the world (1 without the wider world).
+    var homeRatio: Float { layout.map { $0.homeW / $0.total } ?? 1 }
     private let heroScale: Float = 0.62     // small and cute on the circle, like the First Words frame
     /// The stone circle's center in the painting (uv, v up): the Flame's stage.
     private let circle = SIMD2<Float>(0.540, 0.4648)  // exactly where the Flame sits in the root frame, on its own painted glow
@@ -39,6 +50,15 @@ final class SanctuaryScene {
     /// Camera focus for exploring spots: nil = the home view.
     var focus: SIMD3<Float>?
     private var camPos = SIMD3<Float>(0, 0, 0), camLook = SIMD3<Float>(0, 0, -1.2)
+    private var camVel = SIMD3<Float>(0, 0, 0), lookVel = SIMD3<Float>(0, 0, 0)
+    /// Looking around: the camera slides sideways along the world (meters). The view sets the target; the camera
+    /// follows on a smooth spring. `panLimit` is how far the world extends beyond the screen on each side.
+    var panTarget: Float = 0
+    private(set) var pan: Float = 0
+    private var panVel: Float = 0
+    var panLimit: Float = 0
+    /// Points per meter at the painting's depth (for the view to convert finger movement and to move its overlays).
+    static let visibleHeight: Float = 2 * distance * tan(fov / 2 * .pi / 180)
     private var watching = false
 
     static let distance: Float = 1.2
@@ -71,13 +91,17 @@ final class SanctuaryScene {
 
     func build() async throws {
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
-        let tex = try await TextureResource(named: "home-paint.png")
-        let motion = try await TextureResource(named: "home-motion.png", options: .init(semantic: .raw))
-        loadDepth("home-depth.png")
+        let prefix = layout == nil ? "home" : "world"
+        let tex = try await TextureResource(named: "\(prefix)-paint.png")
+        let motion = try await TextureResource(named: "\(prefix)-motion.png", options: .init(semantic: .raw))
+        loadDepth("\(prefix)-depth.png")
         let visibleH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180)
         let aspect = Float(tex.width) / Float(tex.height)
         let (w, h) = (visibleH * aspect * 1.08, visibleH * 1.08)     // a little overscan so parallax never shows edges
         paintingW = w; paintingH = h
+        let screen = UIScreen.main.bounds.size
+        let visibleW = visibleH * Float(screen.width / screen.height)
+        panLimit = max(0, (w - visibleW * 1.04) / 2)
 
         // The painting, bent in depth. Each vertex keeps its rest screen position (scaled along the camera ray),
         // so from the rest camera the painting looks untouched; moving the camera reveals the depth.
@@ -109,13 +133,14 @@ final class SanctuaryScene {
 
         // The world doesn't end at the painting's edge: a softly continued backdrop behind it, much larger,
         // graded by the same light (time of day, the Hush), so no edge or black can ever show.
-        if let lib, let bTex = try? await TextureResource(named: "home-backdrop.png") {
+        if let lib, let bTex = try? await TextureResource(named: "\(prefix)-backdrop.png") {
             let blank = try await TextureResource(named: "blank-mask.png", options: .init(semantic: .raw))
             var u = UnlitMaterial(); u.color = .init(tint: .white, texture: .init(bTex))
             var m = try CustomMaterial(from: u, surfaceShader: .init(named: "stoneLive", in: lib))
             m.custom.texture = .init(blank); m.custom.value = [1, 0.5, 0.5, 0]
             let back: Float = 0.5, k = (Self.distance + back) / Self.distance
-            let bw = w * (1618.0 / 852.0) * k, bh = h * (2768.0 / 1846.0) * k
+            let bw = layout.map { w * $0.backdropW / $0.total * k } ?? w * (1618.0 / 852.0) * k
+            let bh = layout.map { h * $0.backdropH / $0.height * k } ?? h * (2768.0 / 1846.0) * k
             let b = ModelEntity(mesh: .generatePlane(width: bw, height: bh), materials: [m])
             b.position = [0, 0, -(Self.distance + back)]
             root.addChild(b); backdrop = b
@@ -149,11 +174,11 @@ final class SanctuaryScene {
         // The Flame on the steps (v ≈ 0.33 in the painting), scaled to the scene.
         try await hero.build()
         // Center stage: its feet on the middle of the stone circle, at the circle's own depth.
-        let d = Self.distance - relief(depthAt(circle.x, circle.y)) - 0.01
+        let d = Self.distance - relief(depthAt(hx(circle.x), circle.y)) - 0.01
         let k = d / Self.distance
         // Exactly as in the root frame: the cutout is 426 of the painting's 1846 px tall (its mesh is 0.27 tall).
         let scale = 0.92 * (426.0 / 1846.0) * h * k / 0.27      // its painted size, a touch smaller (Mathis); the painted glow stays
-        let feet = SIMD3<Float>((circle.x - 0.5) * w * k, (circle.y - 0.5) * h * k, -d)
+        let feet = SIMD3<Float>((hx(circle.x) - 0.5) * w * k, (circle.y - 0.5) * h * k, -d)
         hero.leanPivot.scale = .init(repeating: scale)
         hero.leanPivot.position = feet + SIMD3(0, 0.09 * scale, 0)
         hero.stationary = true
@@ -162,7 +187,7 @@ final class SanctuaryScene {
 
         try await life.build()
         root.addChild(life.root)
-        try await elements.build(spot: { [unowned self] u, v in self.spot(u, v) }, paintingW: w)
+        try await elements.build(spot: { [unowned self] u, v in self.spot(self.hx(u), v) }, paintingW: w)
         root.addChild(elements.root)
 
         // Soft glowing motes drifting close to the camera, in front of the whole world (depth and air).
@@ -234,9 +259,9 @@ final class SanctuaryScene {
         }
         // The Flame's light on the painting follows it and flickers with the fire (A1); dimmer in the Hush.
         if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
-            let u = circle.x + hero.standingX * heroWorldScale / paintingW
+            let u = hx(circle.x) + hero.standingX * heroWorldScale / paintingW
             let flicker = 0.85 + 0.15 * noise.sample(time * 7) + 0.05 * sin(time * 23)
-            m.custom.value = [vitality, u - 0.03, circle.y + 0.01, (flicker - 0.9) * 1.4 * max(0, min(1, appear.value))]   // the painted glow breathes with the Flame's fire (±)
+            m.custom.value = [vitality, u - 0.03 * homeRatio, circle.y + 0.01, (flicker - 0.9) * 1.4 * max(0, min(1, appear.value))]   // the painted glow breathes with the Flame's fire (±)
             m.roughness = .init(floatLiteral: abs(life.wind))       // the shader reads wind from roughness_scale
             let comps = Calendar.current.dateComponents([.hour, .minute], from: Date())
             let args = CommandLine.arguments
@@ -245,8 +270,10 @@ final class SanctuaryScene {
             let hour = hourOverride ?? (Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60)
             currentHour = hour
             m.metallic = .init(floatLiteral: hour / 24)              // and the time of day from metallic_scale
+            m.specular = .init(floatLiteral: hx(0.88))               // the painted sun's u (sun rays, moon path)
+            m.clearcoat = .init(floatLiteral: homeRatio)             // home width ÷ world width (for round shapes)
             if let backdrop, var bc = backdrop.model, var bm = bc.materials.first as? CustomMaterial {
-                bm.custom.value = [m.custom.value.x, 2, 2, 0]; bm.metallic = m.metallic; bm.roughness = m.roughness
+                bm.custom.value = [m.custom.value.x, 2, 2, 0]; bm.metallic = m.metallic; bm.roughness = m.roughness; bm.specular = .init(floatLiteral: 2); bm.clearcoat = m.clearcoat
                 bc.materials = [bm]; backdrop.model = bc
             }
             comp.materials = [m]; painting.model = comp
@@ -261,8 +288,18 @@ final class SanctuaryScene {
             let f = SIMD3<Float>(max(-0.09, min(0.09, f0.x)), f0.y, f0.z)
             return (f * 0.42 + offset * 0.3, f) }
             ?? (offset, [offset.x * 0.3, offset.y * 0.3, -Self.distance])
-        let k = 1 - exp(-dt * 3.2)
-        camPos += (wantPos - camPos) * k; camLook += (wantLook - camLook) * k
+        // Looking around: a critically damped spring toward the target (glides, never jerks, no overshoot).
+        let pt = max(-panLimit - 0.03, min(panLimit + 0.03, panTarget))
+        let w0: Float = 7.5
+        panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
+        pan += panVel * dt
+        let panV = SIMD3<Float>(pan, 0, 0)
+        // The camera itself moves on springs too (fluid: smooth starts and stops, no sudden changes of speed).
+        let wc: Float = 3.4
+        camVel += (wc * wc * (wantPos + panV - camPos) - 2 * wc * camVel) * dt
+        camPos += camVel * dt
+        lookVel += (wc * wc * (wantLook + panV - camLook) - 2 * wc * lookVel) * dt
+        camLook += lookVel * dt
         camera.look(at: camLook, from: camPos, relativeTo: nil)
     }
 }

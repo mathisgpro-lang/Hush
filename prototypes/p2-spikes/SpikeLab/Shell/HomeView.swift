@@ -12,6 +12,7 @@ struct HomeView: View {
     @State private var open: Call?
     @State private var strand: (from: CGPoint, t: CGFloat)?
     @State private var toast: String?
+    @State private var dragStartPan: Float?
 
     // Where the calls float (fractions of the screen), around the circle like the UI kit.
     private let slots: [CGPoint] = [CGPoint(x: 0.3, y: 0.3), CGPoint(x: 0.72, y: 0.335), CGPoint(x: 0.5, y: 0.6)]
@@ -32,14 +33,20 @@ struct HomeView: View {
                 }
                 .ignoresSafeArea()
                 .onTapGesture { director?.tapped() }
+                .simultaneousGesture(lookAround(geo.size))
 
-                // Today's calls by the hearth.
-                ForEach(Array(model.calls.enumerated()), id: \.element.id) { i, call in
-                    if !call.done {
-                        CallTag(call: call)
-                            .position(x: slots[i].x * geo.size.width, y: slots[i].y * geo.size.height)
-                            .onTapGesture { withAnimation(.spring(duration: 0.4)) { open = call } }
-                            .transition(.scale(scale: 0.3).combined(with: .opacity))
+                // Today's calls by the hearth: they stay with the world when you look around.
+                TimelineView(.animation) { _ in
+                    let shift = CGFloat(-scene.pan) * ppm(geo.size)
+                    ZStack {
+                        ForEach(Array(model.calls.enumerated()), id: \.element.id) { i, call in
+                            if !call.done {
+                                CallTag(call: call)
+                                    .position(x: slots[i].x * geo.size.width + shift, y: slots[i].y * geo.size.height)
+                                    .onTapGesture { withAnimation(.spring(duration: 0.4)) { open = call } }
+                                    .transition(.scale(scale: 0.3).combined(with: .opacity))
+                            }
+                        }
                     }
                 }
 
@@ -66,6 +73,26 @@ struct HomeView: View {
         }
         .onAppear { meter.start() }
         .onDisappear { meter.stop(); director?.stop() }
+    }
+
+    private func ppm(_ size: CGSize) -> CGFloat { size.height / CGFloat(SanctuaryScene.visibleHeight) * 0.98 }
+
+    /// Swipe sideways to look around the Sanctuary; let go and the view glides on (momentum), then settles.
+    private func lookAround(_ size: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { v in
+                if dragStartPan == nil { dragStartPan = scene.pan }
+                var target = (dragStartPan ?? 0) - Float(v.translation.width / ppm(size))
+                let lim = scene.panLimit
+                if target > lim { target = lim + (target - lim) * 0.3 }        // soft resistance at the world's edge
+                if target < -lim { target = -lim + (target + lim) * 0.3 }
+                scene.panTarget = target
+            }
+            .onEnded { v in
+                let projected = (dragStartPan ?? 0) - Float(v.predictedEndTranslation.width / ppm(size))
+                scene.panTarget = max(-scene.panLimit, min(scene.panLimit, projected))
+                dragStartPan = nil
+            }
     }
 
     private var topBar: some View {
