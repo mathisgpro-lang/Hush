@@ -12,7 +12,7 @@ final class WorldElements {
     private var flames: [Entity] = []
     private var time: Float = 0
     private var cloudBounds: Float = 0.5
-    private var lastWind: Float = -9, lastFireflyRate: Float = -9
+    private var lastFireflyRate: Float = -9
 
     /// Painting uv → a point on the relief (from the scene).
     func build(spot: (Float, Float) -> SIMD3<Float>, paintingW: Float, withClouds: Bool = true) async throws {
@@ -129,13 +129,9 @@ final class WorldElements {
             lastFireflyRate = 9 * n
             f.mainEmitter.birthRate = lastFireflyRate; ff.components.set(f)
         }
-        if abs(wind - lastWind) > 0.06 {
-            lastWind = wind
-            for e in flames {
-                guard var f = e.components[ParticleEmitterComponent.self] else { continue }
-                f.mainEmitter.acceleration = [wind * 0.03, 0, 0]
-                e.components.set(f)
-            }
-        }
+        // The flames lean with the wind by tilting their emitters (cheap), never by rebuilding them (that cost
+        // dropped the app to 30 fps during every gust).
+        let lean = simd_quatf(angle: -wind * 0.35, axis: [0, 0, 1])
+        for e in flames { e.orientation = lean }
     }
 }

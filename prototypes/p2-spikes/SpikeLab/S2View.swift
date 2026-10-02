@@ -302,7 +302,7 @@ final class SanctuaryScene {
     /// -perf: frame timing as RealityKit renders it (frames per second, hitches over 20 ms, the worst frame).
     private var perf = (frames: 0, hitches: 0, worst: Float(0), elapsed: Float(0))
     private let perfOn = CommandLine.arguments.contains("-perf")
-    private var fliesWind: Float = -9, layersAt: Float = 0, clockReadAt: Float = 0, clockHour: Float = 18
+    private var layersAt: Float = 0, clockReadAt: Float = 0, clockHour: Float = 18
     private static let hourCycle = CommandLine.arguments.contains("-hourcycle")
     private static let hourArg: Float? = {
         let a = CommandLine.arguments
@@ -316,7 +316,7 @@ final class SanctuaryScene {
             perf.frames += 1; perf.elapsed += dt; perf.worst = max(perf.worst, dt)
             if dt > 0.020 { perf.hitches += 1 }
             if perf.elapsed >= 2 {
-                print(String(format: "PERF fps %.1f  hitches %d  worst %.1f ms", Float(perf.frames) / perf.elapsed, perf.hitches, perf.worst * 1000))
+                print(String(format: "PERF fps %.1f  hitches %d  worst %.1f ms", Float(perf.frames) / perf.elapsed, perf.hitches, perf.worst * 1000) + "  | \(life.debugState) finger \(fingerDown ? 1 : 0) pan \(String(format: "%.2f", pan.x))")
                 perf = (0, 0, 0, 0)
             }
         }
@@ -334,11 +334,7 @@ final class SanctuaryScene {
         }
         hero.update(dt: dt)
         elements.update(dt: dt, hour: currentHour, wind: life.wind)
-        if abs(life.wind - fliesWind) > 0.06, let flies, var f = flies.components[ParticleEmitterComponent.self] {
-            fliesWind = life.wind
-            f.mainEmitter.acceleration = [life.wind * 0.02, 0, 0]
-            flies.components.set(f)
-        }
+        flies?.position.x = life.wind * 0.03         // the fireflies drift with the wind (moving them is cheap)
         // The Flame's light on the painting follows it and flickers with the fire (A1); dimmer in the Hush.
         if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
             let u = hx(circle.x) + hero.standingX * heroWorldScale / paintingW

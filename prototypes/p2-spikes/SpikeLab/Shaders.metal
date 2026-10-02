@@ -420,15 +420,29 @@ void stoneLive(realitykit::surface_parameters params)
     float2 tuv = float2(uv.x, 1.0 - uv.y);
     half4 mask = params.textures().custom().sample(s, tuv);
     float water = float(mask.r), fall = float(mask.g), fire = float(mask.b), skyM = float(mask.a);
-    // Clouds billow: a slow drifting warp in the sky only.
-    float2 cw = float2(s2noise(float2(uv.x * 3.0 + t * 0.03, uv.y * 4.0)) - 0.5, s2noise(float2(uv.x * 2.0 - t * 0.02, uv.y * 3.0 + 5.0)) - 0.5);
-    float2 cloud = (cw * 0.012 + float2(sin(t * 0.05 + uv.y * 6.0) * 0.004, 0)) * skyM;
+    half4 base0 = params.textures().base_color().sample(s, tuv);
+    // Where the land is cut out (the sky and sea layers show), do no work at all.
+    if (base0.a < 0.004) {
+        params.surface().set_base_color(half3(0));
+        params.surface().set_emissive_color(half3(0));
+        params.surface().set_opacity(0.0);
+        return;
+    }
+    // Each effect below only runs where its mask is present: most pixels pay for none of them.
+    // Clouds billow: a slow drifting warp in the sky only (the painted sky, when there's no sky layer).
+    float2 cloud = float2(0.0);
+    if (skyM > 0.01) {
+        float2 cw = float2(s2noise(float2(uv.x * 3.0 + t * 0.03, uv.y * 4.0)) - 0.5, s2noise(float2(uv.x * 2.0 - t * 0.02, uv.y * 3.0 + 5.0)) - 0.5);
+        cloud = (cw * 0.012 + float2(sin(t * 0.05 + uv.y * 6.0) * 0.004, 0)) * skyM;
+    }
 
     float2 ripple = float2(sin(uv.y * 220.0 - t * 1.3 + sin(uv.x * 14.0 + t * 0.4)) * 0.0016,
                            sin(uv.x * 90.0 + t * 0.9) * 0.0008) * water;
-    float2 flow = float2((s2noise(float2(uv.x * 70.0, uv.y * 30.0 + t * 4.0)) - 0.5) * 0.0015,
-                         (s2noise(float2(uv.x * 50.0, uv.y * 25.0 + t * 3.2)) - 0.5) * 0.006) * fall;
-    half4 base0 = params.textures().base_color().sample(s, tuv);
+    float2 flow = float2(0.0);
+    if (fall > 0.01) {
+        flow = float2((s2noise(float2(uv.x * 70.0, uv.y * 30.0 + t * 4.0)) - 0.5) * 0.0015,
+                      (s2noise(float2(uv.x * 50.0, uv.y * 25.0 + t * 3.2)) - 0.5) * 0.006) * fall;
+    }
     float wind = params.material_constants().roughness_scale();
     float green = smoothstep(0.02, 0.12, float(base0.g) - max(float(base0.r) * 0.85, float(base0.b)));
     // Foliage breathes all the time and bends further when a gust rolls across the scene (a travelling wave).
@@ -450,28 +464,38 @@ void stoneLive(realitykit::surface_parameters params)
     float dusk = saturate(1.0 - night - morning - day);
 
     // ---- Water that moves: rolling swell bands, shimmering glints, foam where waterfalls land. ----
-    float swell = sin(uv.y * 140.0 - t * 1.1 + sin(uv.x * 9.0 + t * 0.3) * 2.0) * 0.5 + 0.5;
-    float swell2 = sin(uv.y * 260.0 + uv.x * 40.0 - t * 2.0) * 0.5 + 0.5;
-    rgb *= 1.0 + water * ((swell - 0.5) * 0.10 + (swell2 - 0.5) * 0.05);
-    float glint = smoothstep(0.93, 1.0, s2noise(float2(uv.x * 160.0 + sin(t * 0.25) * 3.0, uv.y * 420.0 - t * 1.6)));
-    float3 glintCol = mix(float3(1.0, 0.86, 0.62), float3(0.75, 0.85, 1.0), night);
-    rgb += glintCol * glint * water * (0.5 + 0.5 * sin(t * 6.0 + uv.x * 40.0)) * (0.9 - 0.5 * night);
+    if (water > 0.01) {
+        float swell = sin(uv.y * 140.0 - t * 1.1 + sin(uv.x * 9.0 + t * 0.3) * 2.0) * 0.5 + 0.5;
+        float swell2 = sin(uv.y * 260.0 + uv.x * 40.0 - t * 2.0) * 0.5 + 0.5;
+        rgb *= 1.0 + water * ((swell - 0.5) * 0.10 + (swell2 - 0.5) * 0.05);
+        float glint = smoothstep(0.93, 1.0, s2noise(float2(uv.x * 160.0 + sin(t * 0.25) * 3.0, uv.y * 420.0 - t * 1.6)));
+        float3 glintCol = mix(float3(1.0, 0.86, 0.62), float3(0.75, 0.85, 1.0), night);
+        rgb += glintCol * glint * water * (0.5 + 0.5 * sin(t * 6.0 + uv.x * 40.0)) * (0.9 - 0.5 * night);
+    }
     // Waterfalls: bright streaks racing down, and churning foam at their feet.
-    float col2 = floor(uv.x * 260.0);
-    float streak = fract(uv.y * 18.0 + t * (1.6 + fract(sin(col2 * 12.9) * 43758.5) * 0.8));
-    rgb += float3(0.95, 0.97, 1.0) * fall * smoothstep(0.75, 1.0, streak) * 0.35;
-    float foamN = s2noise(float2(uv.x * 120.0 + t * 1.5, uv.y * 120.0 - t * 2.0));
-    rgb += float3(0.9) * fall * water * smoothstep(0.55, 0.9, foamN) * 0.4;
+    if (fall > 0.01) {
+        float col2 = floor(uv.x * 260.0);
+        float streak = fract(uv.y * 18.0 + t * (1.6 + fract(sin(col2 * 12.9) * 43758.5) * 0.8));
+        rgb += float3(0.95, 0.97, 1.0) * fall * smoothstep(0.75, 1.0, streak) * 0.35;
+        if (water > 0.01) {
+            float foamN = s2noise(float2(uv.x * 120.0 + t * 1.5, uv.y * 120.0 - t * 2.0));
+            rgb += float3(0.9) * fall * water * smoothstep(0.55, 0.9, foamN) * 0.4;
+        }
+    }
 
     // ---- Braziers that burn: flames lick upward, flicker, and throw a warm halo around them. ----
     // The halo is the fire mask blurred: one read from a small mip level (the GPU's own blur) instead of 8 reads.
     constexpr sampler sb(address::clamp_to_edge, filter::linear, mip_filter::linear);
     float halo = float(params.textures().custom().sample(sb, tuv, level(4.5)).b) * 1.6;
-    float flick = 0.75 + 0.45 * s2noise(float2(t * 7.0, uv.x * 30.0 + uv.y * 20.0)) + 0.15 * sin(t * 13.0 + uv.x * 50.0);
-    float lick = s2noise(float2(uv.x * 80.0, uv.y * 40.0 - t * 5.0));
-    rgb = mix(rgb, rgb * flick * 1.15 + float3(0.25, 0.1, 0.0) * lick, fire);
-    float glowK = 0.35 + 0.9 * night + 0.2 * dusk;
-    rgb += float3(1.0, 0.55, 0.18) * halo * flick * glowK;
+    if (halo > 0.005 || fire > 0.01) {
+        float flick = 0.75 + 0.45 * s2noise(float2(t * 7.0, uv.x * 30.0 + uv.y * 20.0)) + 0.15 * sin(t * 13.0 + uv.x * 50.0);
+        if (fire > 0.01) {
+            float lick = s2noise(float2(uv.x * 80.0, uv.y * 40.0 - t * 5.0));
+            rgb = mix(rgb, rgb * flick * 1.15 + float3(0.25, 0.1, 0.0) * lick, fire);
+        }
+        float glowK = 0.35 + 0.9 * night + 0.2 * dusk;
+        rgb += float3(1.0, 0.55, 0.18) * halo * flick * glowK;
+    }
 
     rgb = s2hourLight(rgb, uv, skyM, 0.0, hour, sunU, ratio, t);
 
