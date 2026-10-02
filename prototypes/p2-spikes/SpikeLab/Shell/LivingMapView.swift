@@ -126,7 +126,7 @@ struct LivingMapView: View {
             .onChanged { v in
                 guard !diving else { return }
                 if pinchStart == nil { pinchStart = scene.zoom }
-                scene.zoomTarget = max(0.92, min(2.4, (pinchStart ?? 1) * Float(v.magnification)))
+                scene.zoomTarget = max(0.97, min(2.4, (pinchStart ?? 1) * Float(v.magnification)))
             }
             .onEnded { _ in
                 scene.zoomTarget = max(1, min(2.2, scene.zoomTarget))         // settles back inside the limits

@@ -116,6 +116,17 @@ final class MapScene {
         let p = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
         root.addChild(p); painting = p
 
+        // The map never ends at its edge: a soft continuation of it (mirrored, softly blurred) a little behind,
+        // much wider, so moving to the sides never shows black. (Codex's side panels will replace it.)
+        if let bTex = try? await TextureResource(named: "map-backdrop.png") {
+            var u = UnlitMaterial(); u.color = .init(tint: UIColor(white: 0.92, alpha: 1), texture: .init(bTex))
+            let back: Float = 0.06, k = (Self.distance + back) / Self.distance
+            let bw = planeW * (1765.0 / 803.0) * k, bh = planeH * (2544.0 / 1958.0) * k
+            let b = ModelEntity(mesh: .generatePlane(width: bw, height: bh), materials: [u])
+            b.position = [0, 0, -(Self.distance + back)]
+            root.addChild(b)
+        }
+
         let cloudTex = try await TextureResource(named: "cloud.png")
         let glowTex = try await TextureResource(named: "glow.png")
         func card(_ t: TextureResource, _ size: SIMD2<Float>, tint: UIColor) -> ModelEntity {
@@ -209,6 +220,7 @@ final class MapScene {
         time += dt
         let w0: Float = 7
         let lim = panLimit(zoom: zoom)
+        if CommandLine.arguments.contains("-edgetest") { panTarget = [-(lim.x + 0.06), pan.y] }   // (test: pushed past the left edge)
         let pt = simd_clamp(panTarget, -lim - 0.06, lim + 0.06)
         panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
         pan += panVel * dt
