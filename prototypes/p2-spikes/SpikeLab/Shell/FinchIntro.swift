@@ -79,7 +79,7 @@ struct FinchIntro: View {
             .ignoresSafeArea()
             .allowsHitTesting(false)
             DuskBackground().opacity(flameReady ? 0 : 1).animation(.easeOut(duration: 1.2), value: flameReady).allowsHitTesting(false)
-            if flameVisible { LightRays(on: rays).allowsHitTesting(false) }
+            BirthBloom(on: rays).allowsHitTesting(false)
             // Soft shade behind the words so they read on the painting (top for the Flame's speech, bottom for choices).
             LinearGradient(colors: [.black.opacity(0.45), .clear, .clear, .black.opacity(0.62)], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea().allowsHitTesting(false)
@@ -238,16 +238,24 @@ struct FinchIntro: View {
                 Spacer()
                 if selected { Image(systemName: "checkmark.circle.fill").foregroundStyle(gold) }
             }
-            .padding(.horizontal, 18).padding(.vertical, 15)
-            .background(RoundedRectangle(cornerRadius: 16).fill(.white.opacity(selected ? 0.22 : 0.10)))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(selected ? gold : .white.opacity(0.18), lineWidth: selected ? 1.5 : 1))
+            .padding(.horizontal, 16).padding(.vertical, 14)
+            .background(RoundedRectangle(cornerRadius: 16).fill(selected ? Color(red: 0.42, green: 0.24, blue: 0.10) : Color(red: 0.20, green: 0.13, blue: 0.11)))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(selected ? gold : gold.opacity(0.22), lineWidth: selected ? 2 : 1))
             .foregroundStyle(cream)
         }
     }
 
     private func question(_ q: String, sub: String?, options: [String], multi: Bool, key: Int, next: IntroStep) -> some View {
+        questionBody(q, sub: sub, options: options, multi: multi, key: key, next: next)
+            .padding(18)
+            .background(RoundedRectangle(cornerRadius: 26).fill(Color(red: 0.11, green: 0.07, blue: 0.07).opacity(0.92)))
+            .overlay(RoundedRectangle(cornerRadius: 26).stroke(gold.opacity(0.35), lineWidth: 1))
+            .shadow(color: .black.opacity(0.4), radius: 18, y: 8)
+    }
+
+    private func questionBody(_ q: String, sub: String?, options: [String], multi: Bool, key: Int, next: IntroStep) -> some View {
         VStack(spacing: 10) {
-            title(q).font(.custom("Georgia", size: 23))
+            Text(q).font(.custom("Georgia", size: 22)).multilineTextAlignment(.center).foregroundStyle(cream)
             if let sub { body2(sub) }
             Spacer().frame(height: 6)
             let columns = multi ? [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)] : [GridItem(.flexible())]
@@ -375,8 +383,9 @@ struct FinchIntro: View {
         case .world: say("Out there, the world went quiet."); scene.hero.look(at: [0.5, -0.5])
         case .mornings: say("Can I bring you your day each morning?"); scene.hero.look(at: nil)
         case .q1: say("Let's learn a little about you.")
+            scene.focus = scene.flameFocus - SIMD3(0, 0.085, 0)   // aim lower: the Flame watches from above the questions
         case .q2, .q3: scene.hero.perform(.glanceUp)
-        case .preparing: say("Give me a moment…")
+        case .preparing: say("Give me a moment…"); scene.focus = scene.flameFocus
         case .firstLight: say("Here's where we begin.")
         default: break
         }
@@ -559,5 +568,42 @@ struct LightRays: View {
         .opacity(on ? 1 : 0).scaleEffect(on ? 1 : 0.4)
         .position(x: UIScreen.main.bounds.width / 2, y: 250)
         .onAppear { spin = true }
+    }
+}
+
+/// The hatching (replaces the star rays): a warm bloom of light swells from the ember on the circle and fades,
+/// while embers drift upward like sparks from a fire waking up.
+struct BirthBloom: View {
+    let on: Bool
+    @State private var t: Double = 0
+    var body: some View {
+        TimelineView(.animation(paused: !on && t == 0)) { tl in
+            Canvas { ctx, size in
+                guard t > 0 else { return }
+                let c = CGPoint(x: size.width / 2, y: size.height * 0.5)
+                let k = min(1, t / 1.8)
+                // The bloom: grows quickly, then softly fades.
+                let r = 40 + 380 * (1 - pow(1 - k, 3))
+                let a = (k < 0.25 ? k / 0.25 : max(0, 1 - (k - 0.25) / 0.75)) * 0.85
+                ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r * 0.8, width: r * 2, height: r * 1.6)),
+                         with: .radialGradient(Gradient(colors: [Color(red: 1, green: 0.95, blue: 0.8).opacity(a), Color(red: 1, green: 0.7, blue: 0.35).opacity(a * 0.5), .clear]),
+                                               center: c, startRadius: 0, endRadius: r))
+                // Embers rising and drifting outward.
+                for i in 0..<34 {
+                    let s = Double(i) * 12.9898
+                    let life = min(1, max(0, (t - Double(i % 6) * 0.05) / 2.4))
+                    guard life > 0 && life < 1 else { continue }
+                    let ang = (sin(s) * 0.5 + 0.5) * .pi * 2
+                    let dist = 40 + 220 * life * (0.5 + 0.5 * cos(s * 1.3))
+                    let x = c.x + cos(ang) * dist * 0.7 + sin(t * 3 + s) * 6
+                    let y = c.y + sin(ang) * dist * 0.35 - 260 * life * (0.6 + 0.4 * sin(s * 0.7))
+                    let rr = 2.2 * (1 - life) + 0.8
+                    ctx.fill(Path(ellipseIn: CGRect(x: x - rr, y: y - rr, width: rr * 2, height: rr * 2)),
+                             with: .color(Color(red: 1, green: 0.8, blue: 0.45).opacity((1 - life) * 0.95)))
+                }
+            }
+            .onChange(of: tl.date) { _, _ in if on || t > 0 { t += 1.0 / 60; if t > 3 && !on { t = 0 } } }
+        }
+        .ignoresSafeArea()
     }
 }

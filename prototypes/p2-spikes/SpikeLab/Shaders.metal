@@ -347,7 +347,10 @@ void stoneLive(realitykit::surface_parameters params)
     constexpr sampler s(address::clamp_to_edge, filter::linear);
     float2 tuv = float2(uv.x, 1.0 - uv.y);
     half4 mask = params.textures().custom().sample(s, tuv);
-    float water = float(mask.r), fall = float(mask.g), fire = float(mask.b);
+    float water = float(mask.r), fall = float(mask.g), fire = float(mask.b), skyM = float(mask.a);
+    // Clouds billow: a slow drifting warp in the sky only.
+    float2 cw = float2(s2noise(float2(uv.x * 3.0 + t * 0.03, uv.y * 4.0)) - 0.5, s2noise(float2(uv.x * 2.0 - t * 0.02, uv.y * 3.0 + 5.0)) - 0.5);
+    float2 cloud = (cw * 0.012 + float2(sin(t * 0.05 + uv.y * 6.0) * 0.004, 0)) * skyM;
 
     float2 ripple = float2(sin(uv.y * 220.0 - t * 1.3 + sin(uv.x * 14.0 + t * 0.4)) * 0.0016,
                            sin(uv.x * 90.0 + t * 0.9) * 0.0008) * water;
@@ -357,7 +360,7 @@ void stoneLive(realitykit::surface_parameters params)
     float wind = params.material_constants().roughness_scale();
     float green = smoothstep(0.02, 0.12, float(base0.g) - max(float(base0.r) * 0.85, float(base0.b)));
     float2 sway = float2(sin(t * 2.0 + uv.y * 30.0 + uv.x * 8.0) * 0.003 * wind * green * (0.3 + uv.y), 0);
-    half4 col = params.textures().base_color().sample(s, tuv + ripple + flow + sway);
+    half4 col = params.textures().base_color().sample(s, tuv + ripple + flow + sway + cloud);
     float3 rgb = float3(col.rgb);
 
     // Sun glints on the sea, falling water shimmer, braziers flickering.
@@ -366,6 +369,15 @@ void stoneLive(realitykit::surface_parameters params)
     rgb += float3(0.07) * fall * (0.5 + 0.5 * sin(uv.y * 420.0 + t * 11.0));
     float flick = 0.85 + 0.25 * s2noise(float2(t * 6.0, uv.x * 30.0 + uv.y * 20.0));
     rgb = mix(rgb, rgb * flick * 1.08 + float3(0.06, 0.03, 0.0), fire);
+
+    // Sun rays: soft shafts fanning from the low sun (upper right), slowly sweeping and breathing.
+    float2 sunP = float2(0.88, 0.82);
+    float2 dv = uv - sunP; dv.x *= 0.46;
+    float ang = atan2(dv.y, dv.x);
+    float shafts = s2noise(float2(ang * 9.0 + t * 0.06, 1.7)) * 0.65 + s2noise(float2(ang * 23.0 - t * 0.04, 4.2)) * 0.35;
+    shafts = smoothstep(0.45, 1.0, shafts);
+    float fall2 = exp(-length(dv) * 2.6);
+    rgb += float3(1.0, 0.78, 0.5) * shafts * fall2 * (0.14 + 0.04 * sin(t * 0.7));
 
     // The Flame lights the circle around it (A1).
     float2 fd = float2((uv.x - c.y) * 0.46, uv.y - c.z);

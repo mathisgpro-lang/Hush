@@ -105,7 +105,7 @@ final class SanctuaryScene {
         // Mist cards at three depths, all just behind the Flame (it must stay the warmest, clearest thing on screen),
         // driven by Vitality. The near-water mist lives in the painting's shader.
         if let lib {
-            for (k, spec) in [(z: -1.0, y: 0.05, w: 0.9, speed: 0.012), (z: -1.2, y: 0.12, w: 1.1, speed: 0.008), (z: -1.3, y: 0.2, w: 1.3, speed: 0.005)].enumerated() {
+            for (k, spec) in [(z: -1.32, y: -0.02, w: 1.0, speed: 0.012), (z: -1.36, y: 0.1, w: 1.2, speed: 0.008), (z: -1.42, y: 0.2, w: 1.4, speed: 0.005)].enumerated() {
                 var u = UnlitMaterial(); u.blending = .transparent(opacity: .init(floatLiteral: 1.0)); u.writesDepth = false
                 var m = try CustomMaterial(from: u, surfaceShader: .init(named: "mistDrift", in: lib))
                 m.custom.value = [0, Float(spec.speed), Float(k) * 13.7, 0]
@@ -144,6 +144,18 @@ final class SanctuaryScene {
         try await life.build()
         root.addChild(life.root)
 
+        // Soft glowing motes drifting close to the camera, in front of the whole world (depth and air).
+        let motes = Entity()
+        var mp = ParticleEmitterComponent()
+        mp.emitterShape = .box; mp.emitterShapeSize = [0.5, 0.9, 0.25]
+        mp.emissionDirection = [0.3, 1, 0]; mp.speed = 0.012; mp.speedVariation = 0.008
+        mp.mainEmitter.birthRate = 5; mp.mainEmitter.lifeSpan = 7; mp.mainEmitter.lifeSpanVariation = 2
+        mp.mainEmitter.size = 0.012; mp.mainEmitter.sizeVariation = 0.008; mp.mainEmitter.blendMode = .additive
+        mp.mainEmitter.color = .evolving(start: .single(UIColor(red: 1, green: 0.85, blue: 0.6, alpha: 0.9)), end: .single(UIColor(red: 1, green: 0.7, blue: 0.4, alpha: 0.6)))
+        mp.mainEmitter.opacityCurve = .gradualFadeInOut
+        motes.components.set(mp); motes.position = [0, -0.05, -0.55]
+        root.addChild(motes)
+
         camera.camera.fieldOfViewInDegrees = Self.fov
         root.addChild(camera)
     }
@@ -173,7 +185,7 @@ final class SanctuaryScene {
         vitality = v
         for (k, e) in mists.enumerated() {
             guard var comp = e.model, var m = comp.materials.first as? CustomMaterial else { continue }
-            m.custom.value.x = (1 - v) * (k == 0 ? 0.55 : 0.75)
+            m.custom.value.x = 0.14 + (1 - v) * (k == 0 ? 0.45 : 0.6)   // mist always drifts far behind; never in front of the Flame
             comp.materials = [m]; e.model = comp
         }
 
@@ -207,8 +219,8 @@ final class SanctuaryScene {
             comp.materials = [m]; painting.model = comp
         }
         // The camera breathes very slowly (an alive world), and follows the phone's tilt for parallax.
-        let drift = autoDrift ? SIMD2(noise.sample(time * 0.09), noise.sample(time * 0.07 + 30)) * 0.06 : .zero
-        let offset = SIMD3<Float>(tilt.x * 0.06 + drift.x, -tilt.y * 0.04 + drift.y * 0.6, 0)
+        let drift = autoDrift ? SIMD2(noise.sample(time * 0.08), noise.sample(time * 0.06 + 30)) * 0.12 : SIMD2(noise.sample(time * 0.08), noise.sample(time * 0.06 + 30)) * 0.04
+        let offset = SIMD3<Float>(tilt.x * 0.11 + drift.x, -tilt.y * 0.07 + drift.y * 0.6, sin(time * 0.11) * 0.05)
         let (wantPos, wantLook): (SIMD3<Float>, SIMD3<Float>) = focus.map { f0 in
             // Glide toward the spot but keep the view inside the painting (side spots would show its edge).
             let f = SIMD3<Float>(max(-0.09, min(0.09, f0.x)), f0.y, f0.z)
