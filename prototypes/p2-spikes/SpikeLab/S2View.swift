@@ -249,6 +249,23 @@ final class SanctuaryScene {
         root.addChild(hero.leanPivot)
         heroFeet = feet; heroWorldScale = scale
 
+        // Now and then a petal drifts past just in front of the Spark: things passing in front of it are what tell
+        // the eye it lives inside the scene, not on top of it.
+        let petals = Entity()
+        var pp = ParticleEmitterComponent()
+        pp.emitterShape = .box; pp.emitterShapeSize = [0.02, 0.12, 0.01]
+        pp.emissionDirection = [-1, -0.25, 0]; pp.speed = 0.022; pp.speedVariation = 0.008
+        pp.mainEmitter.birthRate = 0.45; pp.mainEmitter.lifeSpan = 7; pp.mainEmitter.lifeSpanVariation = 2
+        pp.mainEmitter.size = 0.0042; pp.mainEmitter.sizeVariation = 0.0015
+        pp.mainEmitter.color = .evolving(start: .single(UIColor(red: 1, green: 0.78, blue: 0.82, alpha: 0.95)),
+                                         end: .single(UIColor(red: 1, green: 0.85, blue: 0.7, alpha: 0.85)))
+        pp.mainEmitter.opacityCurve = .gradualFadeInOut
+        pp.mainEmitter.noiseStrength = 0.006; pp.mainEmitter.noiseScale = 1.5; pp.mainEmitter.noiseAnimationSpeed = 0.4
+        pp.mainEmitter.blendMode = .alpha
+        petals.components.set(pp)
+        petals.position = feet + SIMD3(0.16, 0.1, 0.06)          // they start to the right, cross in front, drift left
+        root.addChild(petals)
+
         try await life.build()
         root.addChild(life.root)
         if !CommandLine.arguments.contains("-noelements") {      // (test flag: the world without particles)
