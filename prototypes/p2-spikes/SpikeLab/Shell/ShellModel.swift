@@ -93,6 +93,16 @@ struct Call: Identifiable, Equatable {
     var chosen = false
     /// How long it takes, shown in the journal.
     var minutes: Int = 5
+    /// The painted object it becomes in the world (Codex's props, iteration 2).
+    var prop: String {
+        if symbol == "sparkle" { return "prop-scroll" }
+        switch realm {
+        case .grove: return "prop-lantern"
+        case .stillwater: return "prop-bloom"
+        case .library: return "prop-scroll"
+        default: return "prop-crystal"
+        }
+    }
 }
 
 @MainActor @Observable
@@ -110,7 +120,10 @@ final class ShellModel {
     enum TourStep { case satchel, world, map, grove }
     var tour: TourStep?
 
-    init() { makeCalls() }
+    init() {
+        makeCalls()
+        if CommandLine.arguments.contains("-quests") { for id in ["a", "c", "d"] { toggleChosen(id) } }   // (test: three taken)
+    }
 
     func chose(_ interest: String) {
         self.interest = interest

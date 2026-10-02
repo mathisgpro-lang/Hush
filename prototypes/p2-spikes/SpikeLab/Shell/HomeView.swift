@@ -203,7 +203,12 @@ struct HomeView: View {
         Button(action: action) {
             VStack(spacing: 4) {
                 ZStack(alignment: .topTrailing) {
-                    Image(systemName: symbol).font(.system(size: 22))
+                    if symbol == "bag.fill", let img = UIImage(named: "satchel.png") {
+                        Image(uiImage: img).resizable().scaledToFit().frame(width: 34, height: 26)     // Codex's satchel
+                            .shadow(color: .orange.opacity(badge ? 0.8 : 0.3), radius: badge ? 8 : 3)
+                    } else {
+                        Image(systemName: symbol).font(.system(size: 22))
+                    }
                     if badge { Circle().fill(Color(red: 1, green: 0.55, blue: 0.2)).frame(width: 10, height: 10).offset(x: 6, y: -3) }
                 }
                 Text(label).font(.system(size: 12, design: .serif))
@@ -290,21 +295,19 @@ struct CallTag: View {
     }
 }
 
-/// A quest waiting in the world: a small glowing token in its realm's color with its symbol, breathing and bobbing,
-/// with its name beneath. (Codex's painted objects replace the token when they arrive.)
+/// A quest waiting in the world: its painted object (a lantern, a scroll, a crystal, a bud) glowing softly in its
+/// realm's color, breathing and bobbing, with its name beneath.
 struct QuestObject: View {
     let call: Call
     @State private var bob = false
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             ZStack {
-                Circle().fill(RadialGradient(colors: [call.realm.color.opacity(0.75), call.realm.color.opacity(0.0)], center: .center, startRadius: 2, endRadius: 34))
-                    .frame(width: 68, height: 68).scaleEffect(bob ? 1.12 : 0.92)
-                Circle().fill(LinearGradient(colors: [Color(red: 0.2, green: 0.14, blue: 0.1), Color(red: 0.08, green: 0.06, blue: 0.05)], startPoint: .top, endPoint: .bottom))
-                    .frame(width: 34, height: 34)
-                    .overlay(Circle().stroke(LinearGradient(colors: [Color(red: 1, green: 0.85, blue: 0.55), call.realm.color], startPoint: .top, endPoint: .bottom), lineWidth: 1.5))
-                Image(systemName: call.symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(call.realm.color)
-                    .shadow(color: call.realm.color, radius: 4)
+                Ellipse().fill(RadialGradient(colors: [call.realm.color.opacity(0.7), call.realm.color.opacity(0)], center: .center, startRadius: 2, endRadius: 40))
+                    .frame(width: 84, height: 70).scaleEffect(bob ? 1.12 : 0.9)
+                Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage()).resizable().scaledToFit()
+                    .frame(width: 50, height: 52)
+                    .shadow(color: call.realm.color.opacity(0.8), radius: bob ? 10 : 5)
             }
             Text(call.title).font(.system(size: 11, weight: .semibold, design: .serif)).foregroundStyle(.white)
                 .padding(.horizontal, 7).padding(.vertical, 2).background(Capsule().fill(.black.opacity(0.45)))
@@ -365,8 +368,9 @@ struct QuestJournal: View {
     private func row(_ call: Call) -> some View {
         let full = model.chosenCount >= ShellModel.maxChosen && !call.chosen
         return HStack(spacing: 12) {
-            Image(systemName: call.symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(call.realm.color)
-                .frame(width: 40, height: 40).background(Circle().fill(Color(red: 0.2, green: 0.13, blue: 0.08)))
+            Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage()).resizable().scaledToFit()
+                .frame(width: 34, height: 38).frame(width: 46, height: 46)
+                .background(Circle().fill(RadialGradient(colors: [call.realm.color.opacity(0.35), .clear], center: .center, startRadius: 2, endRadius: 24)))
             VStack(alignment: .leading, spacing: 2) {
                 Text(call.title).font(.system(size: 17, design: .serif)).foregroundStyle(ink)
                 Text(call.detail).font(.system(size: 13, design: .serif)).foregroundStyle(ink.opacity(0.72)).lineLimit(2)
