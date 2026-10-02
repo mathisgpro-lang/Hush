@@ -125,7 +125,15 @@ final class SanctuaryScene {
         let camH = Self.visibleHeight, camW = camH * Float(screen.width / screen.height)
         // Sideways: up to ~28% of a screen, so the stone circle never leaves the view (and never past the world).
         // Up and down: whatever the painting holds beyond the screen, minus a margin for the camera's breathing.
-        panLimit = [min(camW * 0.28, max(0, (w - camW * 1.04) / 2)), max(0, (h - camH) / 2 - 0.03)]
+        // No edge ever shows (EdgeSafety): each edge's nearness from the relief, minus the rubber band and the
+        // camera's breathing. Sideways it also stays within ~28% of a screen (the Sanctuary stays in view).
+        func nearest(_ pts: [(Float, Float)]) -> Float { pts.map { Self.distance - relief(depthAt($0.0, $0.1)) }.min() ?? Self.distance }
+        let steps = (0...40).map { Float($0) / 40 }
+        let edges = (l: nearest(steps.map { (0, $0) }), r: nearest(steps.map { (1, $0) }),
+                     b: nearest(steps.map { ($0, 0) }), t: nearest(steps.map { ($0, 1) }))
+        let safe = EdgeSafety.limit(planeW: w, planeH: h, restDistance: Self.distance, edges: edges, fov: Self.fov,
+                                    aspect: Float(screen.width / screen.height), margin: EdgeSafety.rubber + 0.03)
+        panLimit = [min(camW * 0.28, safe.x), safe.y]
 
         // The painting, bent in depth. Each vertex keeps its rest screen position (scaled along the camera ray),
         // so from the rest camera the painting looks untouched; moving the camera reveals the depth.
@@ -233,7 +241,7 @@ final class SanctuaryScene {
         f.mainEmitter.size = 0.004; f.mainEmitter.blendMode = .additive
         f.mainEmitter.color = .constant(.single(UIColor(red: 1, green: 0.85, blue: 0.45, alpha: 1)))
         flies.components.set(f); flies.position = [0, 0.0, -0.95]
-        root.addChild(flies); self.flies = flies
+        if layers == nil { root.addChild(flies); self.flies = flies }      // (the world's own fireflies come out at night)
 
         // The Flame on the steps (v ≈ 0.33 in the painting), scaled to the scene.
         try await hero.build()
@@ -241,11 +249,12 @@ final class SanctuaryScene {
         let d = Self.distance - relief(depthAt(hx(circle.x), circle.y)) - 0.01
         let k = d / Self.distance
         // Exactly as in the root frame: the cutout is 426 of the painting's 1846 px tall (its mesh is 0.27 tall).
-        let scale = 0.126 * h * k / 0.27      // the Spark: about a ninth of the painting's height (small, a newborn spirit)
+        let scale = 0.105 * h * k / 0.27      // the Spark: small, a newborn spirit (the same size as in the Grove)
         let feet = SIMD3<Float>((hx(circle.x) - 0.5) * w * k, (circle.y - 0.5) * h * k, -d)
         hero.leanPivot.scale = .init(repeating: scale)
         hero.leanPivot.position = feet + SIMD3(0, 0.09 * scale, 0)
         hero.stationary = true
+        hero.hoverHeight = 0.09                  // floating in the air above the runes, as in the Grove (Mathis)
         root.addChild(hero.leanPivot)
         heroFeet = feet; heroWorldScale = scale
 
@@ -365,7 +374,7 @@ final class SanctuaryScene {
             perf.frames += 1; perf.elapsed += dt; perf.worst = max(perf.worst, dt)
             if dt > 0.020 { perf.hitches += 1 }
             if perf.elapsed >= 2 {
-                print(String(format: "PERF fps %.1f  hitches %d  worst %.1f ms", Float(perf.frames) / perf.elapsed, perf.hitches, perf.worst * 1000) + "  | \(life.debugState) finger \(fingerDown ? 1 : 0) pan \(String(format: "%.2f", pan.x))")
+                print(String(format: "PERF fps %.1f  hitches %d  worst %.1f ms", Float(perf.frames) / perf.elapsed, perf.hitches, perf.worst * 1000) + "  | \(FrameMeter.thermalName(ProcessInfo.processInfo.thermalState)) \(Int(FrameMeter.footprint()))MB | \(life.debugState) finger \(fingerDown ? 1 : 0) pan \(String(format: "%.2f", pan.x))")
                 perf = (0, 0, 0, 0)
             }
         }
@@ -429,7 +438,11 @@ final class SanctuaryScene {
             return (f * 0.42 + offset * 0.3, f) }
             ?? (offset, [offset.x * 0.3, offset.y * 0.3, -Self.distance])
         // Looking around: a critically damped spring toward the target (glides, never jerks, no overshoot).
-        let pt = simd_clamp(panTarget, -panLimit - 0.05, panLimit + 0.05)
+        if let i = CommandLine.arguments.firstIndex(of: "-push"), i + 1 < CommandLine.arguments.count {   // (test: held past a limit)
+            let d = CommandLine.arguments[i + 1]
+            panTarget = [d == "left" ? -9 : d == "right" ? 9 : panTarget.x, d == "up" ? 9 : d == "down" ? -9 : panTarget.y]
+        }
+        let pt = simd_clamp(panTarget, -panLimit - EdgeSafety.rubber, panLimit + EdgeSafety.rubber)
         let w0: Float = 7.5
         panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
         pan += panVel * dt

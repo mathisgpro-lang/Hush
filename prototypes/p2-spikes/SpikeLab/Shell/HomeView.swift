@@ -97,7 +97,7 @@ struct HomeView: View {
             .onChanged { v in
                 if dragStartPan == nil { dragStartPan = scene.pan; scene.fingerDown = true }
                 let raw = (dragStartPan ?? .zero) + SIMD2(-Float(v.translation.width), Float(v.translation.height)) / Float(ppm(size))
-                scene.panTarget = SIMD2(rubber(raw.x, scene.panLimit.x), rubber(raw.y, scene.panLimit.y))
+                scene.panTarget = SIMD2(EdgeSafety.rubberBand(raw.x, scene.panLimit.x), EdgeSafety.rubberBand(raw.y, scene.panLimit.y))
             }
             .onEnded { v in
                 let projected = (dragStartPan ?? .zero) + SIMD2(-Float(v.predictedEndTranslation.width), Float(v.predictedEndTranslation.height)) / Float(ppm(size))

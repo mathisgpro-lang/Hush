@@ -12,7 +12,7 @@ final class WorldElements {
     private var flames: [Entity] = []
     private var time: Float = 0
     private var cloudBounds: Float = 0.5
-    private var lastFireflyRate: Float = -9
+    private var lastFireflyRate: Float = -9, lastLean: Float = -9
 
     /// Painting uv → a point on the relief (from the scene).
     func build(spot: (Float, Float) -> SIMD3<Float>, paintingW: Float, withClouds: Bool = true) async throws {
@@ -27,9 +27,7 @@ final class WorldElements {
         for (u, v, s) in [(0.587, 0.155, 1.6), (0.865, 0.28, 1.4), (0.962, 0.427, 1.0), (0.03, 0.38, 0.8)] as [(Float, Float, Float)] {
             let spray = Entity(); spray.components.set(sprayEmitter(size: s))
             spray.position = spot(u, v) + SIMD3(0, 0.004, 0.004)
-            let mist = Entity(); mist.components.set(mistEmitter(size: s))
-            mist.position = spray.position
-            root.addChild(spray); root.addChild(mist)
+            root.addChild(spray)            // (the rolling mist lives in the painting and the land shader: one emitter less each)
         }
         // Fish glints on the open sea (lower right).
         let glints = Entity()
@@ -39,7 +37,7 @@ final class WorldElements {
         g.mainEmitter.size = 0.004; g.mainEmitter.sizeMultiplierAtEndOfLifespan = 0.1; g.mainEmitter.blendMode = .additive
         g.mainEmitter.color = .constant(.single(UIColor(red: 1, green: 0.95, blue: 0.85, alpha: 1)))
         glints.components.set(g); glints.position = spot(0.86, 0.14) + SIMD3(0, 0, 0.01)
-        root.addChild(glints)
+        _ = glints                      // (the sea layer's shader already glitters: no emitter needed)
         // Fireflies over the circle and the gardens (only at night; rate set each frame).
         let ff = Entity()
         var f = ParticleEmitterComponent()
@@ -73,7 +71,7 @@ final class WorldElements {
         var p = ParticleEmitterComponent()
         p.emitterShape = .sphere; p.emitterShapeSize = [0.004 * s, 0.002 * s, 0.004 * s]
         p.emissionDirection = [0, 1, 0]; p.speed = 0.022 * s; p.speedVariation = 0.008 * s
-        p.mainEmitter.birthRate = 70; p.mainEmitter.lifeSpan = 0.45; p.mainEmitter.lifeSpanVariation = 0.15
+        p.mainEmitter.birthRate = 42; p.mainEmitter.lifeSpan = 0.45; p.mainEmitter.lifeSpanVariation = 0.15
         p.mainEmitter.size = 0.0075 * s; p.mainEmitter.sizeMultiplierAtEndOfLifespan = 0.15
         p.mainEmitter.blendMode = .additive
         p.mainEmitter.color = .evolving(start: .single(UIColor(red: 1, green: 0.92, blue: 0.6, alpha: 1)),
@@ -86,7 +84,7 @@ final class WorldElements {
         var p = ParticleEmitterComponent()
         p.emitterShape = .sphere; p.emitterShapeSize = [0.02 * s, 0.003, 0.01 * s]
         p.emissionDirection = [0, 1, 0]; p.speed = 0.02; p.speedVariation = 0.015
-        p.mainEmitter.birthRate = 40 * s; p.mainEmitter.lifeSpan = 0.9; p.mainEmitter.lifeSpanVariation = 0.3
+        p.mainEmitter.birthRate = 22 * s; p.mainEmitter.lifeSpan = 0.9; p.mainEmitter.lifeSpanVariation = 0.3
         p.mainEmitter.size = 0.004; p.mainEmitter.sizeMultiplierAtEndOfLifespan = 2.2
         p.mainEmitter.acceleration = [0, -0.04, 0]
         p.mainEmitter.color = .evolving(start: .single(UIColor(white: 1, alpha: 0.8)), end: .single(UIColor(white: 1, alpha: 0)))
@@ -98,9 +96,9 @@ final class WorldElements {
         var p = ParticleEmitterComponent()
         p.emitterShape = .sphere; p.emitterShapeSize = [0.03 * s, 0.004, 0.015 * s]
         p.emissionDirection = [0.3, 1, 0]; p.speed = 0.006; p.speedVariation = 0.004
-        p.mainEmitter.birthRate = 6 * s; p.mainEmitter.lifeSpan = 3; p.mainEmitter.lifeSpanVariation = 1
-        p.mainEmitter.size = 0.02 * s; p.mainEmitter.sizeMultiplierAtEndOfLifespan = 2.5
-        p.mainEmitter.color = .evolving(start: .single(UIColor(white: 1, alpha: 0.28)), end: .single(UIColor(white: 1, alpha: 0)))
+        p.mainEmitter.birthRate = 2.5 * s; p.mainEmitter.lifeSpan = 3; p.mainEmitter.lifeSpanVariation = 1
+        p.mainEmitter.size = 0.016 * s; p.mainEmitter.sizeMultiplierAtEndOfLifespan = 2.2
+        p.mainEmitter.color = .evolving(start: .single(UIColor(white: 1, alpha: 0.4)), end: .single(UIColor(white: 1, alpha: 0)))     // fewer, a bit denser: same look, a third of the cost
         p.mainEmitter.blendMode = .alpha
         return p
     }
@@ -131,7 +129,10 @@ final class WorldElements {
         }
         // The flames lean with the wind by tilting their emitters (cheap), never by rebuilding them (that cost
         // dropped the app to 30 fps during every gust).
-        let lean = simd_quatf(angle: -wind * 0.35, axis: [0, 0, 1])
-        for e in flames { e.orientation = lean }
+        if abs(wind - lastLean) > 0.015 {          // only when the wind really changed
+            lastLean = wind
+            let lean = simd_quatf(angle: -wind * 0.35, axis: [0, 0, 1])
+            for e in flames { e.orientation = lean }
+        }
     }
 }

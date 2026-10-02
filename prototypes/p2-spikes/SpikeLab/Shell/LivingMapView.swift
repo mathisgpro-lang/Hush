@@ -110,7 +110,7 @@ struct LivingMapView: View {
                 if dragStart == nil { dragStart = scene.pan }
                 let raw = (dragStart ?? .zero) + SIMD2(-Float(v.translation.width), Float(v.translation.height)) / ppm(size)
                 let lim = scene.panLimit(zoom: scene.zoom)
-                scene.panTarget = SIMD2(rubber(raw.x, lim.x), rubber(raw.y, lim.y))
+                scene.panTarget = SIMD2(EdgeSafety.rubberBand(raw.x, lim.x), EdgeSafety.rubberBand(raw.y, lim.y))
             }
             .onEnded { v in
                 guard !diving else { return }
@@ -126,7 +126,7 @@ struct LivingMapView: View {
             .onChanged { v in
                 guard !diving else { return }
                 if pinchStart == nil { pinchStart = scene.zoom }
-                scene.zoomTarget = max(0.97, min(2.4, (pinchStart ?? 1) * Float(v.magnification)))
+                scene.zoomTarget = max(1, min(2.4, (pinchStart ?? 1) * Float(v.magnification)))      // never wider than the map
             }
             .onEnded { _ in
                 scene.zoomTarget = max(1, min(2.2, scene.zoomTarget))         // settles back inside the limits

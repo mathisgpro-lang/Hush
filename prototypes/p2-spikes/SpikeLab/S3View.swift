@@ -110,7 +110,14 @@ final class GroveScene {
         let screen = UIScreen.main.bounds.size
         let camH = visibleH, camW = camH * Float(screen.width / screen.height)
         // Sideways: up to ~45% of a screen each way (Clash of Clans: the stone circle stays in reach); never past the world.
-        panLimit = [min(camW * 0.45, max(0, (w - camW * 1.04) / 2)), max(0, (h - camH) / 2 - 0.02)]
+        func nearest(_ pts: [(Float, Float)]) -> Float { pts.map { Self.distance - relief(depthAt($0.0, $0.1)) }.min() ?? Self.distance }
+        let steps = (0...40).map { Float($0) / 40 }
+        let edges = (l: nearest(steps.map { (0, $0) }), r: nearest(steps.map { (1, $0) }),
+                     b: nearest(steps.map { ($0, 0) }), t: nearest(steps.map { ($0, 1) }))
+        let safe = EdgeSafety.limit(planeW: w, planeH: h, restDistance: Self.distance, edges: edges, fov: Self.fov,
+                                    aspect: Float(screen.width / screen.height), margin: EdgeSafety.rubber + 0.03)
+        _ = camH
+        panLimit = [min(camW * 0.45, safe.x), safe.y]          // no edge ever shows (EdgeSafety)
         func point(_ u: Float, _ v: Float, nearer extra: Float = 0) -> SIMD3<Float> {
             let rest = SIMD3<Float>((u - 0.5) * w, (v - 0.5) * h, -Self.distance)
             let d = Self.distance - relief(depthAt(u, v)) - extra
@@ -272,7 +279,11 @@ final class GroveScene {
         camVel += (wc * wc * (wantPos - camPos) - 2 * wc * camVel) * dt; camPos += camVel * dt
         lookVel += (wc * wc * (wantLook - camLook) - 2 * wc * lookVel) * dt; camLook += lookVel * dt
         // Looking around, added on top so the spots floating over the Grove move exactly with it.
-        let pt = simd_clamp(panTarget, -panLimit - 0.05, panLimit + 0.05)
+        if let i = CommandLine.arguments.firstIndex(of: "-push"), i + 1 < CommandLine.arguments.count {   // (test: held past a limit)
+            let d = CommandLine.arguments[i + 1]
+            panTarget = [d == "left" ? -9 : d == "right" ? 9 : panTarget.x, d == "up" ? 9 : d == "down" ? -9 : panTarget.y]
+        }
+        let pt = simd_clamp(panTarget, -panLimit - EdgeSafety.rubber, panLimit + EdgeSafety.rubber)
         let w0: Float = 7.5
         panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
         pan += panVel * dt

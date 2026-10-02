@@ -78,13 +78,13 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-02 evening, decisions 121–125)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-02 night, decisions 121–126)
 
-**Current work: P2.5 iteration 2** (plan `docs/plan-2.0/p25-iteration-2.md`, approved "do all of this", Mathis reviews at the end). SpikeLab, `prototypes/p2-spikes`.
-- ✅ Built (simulator-verified, installed on the iPhone): the Spark (teardrop, hovering, hour-lit); the Sanctuary sharp and vibrant; the Quest Satchel; the living world map (Clash of Clans movement, realm cards, bird's dive); the vivid Grove with the Spark; the intro (ember on the circle, one-shot hatching, evolution glimpse, guided tour). Steady 60 fps measured on the phone before these; re-measure (`-perf` flag) once unlocked.
-- **In flight (Codex, auto after its limit resets at 18:47):** `scripts/spark-v3.sh` (spark-a-happy) and `scripts/p25-iter2.sh` (satchel icon, journal page, 4 quest props, Grove side panels, **world-map side panels**: Mathis wants no edge ever visible on the map). Both are in `scripts/resume-codex.sh`.
-- **Next when they land:** key the props with `tools/magenta_key.py` and swap them into `QuestObject`/the journal; key spark-a-happy into `spark-happy.png`; stitch the Grove panels (adapt `tools/build_world.py` + `tools/cut_layers.py`) so the Grove is swipeable with a living sky; stitch `map-left/right.png` around the map (it has a soft mirrored backdrop until then, `map-backdrop.png`); re-measure smoothness on the phone; then show Mathis everything for corrections.
-- Test flags: `-skipintro`, `-autointro`, `-map`, `-grove`, `-hour N`, `-perf`, `-noelements`, `-onlyland`.
+**Current work: P2.5 iteration 2** (plan `docs/plan-2.0/p25-iteration-2.md`; Mathis reviews at the end). SpikeLab, `prototypes/p2-spikes`.
+- ✅ Built and on the iPhone: the Spark (floating, hour-lit); the Sanctuary sharp and vibrant; the Quest Satchel with Codex's props; the living map (realm cards, bird's dive); the swipeable Grove (Codex panels, `tools/build_grove.py`); the intro (hatching on the circle, evolution glimpse, guided tour); no edges at any look-around limit (`Shell/EdgeSafety.swift`).
+- **Waiting:** Codex's map side panels (`map-left/right.png` in `scripts/p25-iter2.sh`); Codex is at its usage limit until **2026-10-07 20:15**. Then stitch them around the map and remove the cloud border.
+- **Open: smoothness.** The phone measured ~40 fps with everything on (60 without the particle effects), but the readings were mixed with Mathis using the phone. Re-measure undisturbed (`-perf`), then cut what costs most (candidates: the 2x land texture, now 1.4x; particle emitters; the Spark's extra shader reads).
+- Test flags: `-skipintro`, `-autointro`, `-map`, `-grove`, `-quests`, `-push up|down|left|right`, `-hour N`, `-perf`, `-noelements`, `-onlyland`.
 - Later: the 11 P3 review findings before building P3; sound from free libraries (ask before downloads).
 
 ---

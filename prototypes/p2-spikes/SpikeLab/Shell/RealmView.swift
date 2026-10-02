@@ -93,7 +93,7 @@ struct RealmView: View {
                 if dragStart == nil { dragStart = scene.pan }
                 let ppm = Float(size.height) / (2 * GroveScene.distance * tan(GroveScene.fov / 2 * .pi / 180))
                 let raw = (dragStart ?? .zero) + SIMD2(-Float(v.translation.width), Float(v.translation.height)) / ppm
-                scene.panTarget = SIMD2(rubber(raw.x, scene.panLimit.x), rubber(raw.y, scene.panLimit.y))
+                scene.panTarget = SIMD2(EdgeSafety.rubberBand(raw.x, scene.panLimit.x), EdgeSafety.rubberBand(raw.y, scene.panLimit.y))
             }
             .onEnded { v in
                 guard focused == nil else { return }

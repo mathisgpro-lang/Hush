@@ -64,12 +64,13 @@ final class MapScene {
         let sx = (w.x - cam.x) / dz / (t * aspect), sy = (w.y - cam.y) / dz / t
         return CGPoint(x: CGFloat(0.5 + sx * 0.5) * size.width, y: CGFloat(0.5 - sy * 0.5) * size.height)
     }
-    /// How far you may move from the center at a zoom (the view always stays on the map).
+    /// How far you may move from the center at a zoom: no edge of the map can ever come into view (EdgeSafety:
+    /// each edge's nearness from the relief, the zoom bringing the camera closer, the rubber band and breathing).
+    private var edgeDist: (l: Float, r: Float, b: Float, t: Float) = (1.2, 1.2, 1.2, 1.2)
     func panLimit(zoom z: Float) -> SIMD2<Float> {
-        let d = Self.distance / z
-        let halfH = d * tan(Self.fov / 2 * .pi / 180), halfW = halfH * screenAspect
-        // (Up and down keeps a wider margin: the near rocks at the bottom stand out in relief and shift more.)
-        return [max(0, planeW / 2 - halfW * 1.02), max(0, planeH / 2 - halfH * 1.1 - 0.02)]
+        EdgeSafety.limit(planeW: planeW, planeH: planeH, restDistance: Self.distance, edges: edgeDist,
+                         camForward: Self.distance - Self.distance / max(0.5, z), fov: Self.fov, aspect: screenAspect,
+                         margin: EdgeSafety.rubber + 0.008)
     }
 
     // MARK: Build
@@ -91,6 +92,10 @@ final class MapScene {
         let visibleH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180)
         planeW = visibleH * screenAspect * 1.3                       // a little wider than the screen: room to peek sideways
         planeH = planeW * Self.mapPixels.y / Self.mapPixels.x
+
+        func nearest(_ pts: [(Float, Float)]) -> Float { pts.map { Self.distance - relief(depthAt($0.0, $0.1)) }.min() ?? Self.distance }
+        let steps = (0...40).map { Float($0) / 40 }
+        edgeDist = (nearest(steps.map { (0, $0) }), nearest(steps.map { (1, $0) }), nearest(steps.map { ($0, 0) }), nearest(steps.map { ($0, 1) }))
 
         // The painting, bent in depth.
         let (nx, ny) = (48, 140)
@@ -239,8 +244,11 @@ final class MapScene {
         time += dt
         let w0: Float = 7
         let lim = panLimit(zoom: zoom)
-        if CommandLine.arguments.contains("-edgetest") { panTarget = [-(lim.x + 0.06), pan.y] }   // (test: pushed past the left edge)
-        let pt = simd_clamp(panTarget, -lim - 0.06, lim + 0.06)
+        if let i = CommandLine.arguments.firstIndex(of: "-push"), i + 1 < CommandLine.arguments.count {   // (test: held past a limit)
+            let d = CommandLine.arguments[i + 1]
+            panTarget = [d == "left" ? -9 : d == "right" ? 9 : panTarget.x, d == "up" ? 9 : d == "down" ? -9 : panTarget.y]
+        }
+        let pt = simd_clamp(panTarget, -lim - EdgeSafety.rubber, lim + EdgeSafety.rubber)
         panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
         pan += panVel * dt
         zoomVel += (w0 * w0 * (zoomTarget - zoom) - 2 * w0 * zoomVel) * dt

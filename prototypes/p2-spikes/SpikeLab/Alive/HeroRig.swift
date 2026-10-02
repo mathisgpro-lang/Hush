@@ -43,6 +43,8 @@ final class HeroRig: FlameRig {
     /// The hour (0–24), for the world's light on it (spirits only).
     var hour: Float = 18
     private var hoverTime: Float = 0
+    /// How high a spirit floats above its spot (rig units).
+    var hoverHeight: Float = 0.06
     /// A stationary Flame stays exactly where it sits (no drifting, no leaning toward fingers or moths): only in-place life.
     var stationary = false
     init(base: String = "hero", footInset: Float = 0.044, reflection: Bool = true, glows: Bool = true, wander: Float = 0.06, spirit: Bool = false) {
@@ -165,12 +167,12 @@ final class HeroRig: FlameRig {
         body.step(dt: dt)
         walkPivot.transform.translation = [stationary ? 0 : body.x, 0, 0]
         // A spirit floats: a slow bob (two rhythms so it never visibly loops) above the ground.
-        let hover: Float = spirit ? 0.06 + 0.01 * sin(hoverTime * 1.5) + 0.004 * sin(hoverTime * 0.63 + 1) : 0
+        let hover: Float = spirit ? hoverHeight + 0.01 * sin(hoverTime * 1.5) + 0.004 * sin(hoverTime * 0.63 + 1) : 0
         bodyPivot.transform = Transform(scale: [body.scaleX, body.scaleY, 1],
                                         rotation: simd_quatf(angle: body.roll, axis: [0, 0, 1]),
                                         translation: [0, Self.feetY + body.y + hover, 0])
         if let groundPool {      // closer to the stones → a smaller, brighter pool
-            let k = 1 - (hover - 0.06) * 6
+            let k = 1 - (hover - hoverHeight) * 6
             groundPool.scale = [k, k, 1]
         }
         reflectPivot.transform = Transform(scale: [body.scaleX, -body.scaleY, 1],
