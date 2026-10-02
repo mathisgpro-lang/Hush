@@ -369,8 +369,9 @@ void stoneLive(realitykit::surface_parameters params)
 
     // The Flame lights the circle around it (A1).
     float2 fd = float2((uv.x - c.y) * 0.46, uv.y - c.z);
-    float light = c.w * exp(-dot(fd, fd) / 0.004) * (fd.y < 0.0 ? 1.2 : 0.7);
-    rgb += rgb * float3(1.0, 0.55, 0.18) * light * 1.2;
+    // c.w is signed: the Flame's flicker brightens and dims the warm light it casts on the stones.
+    float light = c.w * exp(-dot(fd, fd) / 0.006) * (fd.y < 0.0 ? 1.2 : 0.8);
+    rgb += rgb * float3(1.0, 0.62, 0.28) * light;
 
     // The Hush (vitality).
     float hush = 1.0 - c.x;

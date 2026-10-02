@@ -15,7 +15,7 @@ final class SanctuaryScene {
     private var paintingW: Float = 1, paintingH: Float = 1
     private let heroScale: Float = 0.62     // small and cute on the circle, like the First Words frame
     /// The stone circle's center in the painting (uv, v up): the Flame's stage.
-    private let circle = SIMD2<Float>(0.495, 0.478)   // exactly the center of the Sanctuary's stone circle (feet just below its middle)
+    private let circle = SIMD2<Float>(0.540, 0.4648)  // exactly where the Flame sits in the root frame, on its own painted glow
     private var mists: [ModelEntity] = []
     let hero = HeroRig(base: "d", footInset: 22.0 / 426.0, reflection: false, glows: false, wander: 0.004)   // the root frame's own Flame, on its own pixels
     let life = SanctuaryLife()
@@ -133,7 +133,7 @@ final class SanctuaryScene {
         let d = Self.distance - relief(depthAt(circle.x, circle.y)) - 0.01
         let k = d / Self.distance
         // Exactly as in the root frame: the cutout is 426 of the painting's 1846 px tall (its mesh is 0.27 tall).
-        let scale = 0.82 * (426.0 / 1846.0) * h * k / 0.27      // a little smaller than in the root frame (Mathis)
+        let scale = 0.92 * (426.0 / 1846.0) * h * k / 0.27      // its painted size, a touch smaller (Mathis); the painted glow stays
         let feet = SIMD3<Float>((circle.x - 0.5) * w * k, (circle.y - 0.5) * h * k, -d)
         hero.leanPivot.scale = .init(repeating: scale)
         hero.leanPivot.position = feet + SIMD3(0, 0.09 * scale, 0)
@@ -164,6 +164,11 @@ final class SanctuaryScene {
         return rest * (d / Self.distance)
     }
 
+    /// For the intro: the Flame isn't born yet.
+    func hideFlameInstantly() { appear = Spring(0, stiffness: 90, damping: 9); flameTarget = 0 }
+    /// Where the Flame's chest is, to focus the camera on it.
+    var flameFocus: SIMD3<Float> { heroFeet + SIMD3(0, 0.12 * heroWorldScale, 0) }
+
     func setVitality(_ v: Float) {
         vitality = v
         for (k, e) in mists.enumerated() {
@@ -176,6 +181,10 @@ final class SanctuaryScene {
 
     func update(dt: Float) {
         time += dt
+        // The Flame's birth: it springs into being (with a little overshoot) when flameTarget becomes 1.
+        appear.step(toward: flameTarget, dt: dt)
+        hero.leanPivot.scale = .init(repeating: heroWorldScale * max(0, appear.value))
+        hero.leanPivot.isEnabled = appear.value > 0.01 || flameTarget > 0
         // Life and wind first, so the Flame can react to them this frame.
         let chest = heroFeet + SIMD3(hero.standingX * heroWorldScale, 0.10 * heroWorldScale, 0.005)
         let watch = life.update(dt: dt, flameAt: chest)
@@ -193,7 +202,7 @@ final class SanctuaryScene {
         if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
             let u = circle.x + hero.standingX * heroWorldScale / paintingW
             let flicker = 0.85 + 0.15 * noise.sample(time * 7) + 0.05 * sin(time * 23)
-            m.custom.value = [vitality, u, circle.y, 0.3 * flicker * (0.5 + 0.5 * vitality) * max(0, min(1, appear.value))]   // the painting already holds its glow; just a living flicker
+            m.custom.value = [vitality, u - 0.03, circle.y + 0.01, (flicker - 0.9) * 1.4 * max(0, min(1, appear.value))]   // the painted glow breathes with the Flame's fire (±)
             m.roughness = .init(floatLiteral: abs(life.wind))       // the shader reads wind from roughness_scale
             comp.materials = [m]; painting.model = comp
         }

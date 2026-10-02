@@ -53,7 +53,8 @@ struct FinchIntro: View {
     @State private var lightToast = false
     @State private var answers: [Int: Set<String>] = [:]
     @State private var ring: CGFloat = 0
-    @State private var stage = IntroFlameStage()
+    @State private var scene = SanctuaryScene()
+    @State private var worldVitality: Float = 0.12
     @State private var meter = FrameMeter()
     @State private var director: AliveDirector?
     @State private var flameReady = false
@@ -64,24 +65,24 @@ struct FinchIntro: View {
 
     var body: some View {
         ZStack {
-            DuskBackground()
-            if flameVisible {
-                LightRays(on: rays).allowsHitTesting(false)
-                RealityView { content in
-                    content.camera = .virtual
-                    do { try await stage.build() } catch { return }
-                    content.add(stage.root)
-                    let d = AliveDirector(seed: 21, meter: meter); d.attach(stage.flame, tempo: 0.6); director = d
-                    stage.updates = content.subscribe(to: SceneEvents.Update.self) { e in stage.update(Float(e.deltaTime)) }
-                    flameReady = true
-                    stage.target = 1
-                    stage.flame.react(.cheer)
-                }
-                .frame(height: 340)
-                .frame(maxHeight: .infinity, alignment: .top)
-                .padding(.top, 96)
-                .allowsHitTesting(false)
+            // The intro happens in the Sanctuary itself: grey and silent (the Hush) until your Flame is born.
+            RealityView { content in
+                content.camera = .virtual
+                scene.hideFlameInstantly()
+                do { try await scene.build() } catch { return }
+                content.add(scene.root)
+                scene.setVitality(worldVitality)
+                let d = AliveDirector(seed: 21, meter: meter); d.attach(scene.hero, tempo: 0.6); director = d
+                scene.updates = content.subscribe(to: SceneEvents.Update.self) { e in scene.update(dt: Float(e.deltaTime)) }
+                flameReady = true
             }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            DuskBackground().opacity(flameReady ? 0 : 1).animation(.easeOut(duration: 1.2), value: flameReady).allowsHitTesting(false)
+            if flameVisible { LightRays(on: rays).allowsHitTesting(false) }
+            // Soft shade behind the words so they read on the painting (top for the Flame's speech, bottom for choices).
+            LinearGradient(colors: [.black.opacity(0.45), .clear, .clear, .black.opacity(0.62)], startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea().allowsHitTesting(false)
             VStack(spacing: 0) {
                 if step.rawValue >= IntroStep.q1.rawValue && step.rawValue <= IntroStep.q3.rawValue { progressBar.padding(.top, 8) }
                 Spacer(minLength: 0)
@@ -121,8 +122,8 @@ struct FinchIntro: View {
             }
         case .warm:
             VStack(spacing: 16) {
-                Spacer()
-                EmberOrb(color: ember?.color ?? gold, size: 150, warmth: warmth, cracks: warmth)
+                Spacer().frame(height: 300)
+                EmberOrb(color: ember?.color ?? gold, size: 120, warmth: warmth, cracks: warmth)
                     .scaleEffect(holding ? 1.06 + warmth * 0.08 : 1)
                     .offset(x: holding ? CGFloat.random(in: -1...1) * warmth * 3 : 0)
                     .gesture(DragGesture(minimumDistance: 0).onChanged { _ in if !holding { startWarming() } }.onEnded { _ in stopWarming() })
@@ -186,7 +187,7 @@ struct FinchIntro: View {
             }
             .task {
                 for k in 1...40 { try? await Task.sleep(for: .milliseconds(55)); ring = CGFloat(k) / 40 }
-                stage.flame.react(.cheer); FeelSound.shared.chime(4)
+                scene.hero.react(.cheer); FeelSound.shared.chime(4)
                 try? await Task.sleep(for: .milliseconds(500)); go(.firstLight)
             }
         case .firstLight:
@@ -256,7 +257,7 @@ struct FinchIntro: View {
                     var set = answers[key, default: []]
                     if multi { if set.contains(o) { set.remove(o) } else { set.insert(o) } } else { set = [o] }
                     answers[key] = set
-                    stage.flame.react(.giggle)
+                    scene.hero.react(.giggle)
                     if !multi { Task { try? await Task.sleep(for: .milliseconds(350)); go(next) } }
                 }
             }
@@ -370,11 +371,11 @@ struct FinchIntro: View {
         case .born: bubble = nil
         case .hello: say("…Oh! There you are. I'm your Flame. What's your name?")
         case .whatAmI: say("Nice to meet you, \(name.trimmingCharacters(in: .whitespaces)). Do you know what I am?")
-        case .growing: say("I'm tiny now. But I'll grow as you grow."); stage.flame.look(at: [0, -0.6])
-        case .world: say("Out there, the world went quiet."); stage.flame.look(at: [0.5, -0.5])
-        case .mornings: say("Can I bring you your day each morning?"); stage.flame.look(at: nil)
+        case .growing: say("I'm tiny now. But I'll grow as you grow."); scene.hero.look(at: [0, -0.6])
+        case .world: say("Out there, the world went quiet."); scene.hero.look(at: [0.5, -0.5])
+        case .mornings: say("Can I bring you your day each morning?"); scene.hero.look(at: nil)
         case .q1: say("Let's learn a little about you.")
-        case .q2, .q3: stage.flame.perform(.glanceUp)
+        case .q2, .q3: scene.hero.perform(.glanceUp)
         case .preparing: say("Give me a moment…")
         case .firstLight: say("Here's where we begin.")
         default: break
@@ -384,7 +385,7 @@ struct FinchIntro: View {
 
     private func say(_ s: String) {
         withAnimation(.spring(duration: 0.4)) { bubble = s }
-        stage.flame.react(.giggle)
+        scene.hero.react(.giggle)
         director?.mutter()
         FeelSound.shared.babble(syllables: min(7, max(3, s.count / 10)))
     }
@@ -412,12 +413,20 @@ struct FinchIntro: View {
         FeelHaptics.shared.ignite(); FeelSound.shared.ignite(pitch: 2)
         withAnimation(.easeOut(duration: 0.4)) { rays = true }
         go(.born)
+        // Your Flame is born on the stone circle, and color floods back into the Sanctuary.
+        scene.flameTarget = 1
+        scene.hero.react(.cheer)
+        Task { @MainActor in
+            for k in 1...40 { try? await Task.sleep(for: .milliseconds(40)); scene.setVitality(0.12 + 0.88 * Float(k) / 40) }
+            try? await Task.sleep(for: .milliseconds(600))
+            scene.focus = scene.flameFocus            // the camera leans in close to your Flame
+        }
         Task { try? await Task.sleep(for: .seconds(2.2)); withAnimation(.easeOut(duration: 1.2)) { rays = false } }
     }
 
     private func gotLight() {
         FeelHaptics.shared.ignite(); FeelSound.shared.catchLight()
-        stage.flame.react(.cheer)
+        scene.hero.react(.cheer)
         say("Yes. And every real thing you do gives me light.")
         withAnimation(.spring(duration: 0.4)) { lightToast = true }
         Task {
@@ -446,7 +455,12 @@ struct FinchIntro: View {
     private func finish() {
         if let e = ember { model.chose(e.interest) }
         FeelHaptics.shared.rise(); FeelSound.shared.rise()
-        withAnimation(.easeInOut(duration: 1.0)) { model.go(.home) }
+        withAnimation { bubble = nil }
+        scene.focus = nil                            // the camera pulls back: the whole Sanctuary
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.6))
+            withAnimation(.easeInOut(duration: 0.8)) { model.go(.home) }
+        }
     }
 
     /// Simulator testing: plays the whole intro with taps.
