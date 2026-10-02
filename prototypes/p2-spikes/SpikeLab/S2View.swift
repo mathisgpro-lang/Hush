@@ -106,7 +106,9 @@ final class SanctuaryScene {
         return Float(sum) / Float(n * 255)
     }
     /// How much nearer than the base plane a point sits, from its depth (lifted mid-tones so the arches separate).
-    private func relief(_ g: Float) -> Float { 0.45 * pow(g, 0.6) - 0.15 }
+    /// Gentler with the living layers: strong relief opened gaps behind near things (the arches) that filled with
+    /// stretched, blurry waterfall pixels when the camera moved. The sky and sea layers now give most of the depth.
+    private func relief(_ g: Float) -> Float { layers == nil ? 0.45 * pow(g, 0.6) - 0.15 : 0.2 * pow(g, 0.6) - 0.065 }
 
     func build() async throws {
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
@@ -248,8 +250,10 @@ final class SanctuaryScene {
 
         try await life.build()
         root.addChild(life.root)
-        try await elements.build(spot: { [unowned self] u, v in self.spot(self.hx(u), v) }, paintingW: w, withClouds: layers == nil)
-        root.addChild(elements.root)
+        if !CommandLine.arguments.contains("-noelements") {      // (test flag: the world without particles)
+            try await elements.build(spot: { [unowned self] u, v in self.spot(self.hx(u), v) }, paintingW: w, withClouds: layers == nil)
+            root.addChild(elements.root)
+        }
 
         // Soft glowing motes drifting close to the camera, in front of the whole world (depth and air).
         let motes = Entity()
@@ -265,6 +269,9 @@ final class SanctuaryScene {
 
         camera.camera.fieldOfViewInDegrees = Self.fov
         root.addChild(camera)
+        if CommandLine.arguments.contains("-onlyland") {        // (test flag: only the land painting)
+            for e in root.children where e !== painting && e !== camera { e.isEnabled = false }
+        }
     }
 
     /// How much nearer than the base plane each row of the painting sits: the water is near, the steps a bit
@@ -368,8 +375,9 @@ final class SanctuaryScene {
             comp.materials = [m]; painting.model = comp
         }
         // The camera breathes very slowly (an alive world), and follows the phone's tilt for parallax.
-        let drift = autoDrift ? SIMD2(noise.sample(time * 0.08), noise.sample(time * 0.06 + 30)) * 0.12 : SIMD2(noise.sample(time * 0.08), noise.sample(time * 0.06 + 30)) * 0.04
-        var offset = SIMD3<Float>(tilt.x * 0.11 + drift.x, -tilt.y * 0.07 + drift.y * 0.6, sin(time * 0.11) * 0.05)
+        let driftAmp: Float = layers != nil ? 0.03 : (autoDrift ? 0.12 : 0.04)     // a calm breath, not a sway
+        let drift = SIMD2(noise.sample(time * 0.08), noise.sample(time * 0.06 + 30)) * driftAmp
+        var offset = SIMD3<Float>(tilt.x * 0.11 + drift.x, -tilt.y * 0.07 + drift.y * 0.6, sin(time * 0.11) * (layers != nil ? 0.015 : 0.05))
         if CommandLine.arguments.contains("-camtest") { offset = SIMD3(sin(time * 1.2) > 0 ? 0.1 : -0.1, cos(time * 0.9) > 0 ? 0.07 : -0.07, 0.05) }
         offset.x = max(-0.1, min(0.1, offset.x)); offset.y = max(-0.07, min(0.07, offset.y))
         let (wantPos, wantLook): (SIMD3<Float>, SIMD3<Float>) = focus.map { f0 in

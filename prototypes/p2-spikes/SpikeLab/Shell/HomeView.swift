@@ -23,7 +23,7 @@ struct HomeView: View {
                 Color.black.ignoresSafeArea()
                 RealityView { content in
                     content.camera = .virtual
-                    do { try await scene.build() } catch { return }
+                    do { try await scene.build() } catch { print("SCENE BUILD FAILED:", error); return }
                     content.add(scene.root)
                     scene.setVitality(1)
                     let d = AliveDirector(seed: 5, meter: meter)

@@ -93,7 +93,20 @@ def up(mask):
 hole = np.maximum(up(sea), up(sky))
 land_alpha = 1 - hole
 paint = np.asarray(world)
-Image.fromarray(np.dstack([paint, (land_alpha * 255).astype(np.uint8)]), "RGBA").save(f"{A}/world-land.png")
+land = Image.fromarray(np.dstack([paint, (land_alpha * 255).astype(np.uint8)]), "RGBA")
+# The phone shows the painting magnified about 1.7×: doubling it here with a high-quality resampling and a gentle
+# sharpening keeps it crisp (the GPU's own magnification is softer).
+land = land.resize((W * 2, H * 2), Image.LANCZOS)
+rgb2 = land.convert("RGB").filter(ImageFilter.UnsharpMask(radius=1.6, percent=70, threshold=2))
+land = Image.merge("RGBA", (*rgb2.split(), land.split()[3]))
+land.save(f"{A}/world-land.png")
+
+# The land's motion mask: its sky channel (A) now only marks the real sky (cut out of the land). The old colour-based
+# sky mask also caught pale mist and far rocks, which the daylight grade turned into white clouds on the land.
+mo = Image.open(f"{A}/world-motion.png"); mw, mh = mo.size
+mo_np = np.asarray(mo).copy()
+mo_np[..., 3] = np.asarray(Image.fromarray((sky * 255).astype(np.uint8)).resize((mw, mh), Image.BILINEAR))
+Image.fromarray(mo_np, "RGBA").save(f"{A}/world-motion.png")
 
 # ---- The sky plate (+ its blurred light).
 sky_plate = Image.open(f"{D}/plate-sky.png").convert("RGB").resize((W, H), Image.LANCZOS)

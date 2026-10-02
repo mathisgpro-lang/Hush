@@ -441,7 +441,7 @@ void stoneLive(realitykit::surface_parameters params)
     float2 flow = float2(0.0);
     if (fall > 0.01) {
         flow = float2((s2noise(float2(uv.x * 70.0, uv.y * 30.0 + t * 4.0)) - 0.5) * 0.0015,
-                      (s2noise(float2(uv.x * 50.0, uv.y * 25.0 + t * 3.2)) - 0.5) * 0.006) * fall;
+                      (s2noise(float2(uv.x * 50.0, uv.y * 25.0 + t * 3.2)) - 0.5) * 0.004) * fall;
     }
     float wind = params.material_constants().roughness_scale();
     float green = smoothstep(0.02, 0.12, float(base0.g) - max(float(base0.r) * 0.85, float(base0.b)));
@@ -495,6 +495,18 @@ void stoneLive(realitykit::surface_parameters params)
         }
         float glowK = 0.35 + 0.9 * night + 0.2 * dusk;
         rgb += float3(1.0, 0.55, 0.18) * halo * flick * glowK;
+    }
+
+    // Dehaze by day (Mathis: never blurry or grey): the painted mist is pulled back so the stone and leaves under it
+    // show their color. Classic dehaze: J = (I − A·(1 − t)) / t, with A the mist's color and t how much shows through.
+    {
+        float mx = max(rgb.r, max(rgb.g, rgb.b)), mn = min(rgb.r, min(rgb.g, rgb.b));
+        float satv = (mx - mn) / max(mx, 0.001);
+        float misty = (1.0 - smoothstep(0.08, 0.3, satv)) * smoothstep(0.45, 0.85, mx) * (1.0 - fall);
+        float amount = (day + morning * 0.7 + dusk * 0.25) * misty * 0.38;
+        float3 A = float3(0.92, 0.9, 0.93);
+        float tr = 1.0 - amount;
+        rgb = max((rgb - A * amount) / tr, 0.0);
     }
 
     rgb = s2hourLight(rgb, uv, skyM, 0.0, hour, sunU, ratio, t);
