@@ -15,9 +15,9 @@ final class SanctuaryScene {
     private var paintingW: Float = 1, paintingH: Float = 1
     private let heroScale: Float = 0.62     // small and cute on the circle, like the First Words frame
     /// The stone circle's center in the painting (uv, v up): the Flame's stage.
-    private let circle = SIMD2<Float>(0.495, 0.505)
+    private let circle = SIMD2<Float>(0.495, 0.478)   // exactly the center of the Sanctuary's stone circle (feet just below its middle)
     private var mists: [ModelEntity] = []
-    let hero = LayeredFlame()   // Codex's parts, center stage (decision 104)
+    let hero = HeroRig(base: "d", footInset: 22.0 / 426.0, reflection: false, glows: false, wander: 0.004)   // the root frame's own Flame, on its own pixels
     let life = SanctuaryLife()
     private var flies: Entity?
     private var heroFeet = SIMD3<Float>(0, 0, 0)
@@ -66,9 +66,9 @@ final class SanctuaryScene {
 
     func build() async throws {
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
-        let tex = try await TextureResource(named: "stone-paint.png")
-        let motion = try await TextureResource(named: "stone-motion.png", options: .init(semantic: .raw))
-        loadDepth("stone-depth.png")
+        let tex = try await TextureResource(named: "home-paint.png")
+        let motion = try await TextureResource(named: "home-motion.png", options: .init(semantic: .raw))
+        loadDepth("home-depth.png")
         let visibleH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180)
         let aspect = Float(tex.width) / Float(tex.height)
         let (w, h) = (visibleH * aspect * 1.08, visibleH * 1.08)     // a little overscan so parallax never shows edges
@@ -132,10 +132,12 @@ final class SanctuaryScene {
         // Center stage: its feet on the middle of the stone circle, at the circle's own depth.
         let d = Self.distance - relief(depthAt(circle.x, circle.y)) - 0.01
         let k = d / Self.distance
-        let scale = heroScale * k
+        // Exactly as in the root frame: the cutout is 426 of the painting's 1846 px tall (its mesh is 0.27 tall).
+        let scale = 0.82 * (426.0 / 1846.0) * h * k / 0.27      // a little smaller than in the root frame (Mathis)
         let feet = SIMD3<Float>((circle.x - 0.5) * w * k, (circle.y - 0.5) * h * k, -d)
         hero.leanPivot.scale = .init(repeating: scale)
         hero.leanPivot.position = feet + SIMD3(0, 0.09 * scale, 0)
+        hero.stationary = true
         root.addChild(hero.leanPivot)
         heroFeet = feet; heroWorldScale = scale
 
@@ -189,9 +191,9 @@ final class SanctuaryScene {
         }
         // The Flame's light on the painting follows it and flickers with the fire (A1); dimmer in the Hush.
         if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
-            let u = circle.x + hero.standingX * heroScale / paintingW
+            let u = circle.x + hero.standingX * heroWorldScale / paintingW
             let flicker = 0.85 + 0.15 * noise.sample(time * 7) + 0.05 * sin(time * 23)
-            m.custom.value = [vitality, u, circle.y, 0.9 * flicker * (0.5 + 0.5 * vitality) * max(0, min(1, appear.value))]
+            m.custom.value = [vitality, u, circle.y, 0.3 * flicker * (0.5 + 0.5 * vitality) * max(0, min(1, appear.value))]   // the painting already holds its glow; just a living flicker
             m.roughness = .init(floatLiteral: abs(life.wind))       // the shader reads wind from roughness_scale
             comp.materials = [m]; painting.model = comp
         }

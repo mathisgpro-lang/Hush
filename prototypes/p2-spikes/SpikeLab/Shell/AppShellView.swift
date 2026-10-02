@@ -9,7 +9,7 @@ struct AppShellView: View {
             Color.black.ignoresSafeArea()
             switch model.screen {
             case .intro:
-                IntroView(model: model).transition(.opacity)
+                FinchIntro(model: model).transition(.opacity)
             case .home:
                 HomeView(model: model).transition(.asymmetric(insertion: .scale(scale: 1.15).combined(with: .opacity), removal: .opacity))
             case .map:

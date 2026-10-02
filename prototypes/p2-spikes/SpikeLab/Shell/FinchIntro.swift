@@ -1,0 +1,549 @@
+// The introduction, Finch-style (decision 114, docs/plan-2.0/intro-finch-spec.md): one thing per screen on a soft
+// dusk gradient, your Flame centered and reacting; choose your ember → hold to warm it → it cracks → light rays →
+// the Spark is born → it asks your name → "what am I?" (+1 light) → foreshadowing (stages, the world) → mornings →
+// three quick questions → preparing → your first-light list → the world reveal.
+import SwiftUI
+import RealityKit
+
+enum IntroStep: Int, CaseIterable { case welcome, chooseEmber, warm, born, hello, whatAmI, growing, world, mornings, q1, q2, q3, preparing, firstLight }
+
+struct EmberChoice: Identifiable, Hashable {
+    let id: String, word: String, pillar: String, color: Color, realm: RealmID, interest: String
+}
+let emberChoices: [EmberChoice] = [
+    .init(id: "heart", word: "Love", pillar: "Heart", color: Color(red: 1.0, green: 0.55, blue: 0.62), realm: .grove, interest: "Be closer to people I love"),
+    .init(id: "mind", word: "Curiosity", pillar: "Mind", color: Color(red: 0.5, green: 0.72, blue: 1.0), realm: .library, interest: "Read again"),
+    .init(id: "body", word: "Strength", pillar: "Body", color: Color(red: 1.0, green: 0.55, blue: 0.22), realm: .highlands, interest: "Move a little every day"),
+    .init(id: "spirit", word: "Calm", pillar: "Spirit", color: Color(red: 0.8, green: 0.85, blue: 1.0), realm: .stillwater, interest: "Find calm"),
+    .init(id: "craft", word: "Craft", pillar: "Craft", color: Color(red: 0.88, green: 0.66, blue: 0.4), realm: .forge, interest: "Make something / focus"),
+    .init(id: "world", word: "Wonder", pillar: "World", color: Color(red: 0.6, green: 0.88, blue: 0.5), realm: .wilds, interest: "Spend time in nature"),
+]
+
+private let gold = Color(red: 1.0, green: 0.78, blue: 0.42)
+private let cream = Color(red: 1.0, green: 0.95, blue: 0.86)
+
+/// The intro's Flame: the living layered Flame alone, centered, with a hatch spring.
+@MainActor final class IntroFlameStage {
+    let root = Entity(), camera = PerspectiveCamera(), flame = HeroRig(base: "d", footInset: 22.0 / 426.0, reflection: false, glows: true, wander: 0.01)
+    var appear = Spring(0, stiffness: 90, damping: 9), target: Float = 0
+    var updates: EventSubscription?
+    func build() async throws {
+        try await flame.build()
+        root.addChild(flame.leanPivot)
+        flame.leanPivot.position = [0, -0.04, 0]
+        camera.camera.fieldOfViewInDegrees = 40
+        camera.look(at: [0, 0.02, 0], from: [0, 0.03, 0.6], relativeTo: nil)
+        root.addChild(camera)
+    }
+    func update(_ dt: Float) {
+        appear.step(toward: target, dt: dt)
+        flame.leanPivot.scale = .init(repeating: max(0, appear.value))
+        flame.update(dt: dt)
+    }
+}
+
+struct FinchIntro: View {
+    let model: ShellModel
+    @State private var step: IntroStep = .welcome
+    @State private var ember: EmberChoice?
+    @State private var name = ""
+    @State private var warmth: CGFloat = 0
+    @State private var holding = false
+    @State private var rays = false
+    @State private var lightToast = false
+    @State private var answers: [Int: Set<String>] = [:]
+    @State private var ring: CGFloat = 0
+    @State private var stage = IntroFlameStage()
+    @State private var meter = FrameMeter()
+    @State private var director: AliveDirector?
+    @State private var flameReady = false
+    @State private var bubble: String?
+    @FocusState private var typing: Bool
+
+    private var flameVisible: Bool { step.rawValue >= IntroStep.born.rawValue }
+
+    var body: some View {
+        ZStack {
+            DuskBackground()
+            if flameVisible {
+                LightRays(on: rays).allowsHitTesting(false)
+                RealityView { content in
+                    content.camera = .virtual
+                    do { try await stage.build() } catch { return }
+                    content.add(stage.root)
+                    let d = AliveDirector(seed: 21, meter: meter); d.attach(stage.flame, tempo: 0.6); director = d
+                    stage.updates = content.subscribe(to: SceneEvents.Update.self) { e in stage.update(Float(e.deltaTime)) }
+                    flameReady = true
+                    stage.target = 1
+                    stage.flame.react(.cheer)
+                }
+                .frame(height: 340)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .padding(.top, 96)
+                .allowsHitTesting(false)
+            }
+            VStack(spacing: 0) {
+                if step.rawValue >= IntroStep.q1.rawValue && step.rawValue <= IntroStep.q3.rawValue { progressBar.padding(.top, 8) }
+                Spacer(minLength: 0)
+                content
+                    .id(step)
+                    .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 16)), removal: .opacity))
+            }
+            .padding(.horizontal, 26).padding(.bottom, 28)
+            if let bubble { speech(bubble) }
+            if lightToast { toast }
+        }
+        .animation(.spring(duration: 0.5), value: step)
+        .onAppear { meter.start(); if CommandLine.arguments.contains("-autointro") { autoplay() } }
+    }
+
+    // MARK: Screens
+
+    @ViewBuilder private var content: some View {
+        switch step {
+        case .welcome:
+            VStack(spacing: 18) {
+                Spacer()
+                EmberOrb(color: gold, size: 90, warmth: 0.2, cracks: 0)
+                Spacer()
+                title("Every person carries a flame.")
+                body2("Most never see it. Yours is waiting.")
+                Spacer().frame(height: 30)
+                primary("Light your ember") { go(.chooseEmber) }
+                Text("Private test · for adults 18+").font(.caption2).foregroundStyle(cream.opacity(0.4)).padding(.top, 6)
+            }
+        case .chooseEmber:
+            VStack(spacing: 14) {
+                title("Which light are you drawn to?")
+                body2("Your ember carries it. You can grow every light later.")
+                emberRing.frame(height: 380)
+                primary("Warm this ember", disabled: ember == nil) { go(.warm) }
+            }
+        case .warm:
+            VStack(spacing: 16) {
+                Spacer()
+                EmberOrb(color: ember?.color ?? gold, size: 150, warmth: warmth, cracks: warmth)
+                    .scaleEffect(holding ? 1.06 + warmth * 0.08 : 1)
+                    .offset(x: holding ? CGFloat.random(in: -1...1) * warmth * 3 : 0)
+                    .gesture(DragGesture(minimumDistance: 0).onChanged { _ in if !holding { startWarming() } }.onEnded { _ in stopWarming() })
+                Spacer()
+                title(warmth > 0.66 ? "Almost…" : "Hold it close. Keep it warm.")
+                body2("Touch and hold the ember.")
+                Spacer().frame(height: 60)
+            }
+        case .born:
+            VStack(spacing: 14) {
+                title("Your Flame is born.")
+                body2("Small, curious, and entirely yours.")
+                primary("Say hello") { go(.hello) }
+            }
+        case .hello:
+            VStack(spacing: 14) {
+                TextField("", text: $name, prompt: Text("Your name").foregroundColor(cream.opacity(0.45)))
+                    .font(.system(size: 22, design: .serif)).multilineTextAlignment(.center).foregroundStyle(cream)
+                    .padding(.vertical, 14).background(RoundedRectangle(cornerRadius: 18).fill(.white.opacity(0.10)))
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(gold.opacity(0.4), lineWidth: 1))
+                    .focused($typing).submitLabel(.done).onSubmit { if !name.isEmpty { go(.whatAmI) } }
+                primary("Next", disabled: name.trimmingCharacters(in: .whitespaces).isEmpty) { go(.whatAmI) }
+            }
+        case .whatAmI:
+            VStack(spacing: 12) {
+                choice("The part of me that's alive") { gotLight() }
+                choice("A little fire that grows when I do") { gotLight() }
+            }
+        case .growing:
+            VStack(spacing: 16) {
+                stageStrip
+                body2("It takes real days. That's the point.")
+                primary("Next") { go(.world) }
+            }
+        case .world:
+            VStack(spacing: 16) {
+                worldWindow.frame(width: 250, height: 250)
+                body2("Every real thing you do wakes a piece of it.")
+                primary("Next") { go(.mornings) }
+            }
+        case .mornings:
+            VStack(spacing: 12) {
+                primary("Turn on mornings") { go(.q1) }
+                secondary("Maybe later") { go(.q1) }
+            }
+        case .q1:
+            question("What would make this year feel alive?", sub: "Pick as many as you like", options: emberChoices.map(\.interest), multi: true, key: 1, next: .q2)
+        case .q2:
+            question("On a normal day, how much time is truly yours?", sub: nil, options: ["About 5 minutes", "About 15 minutes", "Half an hour", "More than that"], multi: false, key: 2, next: .q3)
+        case .q3:
+            question("Where are you starting from?", sub: nil, options: ["Just starting out", "I have a few good habits", "I'm already quite active"], multi: false, key: 3, next: .preparing)
+        case .preparing:
+            VStack(spacing: 14) {
+                ZStack {
+                    Circle().stroke(.white.opacity(0.12), lineWidth: 6)
+                    Circle().trim(from: 0, to: ring).stroke(gold, style: .init(lineWidth: 6, lineCap: .round)).rotationEffect(.degrees(-90))
+                }
+                .frame(width: 120, height: 120)
+                title("Preparing your first days…")
+                Spacer().frame(height: 40)
+            }
+            .task {
+                for k in 1...40 { try? await Task.sleep(for: .milliseconds(55)); ring = CGFloat(k) / 40 }
+                stage.flame.react(.cheer); FeelSound.shared.chime(4)
+                try? await Task.sleep(for: .milliseconds(500)); go(.firstLight)
+            }
+        case .firstLight:
+            VStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Your first light").font(.system(size: 22, design: .serif)).foregroundStyle(Color(red: 0.35, green: 0.2, blue: 0.1))
+                    ForEach(firstThings, id: \.self) { t in
+                        HStack(spacing: 10) {
+                            Circle().fill(gold).frame(width: 9, height: 9).shadow(color: .orange, radius: 4)
+                            Text(t).font(.system(size: 16, design: .serif)).foregroundStyle(Color(red: 0.3, green: 0.2, blue: 0.12))
+                        }
+                    }
+                }
+                .padding(20).frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 18).fill(Color(red: 0.98, green: 0.93, blue: 0.82)))
+                .shadow(color: .black.opacity(0.25), radius: 12, y: 6)
+                body2("In a few days, I'll want a name.")
+                primary("Let's begin") { finish() }
+            }
+        }
+    }
+
+    // MARK: Pieces
+
+    private func title(_ s: String) -> some View {
+        Text(s).font(.custom("Georgia", size: 27)).fontWeight(.regular).multilineTextAlignment(.center).foregroundStyle(cream)
+            .shadow(color: .black.opacity(0.2), radius: 4)
+    }
+    private func body2(_ s: String) -> some View {
+        Text(s).font(.system(size: 16, design: .serif)).multilineTextAlignment(.center).foregroundStyle(cream.opacity(0.78))
+    }
+    private func primary(_ s: String, disabled: Bool = false, action: @escaping () -> Void) -> some View {
+        Button { FeelHaptics.shared.nudge(); action() } label: {
+            Text(s).font(.system(size: 18, weight: .semibold, design: .serif)).frame(maxWidth: .infinity).padding(.vertical, 16)
+                .background(Capsule().fill(LinearGradient(colors: [Color(red: 1, green: 0.8, blue: 0.45), Color(red: 0.95, green: 0.58, blue: 0.28)], startPoint: .top, endPoint: .bottom)))
+                .foregroundStyle(Color(red: 0.32, green: 0.16, blue: 0.06))
+                .shadow(color: Color(red: 1, green: 0.55, blue: 0.2).opacity(disabled ? 0 : 0.5), radius: 12, y: 4)
+        }
+        .disabled(disabled).opacity(disabled ? 0.45 : 1)
+    }
+    private func secondary(_ s: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) { Text(s).font(.system(size: 16, design: .serif)).foregroundStyle(cream.opacity(0.75)).padding(10) }
+    }
+    private func choice(_ s: String, selected: Bool = false, action: @escaping () -> Void) -> some View {
+        Button { FeelHaptics.shared.nudge(); action() } label: {
+            HStack {
+                Text(s).font(.system(size: 17, design: .serif)).multilineTextAlignment(.leading)
+                Spacer()
+                if selected { Image(systemName: "checkmark.circle.fill").foregroundStyle(gold) }
+            }
+            .padding(.horizontal, 18).padding(.vertical, 15)
+            .background(RoundedRectangle(cornerRadius: 16).fill(.white.opacity(selected ? 0.22 : 0.10)))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(selected ? gold : .white.opacity(0.18), lineWidth: selected ? 1.5 : 1))
+            .foregroundStyle(cream)
+        }
+    }
+
+    private func question(_ q: String, sub: String?, options: [String], multi: Bool, key: Int, next: IntroStep) -> some View {
+        VStack(spacing: 10) {
+            title(q).font(.custom("Georgia", size: 23))
+            if let sub { body2(sub) }
+            Spacer().frame(height: 6)
+            let columns = multi ? [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)] : [GridItem(.flexible())]
+            LazyVGrid(columns: columns, spacing: 10) {
+            ForEach(options, id: \.self) { o in
+                choice(multi ? shortLabel(o) : o, selected: answers[key, default: []].contains(o)) {
+                    var set = answers[key, default: []]
+                    if multi { if set.contains(o) { set.remove(o) } else { set.insert(o) } } else { set = [o] }
+                    answers[key] = set
+                    stage.flame.react(.giggle)
+                    if !multi { Task { try? await Task.sleep(for: .milliseconds(350)); go(next) } }
+                }
+            }
+            }
+            if multi { primary("Next", disabled: answers[key, default: []].isEmpty) { go(next) }.padding(.top, 6) }
+        }
+    }
+
+    private func shortLabel(_ o: String) -> String {
+        ["Be closer to people I love": "People I love", "Read again": "Reading", "Find calm": "Calm",
+         "Move a little every day": "Moving", "Make something / focus": "Making & focus", "Spend time in nature": "Nature"][o] ?? o
+    }
+
+    private var progressBar: some View {
+        let k = CGFloat(step.rawValue - IntroStep.q1.rawValue + 1) / 3
+        return Capsule().fill(.white.opacity(0.15)).frame(height: 6)
+            .overlay(alignment: .leading) { GeometryReader { g in Capsule().fill(gold).frame(width: g.size.width * k) } }
+            .animation(.spring(duration: 0.5), value: k)
+            .padding(.horizontal, 30)
+    }
+
+    private var emberRing: some View {
+        GeometryReader { g in
+            let c = CGPoint(x: g.size.width / 2, y: g.size.height / 2), r = min(g.size.width, g.size.height) * 0.38
+            ZStack {
+                EmberOrb(color: ember?.color ?? gold.opacity(0.6), size: 110, warmth: ember == nil ? 0.1 : 0.45, cracks: 0)
+                    .position(c).animation(.spring(duration: 0.5), value: ember)
+                ForEach(Array(emberChoices.enumerated()), id: \.element.id) { i, e in
+                    let a = Double(i) / 6 * 2 * .pi - .pi / 2
+                    Button {
+                        withAnimation(.spring(duration: 0.4)) { ember = e }
+                        FeelHaptics.shared.nudge(); FeelSound.shared.chime(i)
+                    } label: {
+                        VStack(spacing: 6) {
+                            EmberOrb(color: e.color, size: ember == e ? 54 : 44, warmth: ember == e ? 0.6 : 0.25, cracks: 0)
+                            Text(e.word).font(.system(size: 13, weight: .semibold, design: .serif)).foregroundStyle(ember == e ? e.color : cream.opacity(0.7))
+                        }
+                    }
+                    .position(x: c.x + CGFloat(cos(a)) * r, y: c.y + CGFloat(sin(a)) * r)
+                }
+            }
+        }
+    }
+
+    private var stageStrip: some View {
+        HStack(spacing: 2) {
+            ForEach(0..<5, id: \.self) { i in
+                VStack(spacing: 4) {
+                    Image(uiImage: UIImage(named: "stage\(i).png") ?? UIImage()).resizable().scaledToFit()
+                        .frame(width: i == 0 ? 66 : 56, height: i == 0 ? 66 : 56)
+                        .overlay { if i == 4 { Text("?").font(.system(size: 22, weight: .bold, design: .serif)).foregroundStyle(cream.opacity(0.8)) } }
+                    Text(["Spark", "Flame", "Blaze", "Kindled", "…"][i]).font(.system(size: 11, design: .serif)).foregroundStyle(cream.opacity(i == 0 ? 1 : 0.5))
+                }
+                if i < 4 { Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(cream.opacity(0.35)) }
+            }
+        }
+        .padding(.vertical, 10).padding(.horizontal, 8)
+        .background(RoundedRectangle(cornerRadius: 18).fill(.white.opacity(0.07)))
+    }
+
+    private var worldWindow: some View {
+        ZStack {
+            Image(uiImage: UIImage(named: "world-window.png") ?? UIImage()).resizable().scaledToFit()
+            Image(uiImage: UIImage(named: "world-window-color.png") ?? UIImage()).resizable().scaledToFit()
+                .mask(RadialGradient(colors: [.white, .clear], center: ember.map(realmSpot) ?? .center, startRadius: 4, endRadius: 70))
+            Circle().stroke(gold.opacity(0.5), lineWidth: 2)
+        }
+        .shadow(color: .black.opacity(0.35), radius: 14)
+    }
+    /// Where each realm sits inside the world window (the window shows map rows 560–1363).
+    private func realmSpot(_ e: EmberChoice) -> UnitPoint {
+        let p = e.realm.mapPoint
+        return UnitPoint(x: min(0.92, max(0.08, p.x / 803)), y: min(0.92, max(0.08, (p.y - 560) / 803)))
+    }
+
+    private func speech(_ s: String) -> some View {
+        VStack {
+            EmberText(text: s)
+                .padding(.horizontal, 18).padding(.vertical, 14)
+                .background(RoundedRectangle(cornerRadius: 20).fill(Color(red: 0.12, green: 0.08, blue: 0.10).opacity(0.78)))
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(gold.opacity(0.45), lineWidth: 1))
+                .padding(.horizontal, 30)
+                .id(s)
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
+            Spacer()
+        }
+        .padding(.top, 34)
+        .allowsHitTesting(false)
+    }
+
+    private var toast: some View {
+        VStack {
+            Spacer()
+            HStack(spacing: 8) {
+                Image(systemName: "sparkle").foregroundStyle(gold)
+                Text("+1 light · your Flame's first light").font(.system(size: 15, weight: .semibold, design: .serif))
+            }
+            .padding(.horizontal, 18).padding(.vertical, 12)
+            .background(Capsule().fill(Color(red: 0.3, green: 0.18, blue: 0.1).opacity(0.9))).foregroundStyle(cream)
+            .padding(.bottom, 200)
+        }
+        .transition(.scale.combined(with: .opacity))
+    }
+
+    // MARK: Flow
+
+    private func go(_ s: IntroStep) {
+        typing = false
+        withAnimation(.spring(duration: 0.5)) { step = s }
+        switch s {
+        case .born: bubble = nil
+        case .hello: say("…Oh! There you are. I'm your Flame. What's your name?")
+        case .whatAmI: say("Nice to meet you, \(name.trimmingCharacters(in: .whitespaces)). Do you know what I am?")
+        case .growing: say("I'm tiny now. But I'll grow as you grow."); stage.flame.look(at: [0, -0.6])
+        case .world: say("Out there, the world went quiet."); stage.flame.look(at: [0.5, -0.5])
+        case .mornings: say("Can I bring you your day each morning?"); stage.flame.look(at: nil)
+        case .q1: say("Let's learn a little about you.")
+        case .q2, .q3: stage.flame.perform(.glanceUp)
+        case .preparing: say("Give me a moment…")
+        case .firstLight: say("Here's where we begin.")
+        default: break
+        }
+        if s.rawValue >= IntroStep.q2.rawValue && s != .preparing && s != .firstLight { withAnimation { bubble = nil } }
+    }
+
+    private func say(_ s: String) {
+        withAnimation(.spring(duration: 0.4)) { bubble = s }
+        stage.flame.react(.giggle)
+        director?.mutter()
+        FeelSound.shared.babble(syllables: min(7, max(3, s.count / 10)))
+    }
+
+    private func startWarming() {
+        holding = true
+        FeelHaptics.shared.startCharge(duration: 2.2); FeelSound.shared.startCharge(duration: 2.2, pitch: 2)
+        Task { @MainActor in
+            while holding && warmth < 1 {
+                try? await Task.sleep(for: .milliseconds(30))
+                warmth = min(1, warmth + 0.0136)
+            }
+            if warmth >= 1 { hatch() }
+        }
+    }
+    private func stopWarming() {
+        guard warmth < 1 else { return }
+        holding = false
+        FeelHaptics.shared.stopCharge(); FeelSound.shared.stopCharge()
+        withAnimation(.easeOut(duration: 0.6)) { warmth = max(0, warmth - 0.25) }
+    }
+    private func hatch() {
+        holding = false
+        FeelHaptics.shared.stopCharge(); FeelSound.shared.stopCharge()
+        FeelHaptics.shared.ignite(); FeelSound.shared.ignite(pitch: 2)
+        withAnimation(.easeOut(duration: 0.4)) { rays = true }
+        go(.born)
+        Task { try? await Task.sleep(for: .seconds(2.2)); withAnimation(.easeOut(duration: 1.2)) { rays = false } }
+    }
+
+    private func gotLight() {
+        FeelHaptics.shared.ignite(); FeelSound.shared.catchLight()
+        stage.flame.react(.cheer)
+        say("Yes. And every real thing you do gives me light.")
+        withAnimation(.spring(duration: 0.4)) { lightToast = true }
+        Task {
+            try? await Task.sleep(for: .seconds(2.2))
+            withAnimation { lightToast = false }
+            go(.growing)
+        }
+    }
+
+    private var firstThings: [String] {
+        let picks = answers[1, default: []]
+        let pool: [(String, String)] = [
+            ("Be closer to people I love", "Tell someone why you admire them"),
+            ("Read again", "Read ten pages of anything you like"),
+            ("Find calm", "Three slow breaths, right now"),
+            ("Move a little every day", "A ten-minute walk at an easy pace"),
+            ("Make something / focus", "Twenty focused minutes on one thing"),
+            ("Spend time in nature", "Step outside and notice one living thing"),
+        ]
+        var out = pool.filter { picks.contains($0.0) }.map(\.1)
+        if let e = ember, let first = pool.first(where: { $0.0 == e.interest }), !out.contains(first.1) { out.insert(first.1, at: 0) }
+        if out.isEmpty { out = ["Three slow breaths, right now"] }
+        return Array(out.prefix(3))
+    }
+
+    private func finish() {
+        if let e = ember { model.chose(e.interest) }
+        FeelHaptics.shared.rise(); FeelSound.shared.rise()
+        withAnimation(.easeInOut(duration: 1.0)) { model.go(.home) }
+    }
+
+    /// Simulator testing: plays the whole intro with taps.
+    private func autoplay() {
+        Task { @MainActor in
+            func w(_ s: Double) async { try? await Task.sleep(for: .seconds(s)) }
+            await w(2); go(.chooseEmber); await w(1.5); ember = emberChoices[0]; await w(1.5); go(.warm)
+            await w(1); startWarming(); await w(3)
+            await w(3); go(.hello); await w(2); name = "Mathis"; await w(1); go(.whatAmI); await w(2.5); gotLight()
+            await w(5); go(.world); await w(3.5); go(.mornings); await w(2); go(.q1)
+            await w(2); answers[1] = ["Be closer to people I love", "Read again"]; await w(1); go(.q2)
+            await w(1.5); answers[2] = ["About 15 minutes"]; go(.q3); await w(1.5); answers[3] = ["Just starting out"]; go(.preparing)
+        }
+    }
+}
+
+// MARK: - Reusable visuals
+
+/// The dusk background: a soft violet → peach gradient with a few drifting embers.
+struct DuskBackground: View {
+    var body: some View {
+        TimelineView(.animation) { tl in
+            let t = tl.date.timeIntervalSinceReferenceDate
+            Canvas { ctx, size in
+                ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .linearGradient(
+                    Gradient(colors: [Color(red: 0.24, green: 0.18, blue: 0.36), Color(red: 0.55, green: 0.36, blue: 0.5), Color(red: 0.93, green: 0.6, blue: 0.48)]),
+                    startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
+                for i in 0..<18 {
+                    let s = Double(i) * 37.1
+                    let x = (sin(s) * 0.5 + 0.5) * size.width + sin(t * 0.3 + s) * 12
+                    let y = size.height - (CGFloat((t * (8 + Double(i % 5) * 3) + s * 40).truncatingRemainder(dividingBy: Double(size.height + 40))))
+                    let r = 1.2 + Double(i % 3)
+                    let a = 0.25 + 0.25 * sin(t * 2 + s)
+                    ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: r * 2, height: r * 2)), with: .color(Color(red: 1, green: 0.8, blue: 0.5).opacity(a)))
+                }
+            }
+        }
+        .ignoresSafeArea()
+    }
+}
+
+/// A glowing ember (the "egg"): breathing light; warmth makes it brighter; cracks spread across it as it warms.
+struct EmberOrb: View {
+    let color: Color, size: CGFloat, warmth: CGFloat, cracks: CGFloat
+    @State private var breathe = false
+    var body: some View {
+        ZStack {
+            Circle().fill(RadialGradient(colors: [color.opacity(0.55 + warmth * 0.3), .clear], center: .center, startRadius: 0, endRadius: size * (0.9 + warmth * 0.6)))
+                .frame(width: size * 2.4, height: size * 2.4)
+            Ellipse().fill(RadialGradient(colors: [.white, Color(red: 1, green: 0.85, blue: 0.55), color, color.opacity(0.85)], center: UnitPoint(x: 0.45, y: 0.4), startRadius: 1, endRadius: size * 0.6))
+                .frame(width: size * 0.82, height: size)
+                .overlay(Cracks(progress: cracks).stroke(Color.white.opacity(0.9), style: .init(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                    .shadow(color: .white, radius: 4).frame(width: size * 0.82, height: size))
+        }
+        .scaleEffect(breathe ? 1.04 : 0.97)
+        .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: breathe)
+        .onAppear { breathe = true }
+    }
+}
+
+nonisolated struct Cracks: Shape {
+    var progress: CGFloat
+    var animatableData: CGFloat { get { progress } set { progress = newValue } }
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let lines: [[CGPoint]] = [
+            [CGPoint(x: 0.5, y: 0.08), CGPoint(x: 0.42, y: 0.25), CGPoint(x: 0.55, y: 0.38), CGPoint(x: 0.46, y: 0.55)],
+            [CGPoint(x: 0.55, y: 0.38), CGPoint(x: 0.72, y: 0.45), CGPoint(x: 0.68, y: 0.6)],
+            [CGPoint(x: 0.42, y: 0.25), CGPoint(x: 0.26, y: 0.3), CGPoint(x: 0.22, y: 0.45)],
+            [CGPoint(x: 0.46, y: 0.55), CGPoint(x: 0.36, y: 0.7), CGPoint(x: 0.44, y: 0.84)],
+        ]
+        for (i, l) in lines.enumerated() {
+            let start = CGFloat(i) * 0.22, k = min(1, max(0, (progress - start) / 0.35))
+            guard k > 0 else { continue }
+            let n = Int(ceil(CGFloat(l.count - 1) * k))
+            p.move(to: CGPoint(x: l[0].x * r.width, y: l[0].y * r.height))
+            for j in 1...max(1, n) { p.addLine(to: CGPoint(x: l[min(j, l.count - 1)].x * r.width, y: l[min(j, l.count - 1)].y * r.height)) }
+        }
+        return p
+    }
+}
+
+/// Finch-style light rays behind the newborn Flame.
+struct LightRays: View {
+    let on: Bool
+    @State private var spin = false
+    var body: some View {
+        ZStack {
+            ForEach(0..<14, id: \.self) { i in
+                Rectangle().fill(LinearGradient(colors: [Color(red: 1, green: 0.9, blue: 0.65).opacity(0.55), .clear], startPoint: .bottom, endPoint: .top))
+                    .frame(width: 34, height: 520).offset(y: -260).rotationEffect(.degrees(Double(i) * 360 / 14))
+            }
+        }
+        .rotationEffect(.degrees(spin ? 30 : 0))
+        .animation(.linear(duration: 8).repeatForever(autoreverses: false), value: spin)
+        .opacity(on ? 1 : 0).scaleEffect(on ? 1 : 0.4)
+        .position(x: UIScreen.main.bounds.width / 2, y: 250)
+        .onAppear { spin = true }
+    }
+}

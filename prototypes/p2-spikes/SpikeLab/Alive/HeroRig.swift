@@ -32,7 +32,15 @@ final class HeroRig: FlameRig {
     private let sortGroup = ModelSortGroup(depthPass: nil)
     private static let feetY: Float = -0.09
 
-    init() {
+    /// Which painted Flame to use (e.g. "hero" or "d", the root frame's own Flame), how far its feet sit above the
+    /// image's bottom (fraction of its height), whether to add a reflection and extra glows (the root frame already
+    /// paints its own glow), and how much it drifts (a sitting Flame barely moves).
+    private let base: String, footInset: Float, withReflection: Bool, withGlows: Bool
+    /// A stationary Flame stays exactly where it sits (no drifting, no leaning toward fingers or moths): only in-place life.
+    var stationary = false
+    init(base: String = "hero", footInset: Float = 0.044, reflection: Bool = true, glows: Bool = true, wander: Float = 0.06) {
+        self.base = base; self.footInset = footInset; self.withReflection = reflection; self.withGlows = glows
+        body.wanderRange = wander
         leanPivot.addChild(walkPivot)
         walkPivot.addChild(bodyPivot)
         bodyPivot.position = [0, Self.feetY, 0]
@@ -41,10 +49,10 @@ final class HeroRig: FlameRig {
     }
 
     func build() async throws {
-        let tex = try await TextureResource(named: "hero-keyed.png")
+        let tex = try await TextureResource(named: "\(base)-keyed.png")
         faces = ["open": tex,
-                 "blink": try await TextureResource(named: "hero-blink.png"),
-                 "happy": try await TextureResource(named: "hero-happy.png")]
+                 "blink": try await TextureResource(named: "\(base)-blink.png"),
+                 "happy": try await TextureResource(named: "\(base)-happy.png")]
         let aspect = Float(tex.width) / Float(tex.height)
         let h: Float = 0.27, w = h * aspect
         let (nx, ny) = (16, 32)
@@ -74,12 +82,12 @@ final class HeroRig: FlameRig {
             material = m
         }
         let e = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
-        e.position = [0, -0.012, 0]
+        e.position = [0, -footInset * h, 0]
         e.components.set(ModelSortGroupComponent(group: sortGroup, order: 2))
         lookPivot.addChild(e); hero = e
 
         // Its reflection (A4): the same painting mirrored under its feet; the pivot mirrors the body every frame.
-        if let lib {
+        if withReflection, let lib {
             var u = unlit; u.faceCulling = .none
             var m = try CustomMaterial(from: u, surfaceShader: .init(named: "heroReflection", in: lib),
                                        geometryModifier: .init(named: "heroLive", in: lib))
@@ -102,7 +110,7 @@ final class HeroRig: FlameRig {
         puff.components.set(pe); puff.position = [0, Self.feetY + 0.005, 0.01]
         walkPivot.addChild(puff); landingPuff = puff
 
-        if let lib {
+        if withGlows, let lib {
             let glowTex = try await TextureResource(named: "glow.png")
             func glow(_ size: SIMD2<Float>, at p: SIMD3<Float>, strength: Float, order: Int32) throws -> ModelEntity {
                 var u = UnlitMaterial()
@@ -131,9 +139,10 @@ final class HeroRig: FlameRig {
     // MARK: Every frame
 
     func update(dt: Float) {
+        if stationary { body.bias = 0 }
         body.extraRoll = behaviorRoll + fingerRoll - wind * 0.03
         body.step(dt: dt)
-        walkPivot.transform.translation = [body.x, 0, 0]
+        walkPivot.transform.translation = [stationary ? 0 : body.x, 0, 0]
         bodyPivot.transform = Transform(scale: [body.scaleX, body.scaleY, 1],
                                         rotation: simd_quatf(angle: body.roll, axis: [0, 0, 1]),
                                         translation: [0, Self.feetY + body.y, 0])
@@ -220,7 +229,7 @@ final class HeroRig: FlameRig {
     func setMood(_ mood: Float, season: AliveInputs.Season, timeOfDay: AliveInputs.TimeOfDay) {
         self.mood = mood
         body.energy = mood
-        brightness = (0.6 + mood * 0.4) * (timeOfDay == .night ? 0.75 : 1)
+        brightness = min(1, 0.76 + mood * 0.3) * (timeOfDay == .night ? 0.75 : 1)   // at a normal mood: the painting's exact colors
         if timeOfDay == .night && mood < 0.3 { eyesHeldClosed = true; body.resting = true; setFace("blink") }
         else if eyesHeldClosed && body.resting { eyesHeldClosed = false; body.resting = false; setFace("open") }
     }
