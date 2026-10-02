@@ -15,6 +15,7 @@ final class HeroRig: FlameRig {
     private var reflection: ModelEntity?
     private let reflectPivot = Entity()
     private var landingPuff: Entity?
+    private var groundPool: Entity?
     /// Where it stands along the ground (meters, before any scene scale): scenes use it to place its light.
     var standingX: Float { body.x }
     private var faces: [String: TextureResource] = [:]
@@ -36,10 +37,16 @@ final class HeroRig: FlameRig {
     /// image's bottom (fraction of its height), whether to add a reflection and extra glows (the root frame already
     /// paints its own glow), and how much it drifts (a sitting Flame barely moves).
     private let base: String, footInset: Float, withReflection: Bool, withGlows: Bool
+    /// The Spark (decision 125): a pure spirit with no legs. It hovers and bobs above the ground, its flame tip
+    /// sways, and the hour lights it (sparkFire/sparkLive shaders).
+    let spirit: Bool
+    /// The hour (0–24), for the world's light on it (spirits only).
+    var hour: Float = 18
+    private var hoverTime: Float = 0
     /// A stationary Flame stays exactly where it sits (no drifting, no leaning toward fingers or moths): only in-place life.
     var stationary = false
-    init(base: String = "hero", footInset: Float = 0.044, reflection: Bool = true, glows: Bool = true, wander: Float = 0.06) {
-        self.base = base; self.footInset = footInset; self.withReflection = reflection; self.withGlows = glows
+    init(base: String = "hero", footInset: Float = 0.044, reflection: Bool = true, glows: Bool = true, wander: Float = 0.06, spirit: Bool = false) {
+        self.base = base; self.footInset = footInset; self.withReflection = reflection; self.withGlows = glows; self.spirit = spirit
         body.wanderRange = wander
         leanPivot.addChild(walkPivot)
         walkPivot.addChild(bodyPivot)
@@ -74,8 +81,8 @@ final class HeroRig: FlameRig {
         var material: any Material = unlit
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
         if let lib {
-            var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: "heroFireSurface", in: lib),
-                                       geometryModifier: .init(named: "heroLive", in: lib))
+            var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: spirit ? "sparkFire" : "heroFireSurface", in: lib),
+                                       geometryModifier: .init(named: spirit ? "sparkLive" : "heroLive", in: lib))
             m.custom.value = [0.8, 1, 0, 0]       // x mood, y brightness, zw hair follow-through
             m.blending = .transparent(opacity: .init(floatLiteral: 1.0))
             m.writesDepth = false
@@ -123,8 +130,16 @@ final class HeroRig: FlameRig {
                 g.components.set(ModelSortGroupComponent(group: sortGroup, order: order))
                 return g
             }
-            walkPivot.addChild(try glow([0.26, 0.055], at: [0, -0.088, -0.01], strength: 0.85, order: 0))  // ground pool (stays down)
-            lookPivot.addChild(try glow([0.32, 0.32], at: [0, 0.12, -0.02], strength: 0.35, order: 1))     // halo
+            if spirit {
+                // The Spark's light on the stones under it (it hovers, so the pool breathes with its height),
+                // and a soft halo that melts its edge into the air.
+                let pool = try glow([0.34, 0.08], at: [0, Self.feetY + 0.004, 0.005], strength: 1.0, order: 3)
+                walkPivot.addChild(pool); groundPool = pool
+                lookPivot.addChild(try glow([0.36, 0.36], at: [0, 0.10, -0.02], strength: 0.28, order: 1))
+            } else {
+                walkPivot.addChild(try glow([0.26, 0.055], at: [0, -0.088, -0.01], strength: 0.85, order: 0))  // ground pool (stays down)
+                lookPivot.addChild(try glow([0.32, 0.32], at: [0, 0.12, -0.02], strength: 0.35, order: 1))     // halo
+            }
         }
 
         let embers = Entity()
@@ -132,7 +147,12 @@ final class HeroRig: FlameRig {
         p.emitterShape = .sphere; p.emitterShapeSize = [0.1, 0.08, 0.02]; p.emissionDirection = [0, 1, 0]; p.speed = 0.035
         p.mainEmitter.birthRate = 10; p.mainEmitter.lifeSpan = 2.4; p.mainEmitter.size = 0.003
         p.mainEmitter.color = .constant(.single(UIColor(red: 1, green: 0.72, blue: 0.3, alpha: 1))); p.mainEmitter.blendMode = .additive
-        embers.components.set(p); embers.position = [0, 0.15, 0.01]
+        if spirit {      // tiny sparks rising from its tip
+            p.emitterShapeSize = [0.03, 0.02, 0.01]; p.speed = 0.05; p.mainEmitter.birthRate = 7
+            p.mainEmitter.lifeSpan = 1.6; p.mainEmitter.size = 0.0035
+            p.mainEmitter.opacityCurve = .gradualFadeInOut
+        }
+        embers.components.set(p); embers.position = spirit ? [0, 0.2, 0.01] : [0, 0.15, 0.01]
         lookPivot.addChild(embers)
     }
 
@@ -140,12 +160,19 @@ final class HeroRig: FlameRig {
 
     func update(dt: Float) {
         if stationary { body.bias = 0 }
+        hoverTime += dt
         body.extraRoll = behaviorRoll + fingerRoll - wind * 0.03
         body.step(dt: dt)
         walkPivot.transform.translation = [stationary ? 0 : body.x, 0, 0]
+        // A spirit floats: a slow bob (two rhythms so it never visibly loops) above the ground.
+        let hover: Float = spirit ? 0.06 + 0.01 * sin(hoverTime * 1.5) + 0.004 * sin(hoverTime * 0.63 + 1) : 0
         bodyPivot.transform = Transform(scale: [body.scaleX, body.scaleY, 1],
                                         rotation: simd_quatf(angle: body.roll, axis: [0, 0, 1]),
-                                        translation: [0, Self.feetY + body.y, 0])
+                                        translation: [0, Self.feetY + body.y + hover, 0])
+        if let groundPool {      // closer to the stones → a smaller, brighter pool
+            let k = 1 - (hover - 0.06) * 6
+            groundPool.scale = [k, k, 1]
+        }
         reflectPivot.transform = Transform(scale: [body.scaleX, -body.scaleY, 1],
                                            rotation: simd_quatf(angle: -body.roll, axis: [0, 0, 1]),
                                            translation: [0, Self.feetY - body.y, 0])
@@ -154,6 +181,7 @@ final class HeroRig: FlameRig {
             guard var comp = e.model, var m = comp.materials.first as? CustomMaterial else { continue }
             let b = (inScene && e === hero) ? brightness + 10 : brightness
             m.custom.value = [mood, b, drag.x, drag.y]
+            if spirit { m.metallic = .init(floatLiteral: hour / 24) }
             comp.materials = [m]; e.model = comp
         }
         if body.landed > 0.2, let puff = landingPuff, var pe = puff.components[ParticleEmitterComponent.self] {

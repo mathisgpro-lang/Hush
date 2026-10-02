@@ -616,3 +616,69 @@ void seaLive(realitykit::surface_parameters params)
     params.surface().set_emissive_color(half3(rgb));
     params.surface().set_opacity(col.a);
 }
+
+// ---------- The Spark: the first Flame, a pure spirit of fire (decision 125) ----------
+// Its flame tip sways and licks upward, its body breathes; the face stays still and crisp.
+// custom: x mood, y brightness, zw follow-through drag (from its motion).
+[[visible]]
+void sparkLive(realitykit::geometry_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float3 p = params.geometry().model_position();
+    float4 c = params.uniforms().custom_parameter();
+    float t = params.uniforms().time();
+    float energy = 0.6 + 0.6 * c.x;
+    float tip = smoothstep(0.42, 1.0, uv.y);
+    float body = 1.0 - tip;
+    float sway = (sin(t * 2.1 + uv.y * 6.0) * 0.011 + sin(t * 5.3 + uv.y * 13.0) * 0.004) * tip * tip * energy;
+    float lick = (sin(t * 3.4 + uv.x * 9.0) * 0.5 + 0.5) * 0.008 * tip * tip * tip * energy;
+    float breath = sin(t * 1.6) * 0.016;
+    float2 drag = c.zw * tip * tip;
+    params.geometry().set_model_position_offset(float3(sway + p.x * breath * 0.7 * body + drag.x,
+                                                       lick + p.y * breath * 0.45 * body + drag.y, 0));
+}
+
+// Its fire: flames flow upward through it (the face stays crisp), a warm pulse inside, and the light of the hour
+// on it so it belongs to the world: a sunset rim on the sun's side at dusk, a cooler daylight, at night its own glow
+// with a touch of moonlight. Its edge is a little soft, like the painting. metallic_scale = hour / 24.
+[[visible]]
+void sparkFire(realitykit::surface_parameters params)
+{
+    float2 uv = params.geometry().uv0();
+    float t = params.uniforms().time();
+    float4 c = params.uniforms().custom_parameter();
+    float energy = 0.6 + 0.6 * c.x;
+    float hour = params.material_constants().metallic_scale() * 24.0;
+    float face = 1.0 - smoothstep(0.55, 1.0, length((uv - float2(0.5, 0.3)) / float2(0.33, 0.15)));
+    float flame = (0.35 + 0.65 * smoothstep(0.35, 0.8, uv.y)) * (1.0 - face);
+    float w1 = sin(uv.y * 24.0 - t * 4.0 + sin(uv.x * 9.0 + t * 0.7) * 2.0);
+    float w2 = sin(uv.y * 45.0 - t * 6.6 + uv.x * 19.0);
+    float2 d = float2(w1 * 0.004 + w2 * 0.0016, -abs(w2) * 0.003) * flame * energy;
+    constexpr sampler s(address::clamp_to_edge, filter::linear, mip_filter::linear);
+    float2 suv = float2(uv.x, 1.0 - uv.y) + d;
+    half4 col = params.textures().base_color().sample(s, suv);
+    // A soft edge: the outline's alpha comes from a slightly blurred read (the painting has no razor edges).
+    float aSoft = float(params.textures().base_color().sample(s, suv, bias(1.2)).a);
+    float a = mix(float(col.a), aSoft, 0.6);
+    float3 rgb = float3(col.rgb);
+    // A warm pulse in its lower body, like a heartbeat.
+    float core = 1.0 - smoothstep(0.0, 0.22, length((uv - float2(0.5, 0.24)) / float2(1.0, 0.8)));
+    float beat = pow(0.5 + 0.5 * sin(t * 2.3), 8.0) + 0.35 * pow(0.5 + 0.5 * sin(t * 2.3 - 0.6), 12.0);
+    rgb += float3(0.35, 0.22, 0.06) * core * beat * 0.5 * energy;
+    rgb *= 1.0 + 0.06 * w1 * flame;
+    // The light of the hour.
+    float night = s2night(hour);
+    float morning = smoothstep(5.0, 7.0, hour) * (1.0 - smoothstep(9.5, 11.5, hour));
+    float day = smoothstep(9.5, 11.5, hour) * (1.0 - smoothstep(16.0, 18.0, hour));
+    float dusk = saturate(1.0 - night - morning - day);
+    float aSun = float(params.textures().base_color().sample(s, suv + float2(0.04, -0.01)).a);   // the sun is to the right
+    float rim = saturate((float(col.a) - aSun) * 1.6);
+    rgb += float3(1.0, 0.62, 0.38) * rim * (0.55 * dusk + 0.35 * morning + 0.15 * day);
+    rgb = mix(rgb, rgb * float3(0.97, 0.99, 1.03), day * 0.6);
+    float aMoon = float(params.textures().base_color().sample(s, suv + float2(-0.03, -0.015)).a);
+    rgb += float3(0.35, 0.45, 0.8) * saturate((float(col.a) - aMoon) * 1.6) * night * 0.35;
+    rgb *= 1.0 + night * 0.08;
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(half3(rgb * c.y));
+    params.surface().set_opacity(half(a));
+}

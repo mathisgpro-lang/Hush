@@ -44,7 +44,8 @@ final class SanctuaryScene {
     /// The stone circle's center in the painting (uv, v up): the Flame's stage.
     private let circle = SIMD2<Float>(0.540, 0.4648)  // exactly where the Flame sits in the root frame, on its own painted glow
     private var mists: [ModelEntity] = []
-    let hero = HeroRig(base: "d", footInset: 22.0 / 426.0, reflection: false, glows: false, wander: 0.004)   // the root frame's own Flame, on its own pixels
+    /// The Spark (decision 125): the first Flame, a pure spirit hovering over the stone circle.
+    let hero = HeroRig(base: "spark", footInset: 0.045, reflection: false, glows: true, wander: 0.004, spirit: true)
     let life = SanctuaryLife()
     let elements = WorldElements()
     private var currentHour: Float = 18
@@ -240,7 +241,7 @@ final class SanctuaryScene {
         let d = Self.distance - relief(depthAt(hx(circle.x), circle.y)) - 0.01
         let k = d / Self.distance
         // Exactly as in the root frame: the cutout is 426 of the painting's 1846 px tall (its mesh is 0.27 tall).
-        let scale = 0.92 * (426.0 / 1846.0) * h * k / 0.27      // its painted size, a touch smaller (Mathis); the painted glow stays
+        let scale = 0.126 * h * k / 0.27      // the Spark: about a ninth of the painting's height (small, a newborn spirit)
         let feet = SIMD3<Float>((hx(circle.x) - 0.5) * w * k, (circle.y - 0.5) * h * k, -d)
         hero.leanPivot.scale = .init(repeating: scale)
         hero.leanPivot.position = feet + SIMD3(0, 0.09 * scale, 0)
@@ -335,6 +336,7 @@ final class SanctuaryScene {
         let chest = heroFeet + SIMD3(hero.standingX * heroWorldScale, 0.10 * heroWorldScale, 0.005)
         let watch = life.update(dt: dt, flameAt: chest)
         hero.wind = life.wind
+        hero.hour = currentHour
         if !fingerDown {
             if let watch { hero.look(at: watch); watching = true }
             else if watching { hero.look(at: nil); watching = false }   // reset once when the moth leaves
