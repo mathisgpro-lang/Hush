@@ -78,7 +78,19 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-01 morning, PLAN 2.0 APPROVED as direction, decisions 84–86)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-02 afternoon, decisions 112–122)
+
+**Current work: P2.5 on the painted 2D route in Swift** (SpikeLab, `prototypes/p2-spikes`). Home = the swipeable living Sanctuary world.
+- ✅ Stitched world (120), Clash of Clans–style look-around with rubber-band edges (122), living layers (121): sky plate (clouds drift), sea plate (waves roll in), land cut out (`tools/cut_layers.py`). Demo: `docs/design/demos/2026-10-02-living-layers.mp4`.
+- **Next:**
+  1. Install on Mathis's iPhone when it's connected (the Release build is in the scratchpad `dd-spikelab-dev`; `xcrun devicectl device install app --device 00008120-001411043639A01E <app>`).
+  2. Ask Mathis: taller world from Codex (vertical peeking at the old size) vs keep the slight zoom.
+  3. More life per layer: a near foliage layer bending from its roots; birds and butterflies; the sea at night (moon path); the sun's position following the hour on the sky layer.
+  4. Later: fix the 11 P3 review findings before building P3; the six task objects in the style; sound from free libraries (ask before downloads).
+
+---
+
+## (older) Where we left off (updated 2026-10-01 morning, PLAN 2.0 APPROVED as direction, decisions 84–86)
 
 **Plan 2.0 is written:** `docs/plan-2.0/00-overview.md` (start there) plus Parts 1–8. **Building stays paused** until Mathis approves it (decision 83 rule).
 
