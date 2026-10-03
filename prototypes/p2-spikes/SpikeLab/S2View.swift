@@ -42,7 +42,7 @@ final class SanctuaryScene {
     var homeRatio: Float { layout.map { $0.homeW / $0.total } ?? 1 }
     private let heroScale: Float = 0.62     // small and cute on the circle, like the First Words frame
     /// The stone circle's center in the painting (uv, v up): the Flame's stage.
-    private let circle = SIMD2<Float>(0.540, 0.4648)  // exactly where the Flame sits in the root frame, on its own painted glow
+    private let circle = SIMD2<Float>(0.493, 0.501)   // the true center of the rune circle (measured on the painting)
     private var mists: [ModelEntity] = []
     /// The Spark (decision 125): the first Flame, a pure spirit hovering over the stone circle.
     let hero = HeroRig(base: "spark", footInset: 0.045, reflection: false, glows: true, wander: 0.004, spirit: true)
@@ -254,7 +254,9 @@ final class SanctuaryScene {
         hero.leanPivot.scale = .init(repeating: scale)
         hero.leanPivot.position = feet + SIMD3(0, 0.09 * scale, 0)
         hero.stationary = true
-        hero.hoverHeight = 0.09                  // floating in the air above the runes, as in the Grove (Mathis)
+        // Floating well above the runes (Mathis: like in the Grove). Seen from above, a floating thing shows higher
+        // on screen than its light on the ground: its glow pool stays on the circle's center stone.
+        hero.hoverHeight = 0.08
         root.addChild(hero.leanPivot)
         heroFeet = feet; heroWorldScale = scale
 
@@ -398,7 +400,7 @@ final class SanctuaryScene {
         if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
             let u = hx(circle.x) + hero.standingX * heroWorldScale / paintingW
             let flicker = 0.85 + 0.15 * noise.sample(time * 7) + 0.05 * sin(time * 23)
-            m.custom.value = [vitality, u - 0.03 * homeRatio, circle.y + 0.01, (flicker - 0.9) * 1.4 * max(0, min(1, appear.value))]   // the painted glow breathes with the Flame's fire (±)
+            m.custom.value = [vitality, u, circle.y, (flicker - 0.9) * 1.4 * max(0, min(1, appear.value))]   // the painted glow breathes with the Flame's fire (±)
             m.roughness = .init(floatLiteral: abs(life.wind))       // the shader reads wind from roughness_scale
             if Self.hourCycle { hourOverride = (6 + time * 0.8).truncatingRemainder(dividingBy: 24) }
             else if let h = Self.hourArg { hourOverride = h }

@@ -62,7 +62,7 @@ struct HomeView: View {
 
                 // The light flying from a finished quest to your Flame.
                 if let s = strand {
-                    let to = scene.screenPoint(homeUV: [0.54, 0.49], in: fullSize)
+                    let to = scene.screenPoint(homeUV: [0.493, 0.56], in: fullSize)
                     let p = CGPoint(x: s.from.x + (to.x - s.from.x) * s.t, y: s.from.y + (to.y - s.from.y) * s.t - sin(s.t * .pi) * 80)
                     Circle().fill(RadialGradient(colors: [.white, Color(red: 1, green: 0.8, blue: 0.4), .clear], center: .center, startRadius: 1, endRadius: 22))
                         .frame(width: 44, height: 44).position(p).allowsHitTesting(false)
