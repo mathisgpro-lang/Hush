@@ -1,6 +1,6 @@
 # The World, the Book and Your Flame (the home bar), spec draft (2026-10-03)
 
-*Source: Mathis (2026-10-03): design the World map, Book and Flame icons. The Book tells everything about the world you're in. The Flame sums up where you are in your journey. Status: **draft, waiting for approval**.*
+*Source: Mathis (2026-10-03): design the World map, Book and Flame icons. The Book tells everything about the world you're in. The Flame sums up where you are in your journey. Status: **approved 2026-10-03 (decisions 128–129)**. The Book is written as you live (§2 rewritten by decision 129).*
 
 ## 1. The three painted icons
 
