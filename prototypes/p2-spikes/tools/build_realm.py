@@ -72,7 +72,7 @@ h, sat, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
 Y, X = np.mgrid[0:h2, 0:w2]
 # A light is a small, very bright, warm core that stands out from what's around it (leaves and sunlit stone don't).
 around = nd.uniform_filter(v, 15)
-warm = (v > 0.93) & (h > 0.03) & (h < 0.13) & (sat > 0.45) & (v - around > 0.1)
+warm = (v > 0.93) & (h > 0.03) & (h < 0.13) & (sat > 0.45) & (v - around > float(opt("--light-contrast", "0.1")))
 lab, n = nd.label(warm)
 sizes = nd.sum(warm, lab, range(1, n + 1))
 cx_home = (x0 + cu * W) / 2; cy_home = (1 - cv) * H / 2
@@ -82,7 +82,11 @@ for i, o in enumerate(nd.find_objects(lab)):
     ys, xs = np.where(lab[o] == i + 1)
     by, bx = ys.mean() + o[0].start, xs.mean() + o[1].start
     if by < h2 * 0.08: continue                              # the sky's top edge
-    blobs.append((bx, by, int(sizes[i])))
+    score = float((v[lab == i + 1] - around[lab == i + 1]).mean()) * np.sqrt(sizes[i])   # how much it shines
+    blobs.append((bx, by, int(sizes[i]), score))
+cap = int(opt("--max-lights", "100000"))
+blobs = sorted(blobs, key=lambda b: -b[3])[:cap]
+blobs = [b[:3] for b in blobs]
 blobs.sort(key=lambda b: (b[0] - cx_home) ** 2 + (b[1] - cy_home) ** 2)   # outward from the circle
 nL = len(blobs)
 order = np.zeros((h2, w2)); core = np.zeros((h2, w2)); pool = np.zeros((h2, w2))
@@ -111,6 +115,15 @@ if band:
     huemask = ((h >= hl) & (h <= hh)) if hl <= hh else ((h >= hl) | (h <= hh))
     water |= (Y >= y0 * h2) & (Y <= y1 * h2) & smooth & ~green & huemask & (sat > 0.12) & (v > 0.35)
     water = nd.binary_closing(water, iterations=3)
+# Waterfalls: pale and streaked vertically (strong left-right contrast, little up-down), joined into the water.
+mgx = nd.uniform_filter(np.abs(nd.sobel(L, axis=1)), 5); mgy = nd.uniform_filter(np.abs(nd.sobel(L, axis=0)), 5)
+falls = (v > 0.72) & (sat < 0.25) & (mgx > 1.3 * mgy) & (mgx > 0.04)
+fl, nf = nd.label(nd.binary_closing(falls, structure=np.ones((5, 1)), iterations=2))
+keepF = np.zeros(nf + 1, bool)
+for i, o in enumerate(nd.find_objects(fl)):
+    hh_, ww_ = o[0].stop - o[0].start, o[1].stop - o[1].start
+    keepF[i + 1] = hh_ >= 8 and hh_ >= 1.1 * ww_
+water |= keepF[fl] & falls
 water = nd.binary_opening(water, iterations=1)
 lab2, n2 = nd.label(water); sz2 = nd.sum(water, lab2, range(1, n2 + 1))
 water = np.isin(lab2, np.where(sz2 > 80)[0] + 1)

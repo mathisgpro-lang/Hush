@@ -192,6 +192,7 @@ struct HomeView: View {
             if let rs = realmScene {                                     // how awake this realm is
                 Text("\(world.pillar) · \(Restoration.names[Restoration.level(depth: rs.heartDepth)]) · \(rs.litCount) \(RealmContent.lights(world)) lit")
                     .font(.system(size: 12, weight: .medium, design: .serif)).foregroundStyle(world.color)
+                    .padding(.horizontal, 10).padding(.vertical, 3).background(Capsule().fill(.black.opacity(0.45)))
             }
             HStack(spacing: 6) {
                 Image(systemName: "sun.max.fill").font(.caption)

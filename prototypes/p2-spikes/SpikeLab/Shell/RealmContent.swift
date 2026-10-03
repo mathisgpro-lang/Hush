@@ -22,6 +22,7 @@ enum RealmContent {
         switch r {
         case .grove: [[0.27, 0.40], [0.73, 0.40], [0.6, 0.29]]
         case .stillwater: [[0.27, 0.39], [0.69, 0.37], [0.6, 0.27]]
+        case .highlands: [[0.27, 0.35], [0.74, 0.34], [0.62, 0.275]]
         default: nil
         }
     }
@@ -36,10 +37,10 @@ enum RealmContent {
             Spot(id: "shore", title: "The Gratitude Shore", line: "Smooth stones you've written on, warm to the touch. Each one, a thing you were grateful for.", symbol: "heart.text.square.fill", uv: [0.15, 0.29]),
         ]
         case .highlands: [
-            Spot(id: "stairs", title: "The Foot of the Stairs", line: "Where every road begins. One step today is one stair of the mountain.", symbol: "figure.stairs", uv: [0.4, 0.27], action: "Take a walk (a real Body action)"),
-            Spot(id: "brakka", title: "Brakka", line: "An ancient stone tortoise with a small mountain on her back. “The mountain didn't grow in a day. Neither will you. Walk.”", symbol: "tortoise.fill", uv: [0.74, 0.36]),
-            Spot(id: "falls", title: "The Waterfall Steps", line: "The waterfalls tumble down the terraces. They roar louder as you grow stronger.", symbol: "drop.triangle.fill", uv: [0.2, 0.52]),
-            Spot(id: "summit", title: "The Summit Observatory", line: "Far above, the old observatory watched the First Hearth. Its beacon is still dark.", symbol: "binoculars.fill", uv: [0.55, 0.78]),
+            Spot(id: "stairs", title: "The Foot of the Stairs", line: "Where every road begins. One step today is one stair of the mountain.", symbol: "figure.stairs", uv: [0.5, 0.46], action: "Take a walk (a real Body action)"),
+            Spot(id: "brakka", title: "Brakka", line: "An ancient stone tortoise with a small mountain on her back. “The mountain didn't grow in a day. Neither will you. Walk.”", symbol: "tortoise.fill", uv: [0.15, 0.47]),
+            Spot(id: "falls", title: "The Waterfall Steps", line: "The waterfalls tumble down the terraces. They roar louder as you grow stronger.", symbol: "drop.triangle.fill", uv: [0.79, 0.6]),
+            Spot(id: "summit", title: "The Summit Observatory", line: "Far above, the old observatory watched the First Hearth. Its beacon is still dark.", symbol: "binoculars.fill", uv: [0.66, 0.775]),
         ]
         case .library: [
             Spot(id: "shelf", title: "The Unread Shelf", line: "Books waiting for a reader. Each page you read lights another lamp between the shelves.", symbol: "books.vertical.fill", uv: [0.28, 0.4], action: "Read a few pages (a real Mind action)"),
