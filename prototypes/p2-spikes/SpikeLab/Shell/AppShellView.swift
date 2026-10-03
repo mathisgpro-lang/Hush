@@ -8,7 +8,8 @@ struct AppShellView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            WorldLayer(model: model)                 // the one 3D view: the worlds live here, screens float on top
+            WorldLayer(model: model)
+                .onAppear { if CommandLine.arguments.contains("-perf") { print(String(format: "LAUNCH first screen %.0f ms", (CACurrentMediaTime() - AppTimer.start) * 1000)) } }                 // the one 3D view: the worlds live here, screens float on top
             switch model.screen {
             case .intro:
                 FinchIntro(model: model).transition(.opacity)
@@ -61,7 +62,12 @@ struct WorldLayer: View {
         RealityView { content in
             content.camera = .virtual
             content.add(model.worldRoot)
+            try? await Task.sleep(for: .milliseconds(200))     // let the first screen appear before the world loads
+            let t0 = CACurrentMediaTime()
             await model.ensure(.sanctuary)
+            if CommandLine.arguments.contains("-perf") {
+                print(String(format: "LAUNCH world ready %.0f ms after the 3D view (build %.0f ms)", (CACurrentMediaTime() - AppTimer.start) * 1000, (CACurrentMediaTime() - t0) * 1000))
+            }
             model.showActive()
             model.updates = content.subscribe(to: SceneEvents.Update.self) { e in model.tick(Float(e.deltaTime)) }
         }
@@ -69,3 +75,5 @@ struct WorldLayer: View {
         .allowsHitTesting(false)
     }
 }
+
+enum AppTimer { static let start = CACurrentMediaTime() }

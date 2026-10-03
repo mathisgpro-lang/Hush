@@ -10,7 +10,7 @@ struct HomeView: View {
     @State private var meter = FrameMeter()
     @State private var director: AliveDirector?
     @State private var open: Call?
-    @State private var strand: (from: CGPoint, t: CGFloat)?
+    @State private var strand: (from: CGPoint, start: Date)?
     @State private var toast: String?
     @State private var dragStartPan: SIMD2<Float>?
     @State private var satchelOpen = false
@@ -55,10 +55,15 @@ struct HomeView: View {
 
                 // The light flying from a finished quest to your Flame.
                 if let s = strand {
-                    let to = scene.screenPoint(homeUV: [0.493, 0.56], in: fullSize)
-                    let p = CGPoint(x: s.from.x + (to.x - s.from.x) * s.t, y: s.from.y + (to.y - s.from.y) * s.t - sin(s.t * .pi) * 80)
-                    Circle().fill(RadialGradient(colors: [.white, Color(red: 1, green: 0.8, blue: 0.4), .clear], center: .center, startRadius: 1, endRadius: 22))
-                        .frame(width: 44, height: 44).position(p).allowsHitTesting(false)
+                    // It flies frame by frame (time-based, no steps), easing in and out along an arc.
+                    TimelineView(.animation) { tl in
+                        let k = min(1, CGFloat(tl.date.timeIntervalSince(s.start) / 0.9)), t = k * k * (3 - 2 * k)
+                        let to = scene.screenPoint(homeUV: [0.493, 0.56], in: fullSize)
+                        let p = CGPoint(x: s.from.x + (to.x - s.from.x) * t, y: s.from.y + (to.y - s.from.y) * t - sin(t * .pi) * 80)
+                        Circle().fill(RadialGradient(colors: [.white, Color(red: 1, green: 0.8, blue: 0.4), .clear], center: .center, startRadius: 1, endRadius: 22))
+                            .frame(width: 44, height: 44).scaleEffect(1 - 0.35 * t).position(p)
+                    }
+                    .ignoresSafeArea().allowsHitTesting(false)
                 }
 
                 VStack(spacing: 0) {
@@ -278,9 +283,9 @@ struct HomeView: View {
         withAnimation { open = nil }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         withAnimation(.sheet) { model.complete(call.id) }
-        strand = (from, 0)
+        strand = (from, Date())
         Task { @MainActor in
-            for k in 1...36 { try? await Task.sleep(for: .milliseconds(25)); strand = (from, CGFloat(k) / 36) }
+            try? await Task.sleep(for: .milliseconds(900))
             strand = nil
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             director?.actionCompleted(call.realm == .grove ? .heart : call.realm == .library ? .mind : call.realm == .highlands ? .body : .spirit)

@@ -47,7 +47,15 @@ struct FinchIntro: View {
     @State private var step: IntroStep = .welcome
     @State private var ember: EmberChoice?
     @State private var name = ""
-    @State private var warmth: CGFloat = 0
+    @State private var warmth: CGFloat = 0           // coarse (for the words and the hatch); the ember itself uses warmAt
+    /// Warming follows time, frame by frame (no steps): it rises while you hold and cools gently when you let go.
+    @State private var warmFrom: CGFloat = 0
+    @State private var warmSince: Date = .distantPast
+    private static let warmRate: CGFloat = 1 / 2.2, coolRate: CGFloat = 0.35
+    private func warmAt(_ d: Date) -> CGFloat {
+        let e = CGFloat(d.timeIntervalSince(warmSince))
+        return holding ? min(1, warmFrom + e * Self.warmRate) : max(max(0, warmFrom - 0.25), warmFrom - e * Self.coolRate)
+    }
     @State private var holding = false
     @State private var rays = false
     @State private var lightToast = false
@@ -80,14 +88,15 @@ struct FinchIntro: View {
             // Everything that belongs to the Flame's spot follows it on screen: the ember you warm sits on the stone
             // circle, the Spark is born from it in the same place, and the glimpse of its future appears there too.
             GeometryReader { g in
-                TimelineView(.animation) { _ in
+                TimelineView(.animation) { tl in
                     let f = scene.flameScreen(in: g.size)
                     ZStack {
                         if step == .warm || (step == .born && emberGone < 1) {
-                            EmberOrb(color: ember?.color ?? gold, size: max(60, f.height * 0.55), warmth: warmth, cracks: warmth)
-                                .scaleEffect((holding ? 1.06 + warmth * 0.08 : 1) * (1 + emberGone * 0.6))
+                            let w = warmAt(tl.date)
+                            EmberOrb(color: ember?.color ?? gold, size: max(60, f.height * 0.55), warmth: w, cracks: w)
+                                .scaleEffect((holding ? 1.06 + w * 0.08 : 1) * (1 + emberGone * 0.6))
                                 .opacity(1 - emberGone)
-                                .offset(x: holding ? CGFloat.random(in: -1...1) * warmth * 3 : 0)
+                                .offset(x: holding ? sin(tl.date.timeIntervalSinceReferenceDate * 47) * w * 2.5 : 0)   // a smooth tremble
                                 .position(x: f.feet.x, y: f.feet.y - max(60, f.height * 0.55) * 0.5)
                                 .gesture(DragGesture(minimumDistance: 0).onChanged { _ in if !holding { startWarming() } }.onEnded { _ in stopWarming() })
                         }
@@ -117,13 +126,15 @@ struct FinchIntro: View {
                 Spacer(minLength: 0)
                 content
                     .id(step)
-                    .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 16)), removal: .opacity))
+                    // The old words leave quickly, then the new ones arrive: never two texts on top of each other.
+                    .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 12)).animation(.smooth(duration: 0.34).delay(0.14)),
+                                            removal: .opacity.animation(.easeOut(duration: 0.12))))
             }
             .padding(.horizontal, 26).padding(.bottom, 28)
             if let bubble { speech(bubble) }
             if lightToast { toast }
         }
-        .animation(.spring(duration: 0.5), value: step)
+        .animation(.smooth(duration: 0.38), value: step)
         .onAppear {
             meter.start()
             scene.hideFlameInstantly()                      // not born yet
@@ -220,7 +231,8 @@ struct FinchIntro: View {
                 Spacer().frame(height: 40)
             }
             .task {
-                for k in 1...40 { try? await Task.sleep(for: .milliseconds(55)); ring = CGFloat(k) / 40 }
+                withAnimation(.easeInOut(duration: 2.2)) { ring = 1 }           // one smooth fill (no steps)
+                try? await Task.sleep(for: .milliseconds(2200))
                 scene.hero.react(.cheer); FeelSound.shared.chime(4)
                 try? await Task.sleep(for: .milliseconds(500)); go(.firstLight)
             }
@@ -383,7 +395,8 @@ struct FinchIntro: View {
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(gold.opacity(0.45), lineWidth: 1))
                 .padding(.horizontal, 30)
                 .id(s)
-                .transition(.scale(scale: 0.85).combined(with: .opacity))
+                .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity).animation(.spring(response: 0.3, dampingFraction: 0.8).delay(0.1)),
+                                        removal: .opacity.animation(.easeOut(duration: 0.1))))
             Spacer()
         }
         .padding(.top, 34)
@@ -408,7 +421,7 @@ struct FinchIntro: View {
 
     private func go(_ s: IntroStep) {
         typing = false
-        withAnimation(.spring(duration: 0.5)) { step = s }
+        withAnimation(.smooth(duration: 0.38)) { step = s }
         switch s {
         case .warm: scene.focus = scene.flameFocus          // the camera leans in to the circle, where the ember waits
         case .born: bubble = nil
@@ -442,19 +455,21 @@ struct FinchIntro: View {
     private func startWarming() {
         holding = true
         FeelHaptics.shared.startCharge(duration: 2.2); FeelSound.shared.startCharge(duration: 2.2, pitch: 2)
+        warmFrom = warmAt(Date()); warmSince = Date()
         Task { @MainActor in
-            while holding && warmth < 1 {
-                try? await Task.sleep(for: .milliseconds(30))
-                warmth = min(1, warmth + 0.0136)
+            while holding {                                     // only checks; the ember's look follows time itself
+                warmth = warmAt(Date())
+                if warmth >= 1 { hatch(); return }
+                try? await Task.sleep(for: .milliseconds(40))
             }
-            if warmth >= 1 { hatch() }
         }
     }
     private func stopWarming() {
-        guard warmth < 1 else { return }
+        guard holding, warmAt(Date()) < 1 else { return }
+        warmFrom = warmAt(Date()); warmSince = Date()
         holding = false
+        warmth = warmFrom
         FeelHaptics.shared.stopCharge(); FeelSound.shared.stopCharge()
-        withAnimation(.easeOut(duration: 0.6)) { warmth = max(0, warmth - 0.25) }
     }
     private func hatch() {
         holding = false
@@ -468,8 +483,8 @@ struct FinchIntro: View {
         scene.flameTarget = 1
         scene.hero.react(.cheer)
         Task { @MainActor in
-            for k in 1...40 { try? await Task.sleep(for: .milliseconds(40)); scene.setVitality(0.12 + 0.88 * Float(k) / 40) }
-            try? await Task.sleep(for: .milliseconds(600))
+            scene.fadeVitality(to: 1, over: 1.8)                              // color floods back, frame by frame
+            try? await Task.sleep(for: .milliseconds(2400))
         }
         Task { try? await Task.sleep(for: .seconds(2.2)); withAnimation(.easeOut(duration: 1.2)) { rays = false } }
     }

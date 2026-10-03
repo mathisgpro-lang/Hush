@@ -348,6 +348,10 @@ final class SanctuaryScene {
     /// Where the Flame's chest is, to focus the camera on it.
     var flameFocus: SIMD3<Float> { heroFeet + SIMD3(0, 0.12 * heroWorldScale, 0) }
 
+    /// A smooth change of vitality over time (the intro's color flooding back), applied frame by frame.
+    private var vitalityFade: (from: Float, to: Float, start: Float, length: Float)?
+    func fadeVitality(to v: Float, over seconds: Float) { vitalityFade = (vitality, v, time, max(0.01, seconds)) }
+
     func setVitality(_ v: Float) {
         vitality = v
         for (k, e) in mists.enumerated() {
@@ -373,6 +377,11 @@ final class SanctuaryScene {
 
     func update(dt: Float) {
         time += dt
+        if let f = vitalityFade {
+            let k = min(1, (time - f.start) / f.length), e = k * k * (3 - 2 * k)
+            setVitality(f.from + (f.to - f.from) * e)
+            if k >= 1 { vitalityFade = nil }
+        }
         if perfOn {
             perf.frames += 1; perf.elapsed += dt; perf.worst = max(perf.worst, dt)
             if dt > 0.020 { perf.hitches += 1 }
@@ -423,10 +432,8 @@ final class SanctuaryScene {
                 bm.custom.value = [m.custom.value.x, 2, 2, 0]; bm.metallic = m.metallic; bm.roughness = m.roughness; bm.specular = .init(floatLiteral: 2); bm.clearcoat = m.clearcoat
                 bc.materials = [bm]; backdrop.model = bc
             }
-            // The sky and sea only need slow values (vitality, hour, wind): refreshed twice a second.
-            let refreshLayers = time - layersAt > 0.5
-            if refreshLayers { layersAt = time }
-            for layer in [sky, sea].compactMap({ $0 }) where refreshLayers {
+            // The sky and sea change together with the land (same moment, same values), so nothing jumps ahead.
+            for layer in [sky, sea].compactMap({ $0 }) {
                 guard var lc = layer.model, var lm = lc.materials.first as? CustomMaterial else { continue }
                 lm.custom.value = [m.custom.value.x, 0, 0, 0]; lm.metallic = m.metallic; lm.roughness = m.roughness
                 lm.specular = m.specular; lm.clearcoat = m.clearcoat

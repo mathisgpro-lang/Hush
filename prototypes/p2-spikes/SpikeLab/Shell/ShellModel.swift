@@ -184,6 +184,17 @@ final class ShellModel {
             }
         }
         if overlayOpen { return }
+        // After a slow frame, never take one giant step: springs (the camera, your Spark) would overshoot and swing.
+        // Long gaps are walked through in small steps instead, so motion stays smooth whatever happens.
+        var rest = min(dt, 0.25)
+        while rest > 0.0001 {
+            let step = min(rest, 1.0 / 60)
+            rest -= step
+            advance(step)
+        }
+    }
+
+    private func advance(_ dt: Float) {
         switch activeWorld {
         case .sanctuary: if sanctuaryBuilt { sanctuary.update(dt: dt) }
         case .map: if mapBuilt { mapScene.update(dt: dt) }

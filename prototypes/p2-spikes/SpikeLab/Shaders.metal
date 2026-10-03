@@ -698,7 +698,8 @@ void sparkFire(realitykit::surface_parameters params)
         float cs = cos(turn), sn = -sin(turn);          // the same direction as Core Image's hue adjust (the pictures)
         float I2 = (I * cs - Q * sn) * satK, Q2 = (I * sn + Q * cs) * satK;
         float3 tinted = float3(Y + 0.956 * I2 + 0.621 * Q2, Y - 0.272 * I2 - 0.647 * Q2, Y - 1.106 * I2 + 1.703 * Q2);
-        rgb = mix(rgb, max(tinted, 0.0), k * step(0.0001, abs(turn) + abs(satK - 1.0)));
+        float strength = params.material_constants().specular_scale();      // subtle: the painted fire shows through
+        rgb = mix(rgb, max(tinted, 0.0), k * strength * step(0.0001, abs(turn) + abs(satK - 1.0)));
     }
     // A warm pulse in its lower body, like a heartbeat.
     float core = 1.0 - smoothstep(0.0, 0.22, length((uv - float2(0.5, 0.24)) / float2(1.0, 0.8)));

@@ -43,11 +43,11 @@ final class HeroRig: FlameRig {
     /// The hour (0–24), for the world's light on it (spirits only).
     var hour: Float = 18
     private var hoverTime: Float = 0
-    private var lastMatKey = SIMD4<Float>(-9, -9, -9, -9), lastMatHour: Float = -9, lastTintAngle: Float = -99
+    private var lastMatKey = SIMD4<Float>(-9, -9, -9, -9), lastMatHour: Float = -9, lastTintAngle: Float = -99, lastTintStrength: Float = -1
     /// How high a spirit floats above its spot (rig units).
     var hoverHeight: Float = 0.06
     /// Your ember's color on the Spark's fire (SparkTint): hue rotation (radians) and saturation.
-    var tint: (angle: Float, saturation: Float) = (0, 1)
+    var tint: (angle: Float, saturation: Float, strength: Float) = (0, 1, 0)
     /// A stationary Flame stays exactly where it sits (no drifting, no leaning toward fingers or moths): only in-place life.
     var stationary = false
     init(base: String = "hero", footInset: Float = 0.044, reflection: Bool = true, glows: Bool = true, wander: Float = 0.06, spirit: Bool = false) {
@@ -183,8 +183,8 @@ final class HeroRig: FlameRig {
                                            translation: [0, Self.feetY - body.y, 0])
         let drag = body.hairDrag + SIMD2(wind * 0.012, 0)
         let key = SIMD4<Float>(mood, brightness, drag.x, drag.y)
-        let matChanged = simd_reduce_max(simd_abs(key - lastMatKey)) > 0.0015 || abs(hour - lastMatHour) > 0.02 || tint.angle != lastTintAngle
-        if matChanged { lastMatKey = key; lastMatHour = hour; lastTintAngle = tint.angle }
+        let matChanged = simd_reduce_max(simd_abs(key - lastMatKey)) > 0.0015 || abs(hour - lastMatHour) > 0.02 || tint.angle != lastTintAngle || tint.strength != lastTintStrength
+        if matChanged { lastMatKey = key; lastMatHour = hour; lastTintAngle = tint.angle; lastTintStrength = tint.strength }
         for e in [hero, reflection].compactMap({ $0 }) where matChanged {
             guard var comp = e.model, var m = comp.materials.first as? CustomMaterial else { continue }
             let b = (inScene && e === hero) ? brightness + 10 : brightness
@@ -193,6 +193,7 @@ final class HeroRig: FlameRig {
                 m.metallic = .init(floatLiteral: hour / 24)
                 m.roughness = .init(floatLiteral: (tint.angle / (2 * .pi)).truncatingRemainder(dividingBy: 1) + (tint.angle < 0 ? 1 : 0))   // hue turn 0…1
                 m.clearcoat = .init(floatLiteral: tint.saturation * 0.5)                                   // saturation ÷ 2
+                m.specular = .init(floatLiteral: tint.strength)                                         // how much color shows
             }
             comp.materials = [m]; e.model = comp
         }
