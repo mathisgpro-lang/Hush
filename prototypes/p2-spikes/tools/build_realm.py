@@ -108,6 +108,7 @@ L = px @ [0.299, 0.587, 0.114]
 smooth = nd.uniform_filter(np.abs(nd.sobel(L, axis=1)) + np.abs(nd.sobel(L, axis=0)), 5) < float(opt("--smooth", "0.09"))
 green = (h > 0.17) & (h < 0.45) & (sat > 0.3)
 water = (h > 0.45) & (h < 0.62) & (sat > 0.25) & (v > 0.3)
+if "--no-water" in opts: water = np.zeros_like(water)       # (e.g. the Library's blue mosaic floor is not water)
 band = opt("--water-band")
 if band:
     y0, y1 = [float(t) for t in band.split(",")]

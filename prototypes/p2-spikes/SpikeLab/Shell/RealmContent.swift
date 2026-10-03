@@ -23,6 +23,7 @@ enum RealmContent {
         case .grove: [[0.27, 0.40], [0.73, 0.40], [0.6, 0.29]]
         case .stillwater: [[0.27, 0.39], [0.69, 0.37], [0.6, 0.27]]
         case .highlands: [[0.27, 0.35], [0.74, 0.34], [0.62, 0.275]]
+        case .library: [[0.27, 0.36], [0.73, 0.36], [0.6, 0.28]]
         default: nil
         }
     }
@@ -43,10 +44,11 @@ enum RealmContent {
             Spot(id: "summit", title: "The Summit Observatory", line: "Far above, the old observatory watched the First Hearth. Its beacon is still dark.", symbol: "binoculars.fill", uv: [0.66, 0.775]),
         ]
         case .library: [
-            Spot(id: "shelf", title: "The Unread Shelf", line: "Books waiting for a reader. Each page you read lights another lamp between the shelves.", symbol: "books.vertical.fill", uv: [0.28, 0.4], action: "Read a few pages (a real Mind action)"),
-            Spot(id: "quill", title: "Quill", line: "An owl folded from living paper. “Every question you ask writes a new page. Ask more.”", symbol: "bird.fill", uv: [0.75, 0.5]),
-            Spot(id: "reading", title: "The Reading Room", line: "A fireplace among the shelves, cold for years. Reading relights it.", symbol: "flame.fill", uv: [0.36, 0.22]),
-            Spot(id: "lantern", title: "The Lantern of Thought", line: "Atop the tallest tower, the great lantern waits to be lit.", symbol: "lightbulb.max.fill", uv: [0.55, 0.8]),
+            Spot(id: "shelf", title: "The Unread Shelf", line: "Books waiting for a reader. Each page you read lights another lamp between the shelves.", symbol: "books.vertical.fill", uv: [0.25, 0.6], action: "Read a few pages (a real Mind action)"),
+            Spot(id: "quill", title: "Quill", line: "An owl folded from living paper. “Every question you ask writes a new page. Ask more.”", symbol: "bird.fill", uv: [0.73, 0.54]),
+            Spot(id: "reading", title: "The Reading Room", line: "A fireplace among the shelves, cold for years. Reading relights it.", symbol: "flame.fill", uv: [-0.3, 0.38]),
+            Spot(id: "lantern", title: "The Lantern of Thought", line: "Atop the tallest tower, the great lantern waits to be lit.", symbol: "lightbulb.max.fill", uv: [0.42, 0.8]),
+            Spot(id: "maproom", title: "The Map Room", line: "A great globe and star charts. Each subject or language you learn draws itself here, coast by coast.", symbol: "globe.europe.africa.fill", uv: [1.8, 0.49]),
         ]
         case .wilds: [
             Spot(id: "village", title: "The Empty Village", line: "Cottages with dark windows. Each time you help someone, one window lights up again.", symbol: "house.fill", uv: [0.7, 0.4], action: "Help someone (a real World action)"),

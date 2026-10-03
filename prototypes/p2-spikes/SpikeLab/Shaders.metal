@@ -132,6 +132,7 @@ float s2noise(float2 p) {
     return mix(mix(s2hash(i), s2hash(i + float2(1, 0)), u.x), mix(s2hash(i + float2(0, 1)), s2hash(i + float2(1, 1)), u.x), u.y);
 }
 float3 s2hourLight(float3 rgb, float2 uv, float skyM, float seaM, float hour, float sunU, float ratio, float t);   // (defined below)
+float s2night(float hour);
 float s2fbm(float2 p) { return s2noise(p) * 0.55 + s2noise(p * 2.1 + 3.7) * 0.3 + s2noise(p * 4.3 + 9.1) * 0.15; }
 
 // The painting comes alive: rippling water with sparkles in the lower part, falling water where the painting is
@@ -305,7 +306,13 @@ void groveRestore(realitykit::surface_parameters params)
     // The light of the hour, as in the Sanctuary (clearcoat_scale = hour / 24, specular_scale = the sun's u).
     float hourK = params.material_constants().clearcoat_scale();
     if (newRealm && hourK > 0.0) {
-        graded = s2hourLight(graded, uv, skyM, water * 0.3, hourK * 24.0, params.material_constants().specular_scale(), 0.37, t);
+        float hourNow = hourK * 24.0;
+        float3 before = graded;
+        // The sky keeps some of its painting by day (a lavender sky shouldn't turn into a white cloud).
+        graded = s2hourLight(graded, uv, skyM * 0.55, water * 0.3, hourNow, params.material_constants().specular_scale(), 0.37, t);
+        // Nights in a realm stay warm and alive (moonlit, not grey), even before its lights are relit.
+        float nightK = s2night(hourNow);
+        graded = mix(graded, before * float3(0.62, 0.62, 0.78), nightK * 0.4);
     }
     params.surface().set_base_color(half3(0));
     params.surface().set_emissive_color(half3(graded));

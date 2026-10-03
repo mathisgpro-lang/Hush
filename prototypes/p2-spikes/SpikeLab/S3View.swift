@@ -47,6 +47,7 @@ final class RealmScene {
     @ObservationIgnored private var flareOrder: Float = -1
     @ObservationIgnored private var flareAge: Float = 10
     @ObservationIgnored private var fliesRate: Float = -1
+    @ObservationIgnored private var clockReadAt: Float = 0
     @ObservationIgnored private var flight: (from: SIMD3<Float>, to: SIMD3<Float>, t: Float, lightTo: Float, flare: Float)?
     @ObservationIgnored var updates: EventSubscription?
     @ObservationIgnored var focus: SIMD3<Float>?
@@ -265,8 +266,12 @@ final class RealmScene {
         let chest = heroFeet + SIMD3(hero.standingX * heroScale, 0.13 * heroScale, 0.005)
         if let watch = life.update(dt: dt, flameAt: chest) { hero.look(at: watch) }
         hero.wind = life.wind
-        let comps = Calendar.current.dateComponents([.hour, .minute], from: Date())
-        hero.hour = Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60
+        if let i = CommandLine.arguments.firstIndex(of: "-hour"), i + 1 < CommandLine.arguments.count, let h = Float(CommandLine.arguments[i + 1]) {
+            hero.hour = h                                            // (test: a given hour, as at home)
+        } else if time - clockReadAt > 5 || clockReadAt == 0 {     // the real clock, read every few seconds
+            let comps = Calendar.current.dateComponents([.hour, .minute], from: Date())
+            hero.hour = Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60; clockReadAt = time
+        }
         hero.update(dt: dt)
         flareAge += dt
 
