@@ -127,7 +127,15 @@ water |= keepF[fl] & falls
 water = nd.binary_opening(water, iterations=1)
 lab2, n2 = nd.label(water); sz2 = nd.sum(water, lab2, range(1, n2 + 1))
 water = np.isin(lab2, np.where(sz2 > 80)[0] + 1)
-waterA = np.asarray(Image.fromarray((water * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(2))).astype(float) / 255
+# Sky: far away (almost no depth), in the upper part, not water. Alpha: water = 1, sky = 0.5 (the shader tells them apart).
+dd = np.asarray(Image.open(f"{A}/{rid}-world-depth.png").convert("L").resize((w2, h2), Image.BILINEAR)).astype(float) / 255
+sky = (dd < 0.035) & (Y < h2 * 0.62) & ~water & (v > 0.3)
+sky = nd.binary_opening(sky, iterations=2)
+lab3, n3 = nd.label(sky); sz3 = nd.sum(sky, lab3, range(1, n3 + 1))
+sky = np.isin(lab3, np.where(sz3 > 400)[0] + 1)
+amap = np.where(water, 1.0, np.where(sky, 0.5, 0.0))
+waterA = np.asarray(Image.fromarray((amap * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.2))).astype(float) / 255
+print("sky", round(sky.mean(), 3))
 out = np.dstack([order, core, pool, waterA]) * 255
 Image.fromarray(out.clip(0, 255).astype(np.uint8), "RGBA").save(f"{A}/{rid}-world-lights.png")
 json.dump([{"u": b[0] / w2, "v": 1 - b[1] / h2, "size": b[2]} for b in blobs], open(f"{A}/{rid}-lights.json", "w"))

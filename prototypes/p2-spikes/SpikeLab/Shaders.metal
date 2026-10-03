@@ -131,6 +131,7 @@ float s2noise(float2 p) {
     float2 u = f * f * (3.0 - 2.0 * f);
     return mix(mix(s2hash(i), s2hash(i + float2(1, 0)), u.x), mix(s2hash(i + float2(0, 1)), s2hash(i + float2(1, 1)), u.x), u.y);
 }
+float3 s2hourLight(float3 rgb, float2 uv, float skyM, float seaM, float hour, float sunU, float ratio, float t);   // (defined below)
 float s2fbm(float2 p) { return s2noise(p) * 0.55 + s2noise(p * 2.1 + 3.7) * 0.3 + s2noise(p * 4.3 + 9.1) * 0.15; }
 
 // The painting comes alive: rippling water with sparkles in the lower part, falling water where the painting is
@@ -238,18 +239,38 @@ void groveRestore(realitykit::surface_parameters params)
 
     // Water moves again from restoration level ~1. New realms carry their water mask in the lights map's alpha
     // (metallic_scale = 1); the Grove's older map has none, so its water is the bottom band.
-    float water = params.material_constants().metallic_scale() > 0.5
-        ? float(params.textures().custom().sample(s, tuv).a)
-        : 1.0 - smoothstep(0.12, 0.2, uv.y);
-    float flowing = smoothstep(0.15, 0.4, r);
+    // New realms (metallic_scale = 1) carry water and sky in the lights map's alpha: ~1 = water, ~0.5 = sky.
+    bool newRealm = params.material_constants().metallic_scale() > 0.5;
+    float aMap = float(params.textures().custom().sample(s, tuv).a);
+    float water = newRealm ? smoothstep(0.72, 0.9, aMap) : 1.0 - smoothstep(0.12, 0.2, uv.y);
+    float skyM = newRealm ? (smoothstep(0.3, 0.45, aMap) * (1.0 - smoothstep(0.55, 0.7, aMap))) : 0.0;
+    // Clouds billow: a slow drifting warp in the sky only.
+    float2 cw = float2(s2noise(float2(uv.x * 3.0 + t * 0.03, uv.y * 4.0)) - 0.5, s2noise(float2(uv.x * 2.0 - t * 0.02, uv.y * 3.0 + 5.0)) - 0.5);
+    float2 cloud = (cw * 0.012 + float2(sin(t * 0.05 + uv.y * 6.0) * 0.004, 0)) * skyM;
+    float flowing = newRealm ? 1.0 : smoothstep(0.15, 0.4, r);     // new realms: the water always moves
     float2 ripple = float2(sin(uv.y * 150.0 - t * 1.4 + sin(uv.x * 10.0 + t * 0.5)) * 0.002,
                            sin(uv.x * 60.0 + t * 1.0) * 0.001) * water * flowing;
     half4 base0 = params.textures().base_color().sample(s, tuv);
     float wind = params.material_constants().roughness_scale();
     float green = smoothstep(0.02, 0.12, float(base0.g) - max(float(base0.r) * 0.85, float(base0.b)));
     float2 sway = float2(sin(t * 2.0 + uv.y * 28.0 + uv.x * 7.0) * 0.003 * wind * green * (0.4 + uv.y), 0);
-    half4 col = params.textures().base_color().sample(s, tuv + ripple + sway);
+    // Falling water (pale, inside the water mask) races down instead of rippling sideways.
+    float paleW = water * smoothstep(0.62, 0.8, dot(float3(base0.rgb), float3(0.299, 0.587, 0.114)))
+                * (1.0 - smoothstep(0.15, 0.3, float(max(base0.r, max(base0.g, base0.b)) - min(base0.r, min(base0.g, base0.b)))));
+    float2 flow = float2((s2noise(float2(uv.x * 70.0, uv.y * 30.0 + t * 4.0)) - 0.5) * 0.0015,
+                         (s2noise(float2(uv.x * 50.0, uv.y * 25.0 + t * 3.2)) - 0.5) * 0.004) * paleW;
+    // Foliage breathes all the time and bends further when a gust rolls across (a travelling wave), as at home.
+    float gust = 0.5 + 0.5 * sin(uv.x * 7.0 - t * 1.4);
+    float sw = sin(t * 1.7 + uv.y * 14.0 + uv.x * 6.0) * 0.6 + sin(t * 3.1 + uv.y * 31.0) * 0.4;
+    float2 breeze = float2(sw * 0.0022 * green * (0.3 + uv.y) * (0.35 + wind * 1.3 * gust), sw * 0.0006 * green) * (newRealm ? 1.0 : 0.0);
+    half4 col = params.textures().base_color().sample(s, tuv + ripple * (1.0 - paleW) + sway + flow + breeze + cloud);
     float3 rgb = float3(col.rgb);
+    // Waterfalls: bright streaks racing down, glints on still water.
+    float colI = floor(uv.x * 260.0);
+    float streak = fract(uv.y * 18.0 + t * (1.6 + fract(sin(colI * 12.9) * 43758.5) * 0.8));
+    rgb += float3(0.95, 0.97, 1.0) * paleW * smoothstep(0.75, 1.0, streak) * 0.3;
+    float glint = smoothstep(0.93, 1.0, s2noise(float2(uv.x * 160.0 + sin(t * 0.25) * 3.0, uv.y * 420.0 - t * 1.6)));
+    rgb += float3(1.0, 0.88, 0.7) * glint * water * (1.0 - paleW) * (0.5 + 0.5 * sin(t * 6.0 + uv.x * 40.0)) * 0.6;
 
     // Lanterns (custom texture: R = order of the nearest lantern, G = the lantern itself, B = its pool of light).
     // R (order) must not be interpolated between lanterns or at its edge, so it's read with nearest filtering.
@@ -264,10 +285,11 @@ void groveRestore(realitykit::surface_parameters params)
     // The Grove is always vivid (Mathis: never grey); while it sleeps, it is only a little dimmer and cooler, and
     // its lanterns are dark. Restoring it warms it up and lights them one by one.
     float localLight = lit * pool;
-    float sat = max(0.8 + 0.25 * smoothstep(0.0, 0.9, r), localLight);
+    float sat = max((newRealm ? 0.95 : 0.8) + 0.2 * smoothstep(0.0, 0.9, r), localLight);
     float3 graded = mix(float3(lum), rgb, sat);
     graded *= mix(float3(0.86, 0.9, 1.0), float3(1.04, 1.02, 0.98), smoothstep(0.0, 0.8, r));
-    graded *= max(0.8 + 0.25 * smoothstep(0.0, 0.8, r), 0.8 + 0.3 * localLight);
+    float base = newRealm ? 0.93 : 0.8;
+    graded *= max(base + 0.12 * smoothstep(0.0, 0.8, r), base + 0.2 * localLight);
     // Unlit lanterns dim their own painted glow; lit ones shine (flickering, flaring right after relighting).
     float3 dark = rgb * float3(0.32, 0.3, 0.34);          // an unlit lantern: its own colors, just without fire
     float3 shining = rgb * flicker * 1.12 + float3(1.0, 0.8, 0.45) * flare * 1.4;
@@ -276,10 +298,15 @@ void groveRestore(realitykit::surface_parameters params)
     float m0 = 0.0;
 
     // Mist: thick when Hushed, lifting with restoration; vitality thickens or thins it day to day.
-    float mistAmount = (1.0 - smoothstep(0.0, 0.85, r)) * 0.14 + (1.0 - vitality) * 0.25;   // a light veil, never a fog
+    float mistAmount = (1.0 - smoothstep(0.0, 0.85, r)) * (newRealm ? 0.06 : 0.14) + (1.0 - vitality) * 0.25;   // a light veil, never a fog
     float m = s2fbm(uv * float2(3.0, 5.0) + float2(t * 0.015, 0)) * mistAmount * (1.0 - localLight * 0.8) + m0;
     graded = mix(graded, float3(0.6, 0.63, 0.7), m);
 
+    // The light of the hour, as in the Sanctuary (clearcoat_scale = hour / 24, specular_scale = the sun's u).
+    float hourK = params.material_constants().clearcoat_scale();
+    if (newRealm && hourK > 0.0) {
+        graded = s2hourLight(graded, uv, skyM, water * 0.3, hourK * 24.0, params.material_constants().specular_scale(), 0.37, t);
+    }
     params.surface().set_base_color(half3(0));
     params.surface().set_emissive_color(half3(graded));
     params.surface().set_opacity(1.0);

@@ -216,6 +216,18 @@ final class RealmScene {
 
         try await life.build()
         root.addChild(life.root)
+
+        // Soft glowing motes drifting close to you, in front of the whole realm (depth and air), as at home.
+        let motes = Entity()
+        var mp = ParticleEmitterComponent()
+        mp.emitterShape = .box; mp.emitterShapeSize = [0.5, 0.9, 0.25]
+        mp.emissionDirection = [0.3, 1, 0]; mp.speed = 0.012; mp.speedVariation = 0.008
+        mp.mainEmitter.birthRate = 5; mp.mainEmitter.lifeSpan = 7; mp.mainEmitter.lifeSpanVariation = 2
+        mp.mainEmitter.size = 0.011; mp.mainEmitter.sizeVariation = 0.007; mp.mainEmitter.blendMode = .additive
+        mp.mainEmitter.color = .evolving(start: .single(UIColor(red: 1, green: 0.85, blue: 0.6, alpha: 0.9)), end: .single(UIColor(red: 1, green: 0.7, blue: 0.4, alpha: 0.6)))
+        mp.mainEmitter.opacityCurve = .gradualFadeInOut
+        motes.components.set(mp); motes.position = [0, -0.05, -0.55]
+        root.addChild(motes)
         camera.camera.fieldOfViewInDegrees = Self.fov
         root.addChild(camera)
     }
@@ -277,9 +289,11 @@ final class RealmScene {
         if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
             m.custom.value = [r, vitality, flareOrder, flareAge]
             m.roughness = .init(floatLiteral: abs(life.wind))
+            m.clearcoat = .init(floatLiteral: max(0.0001, hero.hour / 24))   // the light of the hour (new realms)
+            m.specular = .init(floatLiteral: hx(0.5))                          // where the sun sits
             comp.materials = [m]; painting.model = comp
         }
-        let rate: Float = r < 0.25 ? 0 : ((r - 0.25) * 18).rounded()
+        let rate: Float = (r < 0.25 ? 2 : 2 + (r - 0.25) * 18).rounded()      // always a few: the realm is never still
         if rate != fliesRate, let flies, var f = flies.components[ParticleEmitterComponent.self] {   // only on change (smooth)
             fliesRate = rate; f.mainEmitter.birthRate = rate; flies.components.set(f)
         }

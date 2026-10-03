@@ -36,8 +36,13 @@ struct HomeView: View {
             ZStack {
                 // The Sanctuary itself is drawn by the app's one 3D view, underneath (WorldLayer): this layer only
                 // catches touches (tap your Spark, look around).
-                Color.clear.contentShape(Rectangle()).ignoresSafeArea()
-                    .onTapGesture { director?.tapped() }
+                // Tap the world itself: a realm's places (its Keeper, its landmarks) answer where they're painted;
+                // anywhere else, your Spark reacts. No floating markers (Mathis).
+                GeometryReader { full in
+                    Color.clear.contentShape(Rectangle())
+                        .onTapGesture(coordinateSpace: .local) { p in tappedWorld(at: p, in: full.size) }
+                }
+                .ignoresSafeArea()
 
                 // The quests you took, waiting in the world as small glowing objects (they stay attached to their
                 // spot when you look around). Tap one to do it.
@@ -45,13 +50,6 @@ struct HomeView: View {
                     // Redrawn every frame only while quests are out and nothing covers them.
                     TimelineView(.animation(minimumInterval: nil, paused: (chosen.isEmpty && world == .sanctuary) || model.overlayOpen || !built)) { _ in
                         ZStack {
-                            // The realm's own places to explore (its Keeper, its landmarks), only in realms.
-                            if focused == nil {
-                                ForEach(RealmContent.spots(world)) { s in
-                                    Button { focus(s) } label: { SpotMarker(spot: s) }
-                                        .position(scene.screenPoint(world: s.uv, in: full.size))
-                                }
-                            }
                             ForEach(chosen) { call in
                                 Button { withAnimation(.sheet) { open = call } } label: { QuestObject(call: call) }
                                     .position(scene.screenPoint(world: spotFor(call), in: full.size))
@@ -120,17 +118,27 @@ struct HomeView: View {
         director = d
     }
 
-    /// Explore a realm's place: the camera glides to it and it tells its story.
+    /// A tap on the world: the nearest of the realm's places (within reach) tells its story; otherwise your Spark reacts.
+    private func tappedWorld(at p: CGPoint, in size: CGSize) {
+        if focused != nil { unfocus(); return }
+        let near = RealmContent.spots(world).map { s -> (Spot, CGFloat) in
+            let c = scene.screenPoint(world: s.uv, in: size); return (s, hypot(p.x - c.x, p.y - c.y))
+        }.min { $0.1 < $1.1 }
+        if let (s, d) = near, d < 70 { focus(s) } else { director?.tapped() }
+    }
+
+    /// Explore a realm's place: the view glides toward it, staying inside the painting (no edge ever), and it
+    /// tells its story.
     private func focus(_ s: Spot) {
         guard let rs = realmScene else { return }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        rs.panTarget = .zero
-        rs.focus = rs.spot(s.uv.x, s.uv.y)
+        let target = rs.spot(s.uv.x, s.uv.y)
+        rs.focus = nil
+        rs.panTarget = simd_clamp(SIMD2(target.x, target.y) * 0.8, -rs.panLimit, rs.panLimit)
         rs.hero.look(at: [s.uv.x < 0.5 ? -0.7 : 0.7, s.uv.y > 0.36 ? 0.5 : -0.3])
         withAnimation(.sheet) { focused = s }
     }
     private func unfocus() {
-        realmScene?.focus = nil
         realmScene?.hero.look(at: nil)
         withAnimation(.sheet) { focused = nil }
     }
@@ -239,7 +247,7 @@ struct HomeView: View {
     }
 
     @ViewBuilder private var hint: some View {
-        if model.tour != nil {
+        if model.tour != nil || focused != nil {
             EmptyView()
         } else if chosen.isEmpty && model.calls.contains(where: { !$0.done }) {
             Button { withAnimation(.sheet) { satchelOpen = true } } label: {
@@ -254,7 +262,7 @@ struct HomeView: View {
                 .foregroundStyle(.white)
             }
             .padding(.bottom, 10)
-        } else if let r = model.newHere.first(where: { $0 != world }) {
+        } else if focused == nil, let r = model.newHere.first(where: { $0 != world }) {
             Button { withAnimation(.screen) { model.go(.map) } } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "sparkles").foregroundStyle(r.color)
