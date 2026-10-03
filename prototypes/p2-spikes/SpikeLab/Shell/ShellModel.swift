@@ -301,7 +301,7 @@ final class ShellModel {
     func go(_ s: Screen) {
         tappedAt = CACurrentMediaTime()
         defer {
-            if s == .map, mapBuilt { mapScene.arrive(at: flameAt) }         // over where you are, the dive undone
+            if s == .map, mapBuilt { mapScene.arrive(at: flameAt); mapScene.refresh(open: open) }   // over where you are; newly opened realms wake
             if case .realm(let r) = s, realmsBuilt.contains(r) { realmScene(r).focus = nil; realmScene(r).panTarget = .zero }
             showActive()
             firstFrame(isBuilt(activeWorld) ? "\(activeWorld) (shown)" : "\(activeWorld) (building)")

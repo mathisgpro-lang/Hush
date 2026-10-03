@@ -24,6 +24,12 @@ final class MapScene {
     private var borderClouds: [(e: Entity, phase: Float, base: SIMD3<Float>)] = []
     private var pathLights: [(e: Entity, phase: Float)] = []
     private var beacons: [(e: Entity, phase: Float)] = []
+    private var mistRealm: [RealmID] = [], beaconRealm: [RealmID] = []
+    /// A realm opened since the map was built: its mist lifts and its beacon lights.
+    func refresh(open: Set<RealmID>) {
+        for (i, r) in mistRealm.enumerated() { hushMists[i].e.isEnabled = !open.contains(r) }
+        for (i, r) in beaconRealm.enumerated() { beacons[i].e.isEnabled = open.contains(r) }
+    }
     private var spark: Entity?
     private var sparkBase = SIMD3<Float>(0, 0, 0)
     private var time: Float = 0
@@ -176,13 +182,15 @@ final class MapScene {
         }
 
         // The Hush: soft grey mist resting over the realms not opened yet (nothing destroyed, only quiet).
-        for r in roadOrder where !open.contains(r) {
+        // Every realm gets its mist and its beacon; which one shows follows what's open (updated on each visit).
+        for r in roadOrder where r != .sanctuary {
             let c = uv(r.mapPoint)
             for j in 0..<2 {
                 let base = spot(c.x, c.y, lift: 0.04 + Float(j) * 0.02) + SIMD3(Float(j) * 0.03 - 0.015, Float(j) * 0.02, 0)
                 let e = card(cloudTex, [0.32, 0.17], tint: UIColor(red: 0.72, green: 0.72, blue: 0.78, alpha: 0.8))
                 e.position = base
-                root.addChild(e); hushMists.append((e, Float(j) * 2.1 + Float(c.y) * 9, base))
+                e.isEnabled = !open.contains(r)
+                root.addChild(e); hushMists.append((e, Float(j) * 2.1 + Float(c.y) * 9, base)); mistRealm.append(r)
             }
         }
 
@@ -200,11 +208,12 @@ final class MapScene {
         }
 
         // A beacon of light on each open realm, in its color.
-        for r in roadOrder where open.contains(r) {
+        for r in roadOrder {
             let c = uv(r.mapPoint)
             let e = card(glowTex, [0.16, 0.16], tint: UIColor(r.color).withAlphaComponent(0.85))
             e.position = spot(c.x, c.y, lift: 0.03)
-            root.addChild(e); beacons.append((e, Float(c.y) * 7))
+            e.isEnabled = open.contains(r)
+            root.addChild(e); beacons.append((e, Float(c.y) * 7)); beaconRealm.append(r)
         }
 
         // Your Spark, hovering where you are.

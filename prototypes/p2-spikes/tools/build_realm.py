@@ -44,7 +44,9 @@ if all(os.path.exists(p) for p in panels):
     total = W * 3 - ovL - ovR
     canvas = np.zeros((H, total, 3)); weight = np.zeros((H, total, 1))
     def put(img, x0, dy, rl, rr):
-        a = np.roll(np.asarray(img).astype(float), dy, axis=0)
+        a = np.asarray(img).astype(float)
+        if dy > 0: a = np.concatenate([np.repeat(a[:1], dy, 0), a[:-dy]], 0)       # shift, repeating the edge row
+        elif dy < 0: a = np.concatenate([a[-dy:], np.repeat(a[-1:], -dy, 0)], 0)   # (rolling wrapped the bottom to the top)
         w = np.ones((H, W, 1))
         if rl: w[:, :rl, 0] = np.linspace(0, 1, rl)[None, :]
         if rr: w[:, W - rr:, 0] = np.linspace(1, 0, rr)[None, :]

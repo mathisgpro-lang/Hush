@@ -14,7 +14,11 @@ struct BookView: View {
 
     private static let order = ["sanctuary", "emberlands", "grove", "stillwater", "highlands", "library", "wilds", "forge", "veil"]
     private func worldName(_ w: String) -> String { w == "emberlands" ? "The Emberlands" : (RealmID(rawValue: w)?.name ?? w) }
-    private func vignette(_ w: String) -> String { w == "emberlands" ? "world-map.png" : w == "grove" ? "grove-paint.png" : "home-paint.png" }
+    private func vignette(_ w: String) -> String {
+        if w == "emberlands" { return "world-map.png" }
+        if w == "sanctuary" { return "home-paint.png" }
+        return UIImage(named: "\(w)-world-paint.png") != nil ? "\(w)-world-paint.png" : "home-paint.png"     // each realm's own painting
+    }
     /// The vignettes, shrunk once to page size (resizing a big painting on every frame slowed the page turns).
     private static var thumbs: [String: UIImage] = [:]
     static func thumb(_ name: String) -> UIImage {
