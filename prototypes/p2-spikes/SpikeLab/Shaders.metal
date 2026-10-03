@@ -236,8 +236,11 @@ void groveRestore(realitykit::surface_parameters params)
     constexpr sampler s(address::clamp_to_edge, filter::linear);
     float2 tuv = float2(uv.x, 1.0 - uv.y);
 
-    // Water moves again from restoration level ~1.
-    float water = 1.0 - smoothstep(0.12, 0.2, uv.y);
+    // Water moves again from restoration level ~1. New realms carry their water mask in the lights map's alpha
+    // (metallic_scale = 1); the Grove's older map has none, so its water is the bottom band.
+    float water = params.material_constants().metallic_scale() > 0.5
+        ? float(params.textures().custom().sample(s, tuv).a)
+        : 1.0 - smoothstep(0.12, 0.2, uv.y);
     float flowing = smoothstep(0.15, 0.4, r);
     float2 ripple = float2(sin(uv.y * 150.0 - t * 1.4 + sin(uv.x * 10.0 + t * 0.5)) * 0.002,
                            sin(uv.x * 60.0 + t * 1.0) * 0.001) * water * flowing;

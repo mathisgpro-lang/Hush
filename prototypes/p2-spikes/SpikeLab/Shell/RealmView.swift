@@ -20,7 +20,9 @@ let groveSpots: [Spot] = [
 struct RealmView: View {
     let model: ShellModel
     let realm: RealmID
-    private var scene: GroveScene { model.grove }
+    private var scene: RealmScene { model.realmScene(realm) }
+    private var spots: [Spot] { RealmContent.spots(realm) }
+    private var built: Bool { model.realmsBuilt.contains(realm) }
     @State private var meter = FrameMeter()
     @State private var director: AliveDirector?
     @State private var focused: Spot?
@@ -41,7 +43,7 @@ struct RealmView: View {
                     GeometryReader { full in
                         TimelineView(.animation(minimumInterval: nil, paused: model.overlayOpen)) { _ in
                             ZStack {
-                                ForEach(groveSpots) { s in
+                                ForEach(spots) { s in
                                     Button { focus(s) } label: { SpotMarker(spot: s) }
                                         .position(scene.screenPoint(s.uv.x, s.uv.y, in: full.size))
                                         .transition(.scale.combined(with: .opacity))
@@ -72,14 +74,16 @@ struct RealmView: View {
         }
         .onAppear { meter.start(); setUpWorld() }
         .onChange(of: bookOpen) { _, covered in model.overlayOpen = covered }
-        .onChange(of: model.groveBuilt) { _, _ in setUpWorld() }
+        .onChange(of: built) { _, _ in setUpWorld() }
         .onDisappear { meter.stop(); director?.stop(); model.overlayOpen = false }
     }
 
     private func setUpWorld() {
-        guard model.groveBuilt, director == nil else { return }
+        guard built, director == nil else { return }
         scene.hero.tint = SparkTint.shift(model.emberID)       // your ember's color
-        scene.heartDepth = max(scene.heartDepth, 6)            // prototype: a Grove that has started to wake
+        // How awake the realm is comes from your real actions in its pillar (each one relights a few of its lights).
+        let lit = Float(model.journey.light(for: realm)) * 3
+        scene.heartDepth = max(scene.heartDepth, realm == .grove ? max(6, lit) : lit)   // (prototype: the Grove starts a little awake)
         let d = AliveDirector(seed: 9, meter: meter)
         d.attach(scene.hero, tempo: 0.55)
         director = d
@@ -92,13 +96,13 @@ struct RealmView: View {
             .onChanged { v in
                 guard focused == nil else { return }
                 if dragStart == nil { dragStart = scene.pan; scene.fingerDown = true }
-                let ppm = Float(size.height) / (2 * GroveScene.distance * tan(GroveScene.fov / 2 * .pi / 180))
+                let ppm = Float(size.height) / (2 * RealmScene.distance * tan(RealmScene.fov / 2 * .pi / 180))
                 let raw = (dragStart ?? .zero) + SIMD2(-Float(v.translation.width), Float(v.translation.height)) / ppm
                 scene.panTarget = SIMD2(EdgeSafety.rubberBand(raw.x, scene.panLimit.x), EdgeSafety.rubberBand(raw.y, scene.panLimit.y))
             }
             .onEnded { v in
                 guard focused == nil else { return }
-                let ppm = Float(size.height) / (2 * GroveScene.distance * tan(GroveScene.fov / 2 * .pi / 180))
+                let ppm = Float(size.height) / (2 * RealmScene.distance * tan(RealmScene.fov / 2 * .pi / 180))
                 let projected = (dragStart ?? .zero) + SIMD2(-Float(v.predictedEndTranslation.width), Float(v.predictedEndTranslation.height)) / ppm
                 scene.panTarget = simd_clamp(projected, -scene.panLimit, scene.panLimit)
                 dragStart = nil; scene.fingerDown = false
@@ -121,7 +125,7 @@ struct RealmView: View {
             VStack(alignment: .trailing, spacing: 2) {
                 Text(realm.name).font(.system(size: 20, design: .serif)).foregroundStyle(.white)
                 let level = Restoration.level(depth: scene.heartDepth)
-                Text("\(realm.pillar) · \(Restoration.names[level]) · \(scene.litCount) lanterns lit")
+                Text("\(realm.pillar) · \(Restoration.names[level]) · \(scene.litCount) \(RealmContent.lights(realm)) lit")
                     .font(.system(size: 12, design: .serif)).foregroundStyle(realm.color)
             }
             .padding(.horizontal, 14).padding(.vertical, 8).background(RoundedRectangle(cornerRadius: 16).fill(.black.opacity(0.5)))

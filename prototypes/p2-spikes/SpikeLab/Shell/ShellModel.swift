@@ -108,34 +108,57 @@ struct Call: Identifiable, Equatable {
 
 @MainActor @Observable
 final class ShellModel {
-    var screen: Screen = CommandLine.arguments.contains("-grove") ? .realm(.grove) : CommandLine.arguments.contains("-map") ? .map : (CommandLine.arguments.contains("-skipintro") ? .home : .intro)
+    var screen: Screen = ShellModel.realmArg != nil ? .home : (CommandLine.arguments.contains("-grove") ? .realm(.grove) : CommandLine.arguments.contains("-map") ? .map : (CommandLine.arguments.contains("-skipintro") ? .home : .intro))
+    private static var realmArg: RealmID? {
+        guard let i = CommandLine.arguments.firstIndex(of: "-realm"), i + 1 < CommandLine.arguments.count else { return nil }
+        return RealmID(rawValue: CommandLine.arguments[i + 1])
+    }
     var interest: String = "Be closer to people I love"
-    var open: Set<RealmID> = [.sanctuary, .grove]
+    /// Open realms: home, the Grove (Act I), and every realm whose pillar you've lit with a real action (and whose world
+    /// is painted). Beyond the Veil never opens in the prototype. (-allopen: everything painted, for testing.)
+    var open: Set<RealmID> {
+        var s: Set<RealmID> = [.sanctuary, .grove]
+        for r in Self.builtRealms where CommandLine.arguments.contains("-allopen") || journey.light(for: r) > 0 { s.insert(r) }
+        return s
+    }
     var newHere: Set<RealmID> = [.grove]              // the glow + badge: "something new waits here"
     var flameAt: RealmID = .sanctuary
     var calls: [Call] = []
     var light: Int = 0                                // today's light sent into the world
     /// What you've lived: the Book writes itself from it; Your Flame sums it up (decisions 128–129).
     let journey = Journey()
-    /// The three worlds, built once and kept alive: going back to a screen shows it instantly instead of reloading
-    /// its paintings (that reload was the biggest lag). Each screen adds its world's root to its view.
+    /// The worlds, built once and kept alive: going back to a screen shows it instantly instead of reloading its
+    /// paintings (that reload was the biggest lag). One engine (RealmScene) runs every realm.
     let sanctuary = SanctuaryScene()
     let mapScene = MapScene()
-    let grove = GroveScene()
+    @ObservationIgnored private var realmScenes: [RealmID: RealmScene] = [:]
+    func realmScene(_ r: RealmID) -> RealmScene {
+        if let s = realmScenes[r] { return s }
+        let s = RealmScene(realm: r); realmScenes[r] = s; return s
+    }
+    var grove: RealmScene { realmScene(.grove) }
+    /// Realms that have their painted world in the app (the others only exist on the map for now).
+    static let builtRealms: Set<RealmID> = {
+        let all: [RealmID] = [.grove, .stillwater, .highlands, .library, .wilds, .forge]
+        var s: Set<RealmID> = [.grove]
+        for r in all where Bundle.main.url(forResource: r.rawValue + "-layout", withExtension: "json") != nil { s.insert(r) }
+        return s
+    }()
     /// A sheet (satchel, Book, Your Flame, a quest card) covers the world: its per-frame work pauses so scrolling
     /// gets the whole phone (the water, fire and sky keep moving: they run on the graphics chip).
     var overlayOpen = false
     var sanctuaryBuilt = false
     var mapBuilt = false
-    var groveBuilt = false
-    /// One 3D view for the whole app (like a game): all three worlds live under this root; switching screens only
+    var realmsBuilt: Set<RealmID> = []
+    var groveBuilt: Bool { realmsBuilt.contains(.grove) }
+    /// One 3D view for the whole app (like a game): every world lives under this root; switching screens only
     /// shows one and hides the others, so nothing is ever rebuilt or re-created.
     @ObservationIgnored let worldRoot = Entity()
     @ObservationIgnored var updates: EventSubscription?
     @ObservationIgnored private var builds: [World: Task<Void, Never>] = [:]
-    enum World { case sanctuary, map, grove }
+    enum World: Hashable { case sanctuary, map, realm(RealmID) }
     var activeWorld: World {
-        switch screen { case .map: .map; case .realm: .grove; default: .sanctuary }
+        switch screen { case .map: .map; case .realm(let r): .realm(r); default: .sanctuary }
     }
 
     /// Builds a world once (or waits for the build already running), then parks it hidden under the root.
@@ -150,8 +173,9 @@ final class ShellModel {
                 if (try? await mapScene.build(open: open, flameAt: flameAt, lastOpenRoadIndex: lastOpen, ember: emberID)) != nil {
                     mapScene.root.isEnabled = false; worldRoot.addChild(mapScene.root); mapBuilt = true
                 }
-            case .grove where !groveBuilt:
-                if (try? await grove.build()) != nil { grove.root.isEnabled = false; worldRoot.addChild(grove.root); groveBuilt = true }
+            case .realm(let r) where !realmsBuilt.contains(r):
+                let sc = realmScene(r)
+                if (try? await sc.build()) != nil { sc.root.isEnabled = false; worldRoot.addChild(sc.root); realmsBuilt.insert(r) }
             default: break
             }
         }
@@ -164,10 +188,12 @@ final class ShellModel {
         let a = activeWorld
         sanctuary.root.isEnabled = a == .sanctuary && sanctuaryBuilt
         mapScene.root.isEnabled = a == .map && mapBuilt
-        grove.root.isEnabled = a == .grove && groveBuilt
+        for (r, sc) in realmScenes { sc.root.isEnabled = a == .realm(r) && realmsBuilt.contains(r) }
         if !isBuilt(a) { Task { @MainActor in await ensure(a); showActive() } }
     }
-    func isBuilt(_ w: World) -> Bool { switch w { case .sanctuary: sanctuaryBuilt; case .map: mapBuilt; case .grove: groveBuilt } }
+    func isBuilt(_ w: World) -> Bool {
+        switch w { case .sanctuary: sanctuaryBuilt; case .map: mapBuilt; case .realm(let r): realmsBuilt.contains(r) }
+    }
 
     /// Every frame: only the world on screen moves.
     @ObservationIgnored private var tickCost: (sum: Double, n: Int, worst: Double) = (0, 0, 0)
@@ -198,7 +224,7 @@ final class ShellModel {
         switch activeWorld {
         case .sanctuary: if sanctuaryBuilt { sanctuary.update(dt: dt) }
         case .map: if mapBuilt { mapScene.update(dt: dt) }
-        case .grove: if groveBuilt { grove.update(dt: dt) }
+        case .realm(let r): if realmsBuilt.contains(r) { realmScene(r).update(dt: dt) }
         }
     }
 
@@ -208,7 +234,7 @@ final class ShellModel {
             try? await Task.sleep(for: .seconds(2))
             await ensure(.map)
             try? await Task.sleep(for: .seconds(1))
-            await ensure(.grove)
+            await ensure(.realm(.grove))
         }
     }
     /// The ember you chose in the introduction: your Spark burns in its color (Mathis, 2026-10-03).
@@ -276,7 +302,7 @@ final class ShellModel {
         tappedAt = CACurrentMediaTime()
         defer {
             if s == .map, mapBuilt { mapScene.arrive(at: flameAt) }         // over where you are, the dive undone
-            if case .realm = s, groveBuilt { grove.focus = nil; grove.panTarget = .zero }
+            if case .realm(let r) = s, realmsBuilt.contains(r) { realmScene(r).focus = nil; realmScene(r).panTarget = .zero }
             showActive()
             firstFrame(isBuilt(activeWorld) ? "\(activeWorld) (shown)" : "\(activeWorld) (building)")
         }

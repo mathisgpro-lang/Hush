@@ -23,6 +23,13 @@ struct AppShellView: View {
             }
         }
         .buttonStyle(PressableStyle())          // every button reacts the instant it's touched
+        .task {                                  // (-realm X) test: travel to a realm the way a user does, through home
+            guard let i = CommandLine.arguments.firstIndex(of: "-realm"), i + 1 < CommandLine.arguments.count,
+                  let r = RealmID(rawValue: CommandLine.arguments[i + 1]) else { return }
+            while !model.sanctuaryBuilt { try? await Task.sleep(for: .milliseconds(200)) }
+            try? await Task.sleep(for: .milliseconds(600))
+            model.go(.realm(r))
+        }
         .task {                                  // (-reacttest) home → map → Grove → map → home, timing each change
             guard CommandLine.arguments.contains("-reacttest") else { return }
             for s in [Screen.map, .realm(.grove), .map, .home, .map, .home] {

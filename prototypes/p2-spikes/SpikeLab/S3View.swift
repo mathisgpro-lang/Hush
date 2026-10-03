@@ -29,7 +29,7 @@ enum Restoration {
 }
 
 @MainActor @Observable
-final class GroveScene {
+final class RealmScene {
     @ObservationIgnored let root = Entity()
     @ObservationIgnored let camera = PerspectiveCamera()
     /// The Spark (decision 125), hovering over the Grove's stone circle.
@@ -64,9 +64,17 @@ final class GroveScene {
 
     static let distance: Float = 1.2, fov: Float = 40
 
+    /// Which realm this is (one engine for every realm: the Grove, the Stillwater, the Highlands…). Its assets are
+    /// named after it: <id>-world-paint/-lights/-depth.png and <id>-layout.json (tools/build_realm.py).
+    @ObservationIgnored let realm: RealmID
+    init(realm: RealmID = .grove) { self.realm = realm }
+    private var id: String { realm.rawValue }
+    /// Where the Spark hovers (the center of the realm's stone circle, painting uv, v up).
+    @ObservationIgnored private var circleUV = SIMD2<Float>(0.5, 0.335)
+
     /// The swipeable Grove (iteration 2): Codex's side panels stitched around the painting (tools/build_grove.py).
     @ObservationIgnored private lazy var layout: (total: Float, homeX0: Float, homeW: Float)? = {
-        guard let url = Bundle.main.url(forResource: "grove-layout", withExtension: "json"),
+        guard let url = Bundle.main.url(forResource: "\(id)-layout", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let d = try? JSONSerialization.jsonObject(with: data) as? [String: Double] else { return nil }
         return (Float(d["total"]!), Float(d["homeX0"]!), Float(d["homeW"]!))
@@ -95,9 +103,15 @@ final class GroveScene {
     func build() async throws {
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
         let wide = layout != nil
-        let tex = try await TextureResource(named: wide ? "grove-world-paint.png" : "grove-paint.png")
-        let lanternTex = try await TextureResource(named: wide ? "grove-world-lanterns.png" : "grove-lanterns.png", options: .init(semantic: .raw))
-        if let img = UIImage(named: wide ? "grove-world-depth.png" : "grove-depth.png")?.cgImage {
+        let tex = try await TextureResource(named: wide ? "\(id)-world-paint.png" : "\(id)-paint.png")
+        // New realms carry their lights and their water in one map (RGBA); the Grove's older map has no water channel.
+        let hasWater = UIImage(named: "\(id)-world-lights.png") != nil
+        let lanternTex = try await TextureResource(named: hasWater ? "\(id)-world-lights.png" : (wide ? "\(id)-world-lanterns.png" : "\(id)-lanterns.png"), options: .init(semantic: .raw))
+        if let url = Bundle.main.url(forResource: "\(id)-layout", withExtension: "json"), let data = try? Data(contentsOf: url),
+           let d = try? JSONSerialization.jsonObject(with: data) as? [String: Double], let cu = d["circleU"], let cv = d["circleV"] {
+            circleUV = [Float(cu), Float(cv)]
+        }
+        if let img = UIImage(named: wide ? "\(id)-world-depth.png" : "\(id)-depth.png")?.cgImage {
             var px = [UInt8](repeating: 0, count: img.width * img.height)
             let ctx = CGContext(data: &px, width: img.width, height: img.height, bitsPerComponent: 8, bytesPerRow: img.width,
                                 space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue)!
@@ -135,7 +149,7 @@ final class GroveScene {
             let a = UInt32(j * (nx + 1) + i), b = a + 1, c = a + UInt32(nx + 1), d = c + 1
             idx += [a, b, d, a, d, c]
         } }
-        var desc = MeshDescriptor(name: "grove")
+        var desc = MeshDescriptor(name: id)
         desc.positions = .init(pos); desc.textureCoordinates = .init(uvs); desc.primitives = .triangles(idx)
         var unlit = UnlitMaterial()
         unlit.color = .init(tint: .white, texture: .init(tex))
@@ -144,13 +158,14 @@ final class GroveScene {
             var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: "groveRestore", in: lib))
             m.custom.texture = .init(lanternTex)
             m.custom.value = [0, 1, -1, 10]
+            m.metallic = .init(floatLiteral: hasWater ? 1 : 0)      // 1 = the water mask is in the lights map's alpha
             material = m
         }
         let p = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
         root.addChild(p); painting = p
 
         // Lantern positions (in front of the relief by a hair) and their relight order, from tools' detection.
-        if let url = Bundle.main.url(forResource: "grove-lanterns", withExtension: "json"),
+        if let url = Bundle.main.url(forResource: "\(id)-lights", withExtension: "json") ?? Bundle.main.url(forResource: "\(id)-lanterns", withExtension: "json"),
            let data = try? Data(contentsOf: url),
            let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Double]] {
             let n = list.count
@@ -188,7 +203,7 @@ final class GroveScene {
         }
 
         // The Flame on the stone circle.
-        let circle = point(hx(0.5), 0.335, nearer: 0.012)
+        let circle = point(hx(circleUV.x), circleUV.y, nearer: 0.012)
         try await hero.build()
         let k = -circle.z / Self.distance
         heroScale = 0.105 * h * k / 0.27                            // the Spark's size, as in the Sanctuary
@@ -309,7 +324,7 @@ final class GroveScene {
 
 struct S3View: View {
     @State private var meter = FrameMeter()
-    @State private var scene = GroveScene()
+    @State private var scene = RealmScene()
     @State private var director: AliveDirector?
     @State private var depthSlider: Double = 0     // sqrt scale, 0…20 → Depth 0…400
 

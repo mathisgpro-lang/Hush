@@ -103,9 +103,8 @@ final class Journey {
 
     /// The first time you entered a realm.
     func entered(_ realm: RealmID) {
-        guard realm == .grove else { return }
-        write("grove-entered", world: realm.rawValue, title: "Into the Whispering Grove",
-              "You dived into the Grove for the first time. Giant trees full of lanterns, most of them dark. From somewhere in the roots, two small voices whispered: “Someone came.” Nim and Ro had been waiting a long time.")
+        guard let page = RealmContent.firstVisit(realm) else { return }
+        write("\(realm.rawValue)-entered", world: realm.rawValue, title: page.title, page.text)
     }
 
     // MARK: Your Flame
