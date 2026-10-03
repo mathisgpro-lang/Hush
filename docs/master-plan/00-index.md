@@ -78,22 +78,14 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-03, decisions 121–129)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-03 evening, decisions 121–133)
 
-**Current work: P2.5 iteration 2** plus the home bar and game-speed reactivity (decision 130: one shared 3D view `WorldLayer` in `Shell/AppShellView.swift`; worlds owned by `ShellModel`) (spec `docs/plan-2.0/p25-book-flame-spec.md`, approved). SpikeLab, `prototypes/p2-spikes`.
-- ✅ On the iPhone:
-  - the floating Spark in the ember's color (`Shell/SparkTint.swift`);
-  - the Sanctuary;
-  - the Quest Satchel with props;
-  - the living map with the dive;
-  - the swipeable Grove;
-  - the intro and tour;
-  - no edges anywhere (`Shell/EdgeSafety.swift`);
-  - **the Book that writes itself** (`Shell/Journey.swift`, `Shell/BookView.swift`);
-  - **Your Flame** (`Shell/FlameSheet.swift`).
-- ✅ **Smoothness:** a steady 60 fps on the iPhone 15 with everything on, measured at 11:50, 17:00, 18:30 and 23:00 (2026-10-03).
-- **Waiting on Codex (limit until 2026-10-07 20:15):** `scripts/p25-iter2.sh` (map side panels, then icons: world, book, flame). Then key the icons into `Assets/icon-world.png`, `icon-book.png`, `icon-flame.png` (the bar picks them up automatically), stitch the map panels, and remove the cloud border.
-- Test flags: `-skipintro`, `-autointro`, `-map`, `-grove`, `-quests`, `-book`, `-flamesheet`, `-ember heart|mind|body|spirit|craft|world`, `-seedjourney`, `-freshjourney`, `-push up|down|left|right`, `-hour N`, `-perf`, `-noelements`, `-noflames`, `-nospray`, `-noflies`, `-onlyland`.
+**Current work: the next worlds** (decisions 132–133). SpikeLab, `prototypes/p2-spikes`.
+- ✅ One interface in every world (`HomeView(world:)`, `Shell/LivingWorld.swift`); one realm engine (`RealmScene` in `S3View.swift`, content in `Shell/RealmContent.swift`); no floating markers (tap the painted places); realms alive (hour, clouds, waterfalls, gusts, motes).
+- ✅ Built realms: the Grove, the Stillwater, the Ascent Highlands, the Library of Embers, the Wilds (left panel only so far). Rebuild all: `tools/realms.sh` (per-realm settings for `tools/build_realm.py`).
+- **Waiting on Codex** (limit, resumes automatically after 22:12 via a nohup loop; also in `scripts/resume-codex.sh`): `scripts/realms.sh` (wilds-right, forge + panels), then `scripts/p25-iter2.sh` (map side panels, bar icons).
+- **Next when they land:** add Forge to `tools/realms.sh` (choose its circle uv from the painting), run it, place Forge and Wilds spots (`RealmContent`), test with `-realm <id> -allopen -quests -hour N`, install on the phone.
+- Test flags: `-skipintro`, `-autointro`, `-map`, `-realm <id>`, `-allopen`, `-quests`, `-book`, `-flamesheet`, `-ember <id>`, `-seedjourney`, `-freshjourney`, `-push up|down|left|right`, `-hour N`, `-perf`, `-reacttest`.
 - Later: the 11 P3 review findings before building P3; sound from free libraries (ask before downloads).
 
 ---

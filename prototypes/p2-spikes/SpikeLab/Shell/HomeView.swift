@@ -134,7 +134,7 @@ struct HomeView: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         let target = rs.spot(s.uv.x, s.uv.y)
         rs.focus = nil
-        rs.panTarget = simd_clamp(SIMD2(target.x, target.y) * 0.8, -rs.panLimit, rs.panLimit)
+        rs.panTarget = simd_clamp(SIMD2(target.x - rs.homeCenterX, target.y) * 0.8, -rs.panLimit, rs.panLimit)
         rs.hero.look(at: [s.uv.x < 0.5 ? -0.7 : 0.7, s.uv.y > 0.36 ? 0.5 : -0.3])
         withAnimation(.sheet) { focused = s }
     }

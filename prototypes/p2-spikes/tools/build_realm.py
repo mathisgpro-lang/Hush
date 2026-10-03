@@ -36,12 +36,15 @@ def best_overlap(a_img, b_img, max_ov=int(W * 0.18)):
             if err < best[0]: best = (err, ov, dy)
     return best
 
-if all(os.path.exists(p) for p in panels):
+if os.path.exists(panels[0]):
+    # The right panel may still be on its way: until then the main view continues into a mirror of itself.
     left = Image.open(panels[0]).convert("RGB").resize((W, H), Image.LANCZOS)
-    right = Image.open(panels[1]).convert("RGB").resize((W, H), Image.LANCZOS)
-    _, ovL, dyL = best_overlap(left, main); _, ovR, dyR = best_overlap(main, right)
-    ovL = max(ovL, 60); ovR = max(ovR, 60)
-    total = W * 3 - ovL - ovR
+    hasRight = os.path.exists(panels[1])                  # (until it arrives, the world simply ends on the right)
+    right = Image.open(panels[1]).convert("RGB").resize((W, H), Image.LANCZOS) if hasRight else None
+    _, ovL, dyL = best_overlap(left, main)
+    _, ovR, dyR = best_overlap(main, right) if hasRight else (0, 0, 0)
+    ovL = max(ovL, 60); ovR = max(ovR, 60) if hasRight else 0
+    total = W * 3 - ovL - ovR if hasRight else W * 2 - ovL
     canvas = np.zeros((H, total, 3)); weight = np.zeros((H, total, 1))
     def put(img, x0, dy, rl, rr):
         a = np.asarray(img).astype(float)
@@ -51,7 +54,8 @@ if all(os.path.exists(p) for p in panels):
         if rl: w[:, :rl, 0] = np.linspace(0, 1, rl)[None, :]
         if rr: w[:, W - rr:, 0] = np.linspace(1, 0, rr)[None, :]
         canvas[:, x0:x0 + W] += a * w; weight[:, x0:x0 + W] += w
-    put(left, 0, -dyL, 0, ovL); put(main, W - ovL, 0, ovL, ovR); put(right, 2 * W - ovL - ovR, -dyR, ovR, 0)
+    put(left, 0, -dyL, 0, ovL); put(main, W - ovL, 0, ovL, ovR)
+    if hasRight: put(right, 2 * W - ovL - ovR, -dyR, ovR, 0)
     world = Image.fromarray((canvas / np.maximum(weight, 1e-6)).clip(0, 255).astype(np.uint8))
     x0 = W - ovL
     print("stitched", total, "x", H)
@@ -126,6 +130,9 @@ for i, o in enumerate(nd.find_objects(fl)):
     keepF[i + 1] = hh_ >= 8 and hh_ >= 1.1 * ww_
 water |= keepF[fl] & falls
 water = nd.binary_opening(water, iterations=1)
+# Never the stone circle or the stones around it (the Spark's ground stays still).
+ell = ((X - cx_home) / (W * 0.3)) ** 2 + ((Y - cy_home) / (H * 0.09)) ** 2 < 1
+water &= ~ell
 lab2, n2 = nd.label(water); sz2 = nd.sum(water, lab2, range(1, n2 + 1))
 water = np.isin(lab2, np.where(sz2 > 80)[0] + 1)
 # Sky: far away (almost no depth), in the upper part, not water. Alpha: water = 1, sky = 0.5 (the shader tells them apart).

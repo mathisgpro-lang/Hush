@@ -24,6 +24,7 @@ enum RealmContent {
         case .stillwater: [[0.27, 0.39], [0.69, 0.37], [0.6, 0.27]]
         case .highlands: [[0.27, 0.35], [0.74, 0.34], [0.62, 0.275]]
         case .library: [[0.27, 0.36], [0.73, 0.36], [0.6, 0.28]]
+        case .wilds: [[0.27, 0.46], [0.76, 0.45], [0.62, 0.33]]
         default: nil
         }
     }
@@ -51,10 +52,10 @@ enum RealmContent {
             Spot(id: "maproom", title: "The Map Room", line: "A great globe and star charts. Each subject or language you learn draws itself here, coast by coast.", symbol: "globe.europe.africa.fill", uv: [1.8, 0.49]),
         ]
         case .wilds: [
-            Spot(id: "village", title: "The Empty Village", line: "Cottages with dark windows. Each time you help someone, one window lights up again.", symbol: "house.fill", uv: [0.7, 0.4], action: "Help someone (a real World action)"),
-            Spot(id: "mossbeard", title: "Mossbeard", line: "A walking forest-giant with a village of birds in his beard. “Care for a place, and it cares for you back. Simple.”", symbol: "tree.fill", uv: [0.24, 0.48]),
-            Spot(id: "river", title: "The River of Return", line: "The river winds back to where it began. Things you plant here come back to you.", symbol: "water.waves", uv: [0.5, 0.2]),
-            Spot(id: "lookout", title: "The Far Lookout", line: "From the hill, one day, you'll see other travellers' lights on the horizon.", symbol: "binoculars.fill", uv: [0.62, 0.72]),
+            Spot(id: "village", title: "The Empty Village", line: "Cottages with dark windows. Each time you help someone, one window lights up again.", symbol: "house.fill", uv: [0.34, 0.67], action: "Help someone (a real World action)"),
+            Spot(id: "mossbeard", title: "Mossbeard", line: "A walking forest-giant with a village of birds in his beard. “Care for a place, and it cares for you back. Simple.”", symbol: "tree.fill", uv: [0.03, 0.56]),
+            Spot(id: "river", title: "The River of Return", line: "The river winds back to where it began. Things you plant here come back to you.", symbol: "water.waves", uv: [0.84, 0.29]),
+            Spot(id: "lookout", title: "The Far Lookout", line: "From the hill, one day, you'll see other travellers' lights on the horizon.", symbol: "binoculars.fill", uv: [0.76, 0.72]),
         ]
         case .forge: [
             Spot(id: "bench", title: "The Apprentice's Bench", line: "Every focused hour leaves a mark here. The furnaces glow brighter with your work.", symbol: "hammer.fill", uv: [0.32, 0.28], action: "Do a focused block (a real Craft action)"),

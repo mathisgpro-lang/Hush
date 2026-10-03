@@ -89,6 +89,8 @@ final class RealmScene {
     @ObservationIgnored private var panVel = SIMD2<Float>(0, 0)
     @ObservationIgnored private(set) var panLimit = SIMD2<Float>(0, 0)
     @ObservationIgnored var fingerDown = false
+    @ObservationIgnored private var homeShift: Float = 0
+    var homeCenterX: Float { homeShift }
 
     private func relief(_ g: Float) -> Float { 0.2 * pow(g, 0.6) - 0.065 }      // gentle: no smeared gaps (as the Sanctuary)
     private func depthAt(_ u: Float, _ v: Float) -> Float {
@@ -134,7 +136,10 @@ final class RealmScene {
         let safe = EdgeSafety.limit(planeW: w, planeH: h, restDistance: Self.distance, edges: edges, fov: Self.fov,
                                     aspect: Float(screen.width / screen.height), margin: EdgeSafety.rubber + 0.03)
         _ = camH
-        panLimit = [min(camW * 0.45, safe.x), safe.y]          // no edge ever shows (EdgeSafety)
+        // The view rests on the home painting (the circle), even when the world isn't centered on it (a panel
+        // still missing): looking around stays inside the nearer edge.
+        homeShift = (hx(0.5) - 0.5) * w
+        panLimit = [max(0, min(camW * 0.45, safe.x - abs(homeShift))), safe.y]          // no edge ever shows (EdgeSafety)
         func point(_ u: Float, _ v: Float, nearer extra: Float = 0) -> SIMD3<Float> {
             let rest = SIMD3<Float>((u - 0.5) * w, (v - 0.5) * h, -Self.distance)
             let d = Self.distance - relief(depthAt(u, v)) - extra
@@ -327,7 +332,7 @@ final class RealmScene {
             panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
             pan += panVel * dt
         }
-        let pv = SIMD3<Float>(pan.x, pan.y, 0)
+        let pv = SIMD3<Float>(pan.x + homeShift, pan.y, 0)
         camera.look(at: camLook + pv, from: camPos + pv, relativeTo: nil)
     }
 
