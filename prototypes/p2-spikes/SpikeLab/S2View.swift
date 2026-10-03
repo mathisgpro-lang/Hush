@@ -256,7 +256,7 @@ final class SanctuaryScene {
         hero.stationary = true
         // Floating well above the runes (Mathis: like in the Grove). Seen from above, a floating thing shows higher
         // on screen than its light on the ground: its glow pool stays on the circle's center stone.
-        hero.hoverHeight = 0.08
+        hero.hoverHeight = 0.045                // the height Mathis picked (decision 127)
         root.addChild(hero.leanPivot)
         heroFeet = feet; heroWorldScale = scale
 
