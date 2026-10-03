@@ -122,6 +122,9 @@ final class ShellModel {
     let sanctuary = SanctuaryScene()
     let mapScene = MapScene()
     let grove = GroveScene()
+    /// A sheet (satchel, Book, Your Flame, a quest card) covers the world: its per-frame work pauses so scrolling
+    /// gets the whole phone (the water, fire and sky keep moving: they run on the graphics chip).
+    var overlayOpen = false
     var sanctuaryBuilt = false
     var mapBuilt = false
     var groveBuilt = false
@@ -167,7 +170,20 @@ final class ShellModel {
     func isBuilt(_ w: World) -> Bool { switch w { case .sanctuary: sanctuaryBuilt; case .map: mapBuilt; case .grove: groveBuilt } }
 
     /// Every frame: only the world on screen moves.
+    @ObservationIgnored private var tickCost: (sum: Double, n: Int, worst: Double) = (0, 0, 0)
     func tick(_ dt: Float) {
+        let t0 = CACurrentMediaTime()
+        defer {
+            if CommandLine.arguments.contains("-perf") {
+                let c = (CACurrentMediaTime() - t0) * 1000
+                tickCost.sum += c; tickCost.n += 1; tickCost.worst = max(tickCost.worst, c)
+                if tickCost.n >= 120 {
+                    print(String(format: "TICK avg %.2f ms worst %.2f ms", tickCost.sum / Double(tickCost.n), tickCost.worst))
+                    tickCost = (0, 0, 0)
+                }
+            }
+        }
+        if overlayOpen { return }
         switch activeWorld {
         case .sanctuary: if sanctuaryBuilt { sanctuary.update(dt: dt) }
         case .map: if mapBuilt { mapScene.update(dt: dt) }

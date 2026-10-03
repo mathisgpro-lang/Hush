@@ -15,6 +15,16 @@ struct BookView: View {
     private static let order = ["sanctuary", "emberlands", "grove", "stillwater", "highlands", "library", "wilds", "forge", "veil"]
     private func worldName(_ w: String) -> String { w == "emberlands" ? "The Emberlands" : (RealmID(rawValue: w)?.name ?? w) }
     private func vignette(_ w: String) -> String { w == "emberlands" ? "world-map.png" : w == "grove" ? "grove-paint.png" : "home-paint.png" }
+    /// The vignettes, shrunk once to page size (resizing a big painting on every frame slowed the page turns).
+    private static var thumbs: [String: UIImage] = [:]
+    static func thumb(_ name: String) -> UIImage {
+        if let t = thumbs[name] { return t }
+        guard let src = UIImage(named: name) else { return UIImage() }
+        let w: CGFloat = 700, h = w * src.size.height / src.size.width
+        let t = UIGraphicsImageRenderer(size: CGSize(width: w, height: h)).image { _ in src.draw(in: CGRect(x: 0, y: 0, width: w, height: h)) }
+        thumbs[name] = t
+        return t
+    }
     private var chapters: [String] { Self.order.filter { w in model.journey.pages.contains { $0.world == w } } }
     private var pages: [BookPage] { model.journey.pages.filter { $0.world == chapter }.sorted { $0.date < $1.date } }
 
@@ -84,7 +94,7 @@ struct BookView: View {
 
     private func pageView(_ p: BookPage) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Image(uiImage: UIImage(named: vignette(p.world)) ?? UIImage()).resizable().scaledToFill()
+            Image(uiImage: Self.thumb(vignette(p.world))).resizable().scaledToFill()
                 .frame(height: 130).frame(maxWidth: .infinity).clipped()
                 .saturation(0.8).overlay(LinearGradient(colors: [.clear, Color(red: 0.96, green: 0.9, blue: 0.78).opacity(0.85)], startPoint: .center, endPoint: .bottom))
                 .clipShape(RoundedRectangle(cornerRadius: 14))

@@ -362,7 +362,8 @@ final class SanctuaryScene {
     /// -perf: frame timing as RealityKit renders it (frames per second, hitches over 20 ms, the worst frame).
     private var perf = (frames: 0, hitches: 0, worst: Float(0), elapsed: Float(0))
     private let perfOn = CommandLine.arguments.contains("-perf")
-    private var layersAt: Float = 0, clockReadAt: Float = 0, clockHour: Float = 18
+    private var layersAt: Float = 0
+    private var lastLandKey = SIMD4<Float>(-1, -1, -1, -1), clockReadAt: Float = 0, clockHour: Float = 18
     private static let hourCycle = CommandLine.arguments.contains("-hourcycle")
     private static let hourArg: Float? = {
         let a = CommandLine.arguments
@@ -397,19 +398,24 @@ final class SanctuaryScene {
         elements.update(dt: dt, hour: currentHour, wind: life.wind)
         flies?.position.x = life.wind * 0.03         // the fireflies drift with the wind (moving them is cheap)
         // The Flame's light on the painting follows it and flickers with the fire (A1); dimmer in the Hush.
-        if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
+        if Self.hourCycle { hourOverride = (6 + time * 0.8).truncatingRemainder(dividingBy: 24) }
+        else if let h = Self.hourArg { hourOverride = h }
+        if time - clockReadAt > 5 || clockReadAt == 0 {       // the clock is read every few seconds, not every frame
+            let comps = Calendar.current.dateComponents([.hour, .minute], from: Date())
+            clockHour = Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60; clockReadAt = time
+        }
+        currentHour = hourOverride ?? clockHour
+        // Re-sending a material to the graphics chip costs time on every frame: only when something really changed
+        // (the Flame's flicker is computed in the shader itself from time).
+        let lightAmt = max(0, min(1, appear.value))
+        let key = SIMD4<Float>(vitality, abs(life.wind), currentHour / 24, lightAmt)
+        let changed = simd_reduce_max(simd_abs(key - lastLandKey)) > 0.015
+        if changed, let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
+            lastLandKey = key
             let u = hx(circle.x) + hero.standingX * heroWorldScale / paintingW
-            let flicker = 0.85 + 0.15 * noise.sample(time * 7) + 0.05 * sin(time * 23)
-            m.custom.value = [vitality, u, circle.y, (flicker - 0.9) * 1.4 * max(0, min(1, appear.value))]   // the painted glow breathes with the Flame's fire (±)
+            m.custom.value = [vitality, u, circle.y, lightAmt]        // w = how much the Flame lights the circle (0…1)
             m.roughness = .init(floatLiteral: abs(life.wind))       // the shader reads wind from roughness_scale
-            if Self.hourCycle { hourOverride = (6 + time * 0.8).truncatingRemainder(dividingBy: 24) }
-            else if let h = Self.hourArg { hourOverride = h }
-            if time - clockReadAt > 5 || clockReadAt == 0 {       // the clock is read every few seconds, not every frame
-                let comps = Calendar.current.dateComponents([.hour, .minute], from: Date())
-                clockHour = Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60; clockReadAt = time
-            }
-            let hour = hourOverride ?? clockHour
-            currentHour = hour
+            let hour = currentHour
             m.metallic = .init(floatLiteral: hour / 24)              // and the time of day from metallic_scale
             m.specular = .init(floatLiteral: hx(0.88))               // the painted sun's u (sun rays, moon path)
             m.clearcoat = .init(floatLiteral: homeRatio)             // home width ÷ world width (for round shapes)

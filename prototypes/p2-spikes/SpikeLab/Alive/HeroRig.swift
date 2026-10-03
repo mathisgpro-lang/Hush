@@ -43,6 +43,7 @@ final class HeroRig: FlameRig {
     /// The hour (0–24), for the world's light on it (spirits only).
     var hour: Float = 18
     private var hoverTime: Float = 0
+    private var lastMatKey = SIMD4<Float>(-9, -9, -9, -9), lastMatHour: Float = -9, lastTintAngle: Float = -99
     /// How high a spirit floats above its spot (rig units).
     var hoverHeight: Float = 0.06
     /// Your ember's color on the Spark's fire (SparkTint): hue rotation (radians) and saturation.
@@ -181,7 +182,10 @@ final class HeroRig: FlameRig {
                                            rotation: simd_quatf(angle: -body.roll, axis: [0, 0, 1]),
                                            translation: [0, Self.feetY - body.y, 0])
         let drag = body.hairDrag + SIMD2(wind * 0.012, 0)
-        for e in [hero, reflection].compactMap({ $0 }) {
+        let key = SIMD4<Float>(mood, brightness, drag.x, drag.y)
+        let matChanged = simd_reduce_max(simd_abs(key - lastMatKey)) > 0.0015 || abs(hour - lastMatHour) > 0.02 || tint.angle != lastTintAngle
+        if matChanged { lastMatKey = key; lastMatHour = hour; lastTintAngle = tint.angle }
+        for e in [hero, reflection].compactMap({ $0 }) where matChanged {
             guard var comp = e.model, var m = comp.materials.first as? CustomMaterial else { continue }
             let b = (inScene && e === hero) ? brightness + 10 : brightness
             m.custom.value = [mood, b, drag.x, drag.y]

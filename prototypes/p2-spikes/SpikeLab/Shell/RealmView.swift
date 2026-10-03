@@ -39,7 +39,7 @@ struct RealmView: View {
                 // The spots to explore, attached to their place in the Grove (they move with it as you look around).
                 if ready && focused == nil {
                     GeometryReader { full in
-                        TimelineView(.animation) { _ in
+                        TimelineView(.animation(minimumInterval: nil, paused: model.overlayOpen)) { _ in
                             ZStack {
                                 ForEach(groveSpots) { s in
                                     Button { focus(s) } label: { SpotMarker(spot: s) }
@@ -71,8 +71,9 @@ struct RealmView: View {
             .simultaneousGesture(lookAround(geo.size), including: bookOpen ? .subviews : .all)     // the whole screen: drags anywhere look around
         }
         .onAppear { meter.start(); setUpWorld() }
+        .onChange(of: bookOpen) { _, covered in model.overlayOpen = covered }
         .onChange(of: model.groveBuilt) { _, _ in setUpWorld() }
-        .onDisappear { meter.stop(); director?.stop() }
+        .onDisappear { meter.stop(); director?.stop(); model.overlayOpen = false }
     }
 
     private func setUpWorld() {

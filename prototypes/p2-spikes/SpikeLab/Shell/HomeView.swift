@@ -38,7 +38,8 @@ struct HomeView: View {
                 // The quests you took, waiting in the world as small glowing objects (they stay attached to their
                 // spot when you look around). Tap one to do it.
                 GeometryReader { full in
-                    TimelineView(.animation) { _ in
+                    // Redrawn every frame only while quests are out and nothing covers them.
+                    TimelineView(.animation(minimumInterval: nil, paused: chosen.isEmpty || model.overlayOpen)) { _ in
                         ZStack {
                             ForEach(chosen) { call in
                                 Button { withAnimation(.sheet) { open = call } } label: { QuestObject(call: call) }
@@ -79,8 +80,9 @@ struct HomeView: View {
             .simultaneousGesture(lookAround(geo.size), including: satchelOpen || bookOpen || flameOpen || open != nil ? .subviews : .all)
         }
         .onAppear { meter.start(); setUpWorld() }
+        .onChange(of: satchelOpen || bookOpen || flameOpen || open != nil) { _, covered in model.overlayOpen = covered }
         .onChange(of: model.sanctuaryBuilt) { _, _ in setUpWorld() }
-        .onDisappear { meter.stop(); director?.stop() }
+        .onDisappear { meter.stop(); director?.stop(); model.overlayOpen = false }
     }
 
     /// Your Spark in your color, the world bright, its little life director; then the other worlds preload.

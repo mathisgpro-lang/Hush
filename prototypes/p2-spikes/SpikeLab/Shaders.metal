@@ -538,7 +538,9 @@ void stoneLive(realitykit::surface_parameters params)
     // The Flame lights the circle around it (A1); at night its light carries much further.
     float2 fd = float2((uv.x - c.y) * asp, uv.y - c.z);
     float reach = 0.006 + 0.02 * night;
-    float light = (c.w + night * 0.9) * exp(-dot(fd, fd) / reach) * (fd.y < 0.0 ? 1.2 : 0.8);
+    // The painted glow breathes with the Flame's fire: its flicker comes from time here (no per-frame updates).
+    float flickerS = (0.85 + 0.15 * (s2noise(float2(t * 7.0, 3.1)) * 2.0 - 1.0) + 0.05 * sin(t * 23.0) - 0.9) * 1.4;
+    float light = (c.w * flickerS + night * 0.9 * c.w) * exp(-dot(fd, fd) / reach) * (fd.y < 0.0 ? 1.2 : 0.8);
     rgb += mix(rgb, float3(0.4, 0.22, 0.08), night) * float3(1.0, 0.62, 0.28) * light;
 
     // The Hush (vitality).

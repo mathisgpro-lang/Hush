@@ -23,10 +23,16 @@ struct FlameSheet: View {
                 VStack(spacing: 18) {
                     Capsule().fill(cream.opacity(0.3)).frame(width: 40, height: 5).padding(.top, 10)
                     // Your Spark, alive.
-                    Image(uiImage: SparkTint.image("spark-keyed.png", ember: model.emberID) ?? UIImage()).resizable().scaledToFit()
-                        .frame(height: 120).offset(y: bob ? -5 : 3)
-                        .shadow(color: .orange.opacity(0.6), radius: bob ? 22 : 14)
-                        .animation(.easeInOut(duration: 2.1).repeatForever(autoreverses: true), value: bob)
+                    // A painted glow behind it (no live shadow: shadows redraw on every frame and slow scrolling).
+                    ZStack {
+                        Circle().fill(RadialGradient(colors: [Color.orange.opacity(0.45), .clear], center: .center, startRadius: 4, endRadius: 80))
+                            .frame(width: 170, height: 170)
+                        Image(uiImage: SparkTint.image("spark-keyed.png", ember: model.emberID) ?? UIImage()).resizable().scaledToFit()
+                            .frame(height: 120)
+                            .offset(y: bob ? -5 : 3)
+                            .animation(.easeInOut(duration: 2.1).repeatForever(autoreverses: true), value: bob)
+                    }
+                    .frame(height: 140)
                     VStack(spacing: 2) {
                         Text(j.name.isEmpty ? "Your Spark" : "\(j.name)'s Spark").font(.system(size: 26, design: .serif)).foregroundStyle(cream)
                         Text("Spark · day \(j.dayNumber())").font(.system(size: 14, design: .serif)).foregroundStyle(gold)
@@ -64,7 +70,6 @@ struct FlameSheet: View {
                     Image(uiImage: SparkTint.image("\(Self.stages[i]).png", ember: model.emberID) ?? UIImage()).resizable().scaledToFit()
                         .frame(height: CGFloat(30 + i * 7))
                         .colorMultiply(i == 0 ? .white : .black).opacity(i == 0 ? 1 : 0.55)      // the next ones: silhouettes
-                        .shadow(color: i == 0 ? .orange : .clear, radius: 8)
                     Text(i == 4 ? "?" : Self.stageNames[i]).font(.system(size: 10, design: .serif)).foregroundStyle(cream.opacity(i == 0 ? 1 : 0.45))
                 }
             }
@@ -79,7 +84,7 @@ struct FlameSheet: View {
                     VStack(spacing: 4) {
                         Image(systemName: "flame.fill").font(.system(size: 20))
                             .foregroundStyle(d.1 ? AnyShapeStyle(LinearGradient(colors: [Color(red: 1, green: 0.9, blue: 0.5), .orange], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(cream.opacity(0.15)))
-                            .shadow(color: d.1 ? .orange.opacity(0.8) : .clear, radius: 6)
+
                         Text(d.0).font(.system(size: 11, design: .serif)).foregroundStyle(cream.opacity(0.55))
                     }
                     .frame(maxWidth: .infinity)
@@ -105,7 +110,7 @@ struct FlameSheet: View {
                         }
                         Capsule().fill(cream.opacity(0.1)).frame(height: 5)
                             .overlay(alignment: .leading) { GeometryReader { g in
-                                Capsule().fill(realm.color).frame(width: g.size.width * max(n == 0 ? 0 : 0.08, part)).shadow(color: realm.color, radius: 4)
+                                Capsule().fill(realm.color).frame(width: g.size.width * max(n == 0 ? 0 : 0.08, part))
                             } }
                     }
                 }
