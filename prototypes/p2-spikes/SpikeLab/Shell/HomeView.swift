@@ -6,7 +6,7 @@ import RealityKit
 
 struct HomeView: View {
     let model: ShellModel
-    @State private var scene = SanctuaryScene()
+    private var scene: SanctuaryScene { model.sanctuary }
     @State private var meter = FrameMeter()
     @State private var director: AliveDirector?
     @State private var open: Call?
@@ -30,20 +30,10 @@ struct HomeView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                Color.black.ignoresSafeArea()
-                RealityView { content in
-                    content.camera = .virtual
-                    do { try await scene.build() } catch { print("SCENE BUILD FAILED:", error); return }
-                    content.add(scene.root)
-                    scene.hero.tint = SparkTint.shift(model.emberID)       // your ember's color
-                    scene.setVitality(1)
-                    let d = AliveDirector(seed: 5, meter: meter)
-                    d.attach(scene.hero, tempo: 0.55)
-                    director = d
-                    scene.updates = content.subscribe(to: SceneEvents.Update.self) { e in scene.update(dt: Float(e.deltaTime)) }
-                }
-                .ignoresSafeArea()
-                .onTapGesture { director?.tapped() }
+                // The Sanctuary itself is drawn by the app's one 3D view, underneath (WorldLayer): this layer only
+                // catches touches (tap your Spark, look around).
+                Color.clear.contentShape(Rectangle()).ignoresSafeArea()
+                    .onTapGesture { director?.tapped() }
 
                 // The quests you took, waiting in the world as small glowing objects (they stay attached to their
                 // spot when you look around). Tap one to do it.
@@ -51,9 +41,8 @@ struct HomeView: View {
                     TimelineView(.animation) { _ in
                         ZStack {
                             ForEach(chosen) { call in
-                                QuestObject(call: call)
+                                Button { withAnimation(.sheet) { open = call } } label: { QuestObject(call: call) }
                                     .position(scene.screenPoint(homeUV: spotFor(call), in: full.size))
-                                    .onTapGesture { withAnimation(.spring(duration: 0.4)) { open = call } }
                                     .transition(.scale(scale: 0.2).combined(with: .opacity))
                             }
                         }
@@ -89,8 +78,21 @@ struct HomeView: View {
             }
             .simultaneousGesture(lookAround(geo.size), including: satchelOpen || bookOpen || flameOpen || open != nil ? .subviews : .all)
         }
-        .onAppear { meter.start() }
+        .onAppear { meter.start(); setUpWorld() }
+        .onChange(of: model.sanctuaryBuilt) { _, _ in setUpWorld() }
         .onDisappear { meter.stop(); director?.stop() }
+    }
+
+    /// Your Spark in your color, the world bright, its little life director; then the other worlds preload.
+    private func setUpWorld() {
+        guard model.sanctuaryBuilt, director == nil else { return }
+        scene.hero.tint = SparkTint.shift(model.emberID)
+        scene.flameTarget = 1
+        scene.setVitality(1)
+        let d = AliveDirector(seed: 5, meter: meter)
+        d.attach(scene.hero, tempo: 0.55)
+        director = d
+        model.preloadLater()
     }
 
     private func ppm(_ size: CGSize) -> CGFloat { size.height / CGFloat(SanctuaryScene.visibleHeight) * 0.98 }
@@ -98,7 +100,7 @@ struct HomeView: View {
     /// Drag to look around the Sanctuary, a little in any direction (Clash of Clans–style): past the limit the
     /// world resists like a rubber band, and letting go glides on (momentum), then settles back inside.
     private func lookAround(_ size: CGSize) -> some Gesture {
-        DragGesture(minimumDistance: 12)
+        DragGesture(minimumDistance: 6)
             .onChanged { v in
                 if dragStartPan == nil { dragStartPan = scene.pan; scene.fingerDown = true }
                 let raw = (dragStartPan ?? .zero) + SIMD2(-Float(v.translation.width), Float(v.translation.height)) / Float(ppm(size))
@@ -141,13 +143,13 @@ struct HomeView: View {
                 Group {
                     if model.tour == .satchel {
                         TourBubble(text: "This is your satchel. Each day I'll fill it with quests made for you. Take the ones you'll do: they'll wait for you right here.",
-                                   button: "Next", next: { withAnimation(.spring(duration: 0.5)) { model.tour = .world } },
+                                   button: "Next", next: { withAnimation(.sheet) { model.tour = .world } },
                                    skip: { withAnimation { model.tour = nil } })
                     } else {
                         TourBubble(text: "And this is the World. Out there, most of it sleeps in the Hush. Every light you send wakes a piece of it.",
                                    button: "Show me", next: {
                                        model.tour = .map
-                                       withAnimation(.easeInOut(duration: 0.6)) { model.go(.map) }
+                                       withAnimation(.screen) { model.go(.map) }
                                    }, skip: { withAnimation { model.tour = nil } })
                     }
                 }
@@ -161,7 +163,7 @@ struct HomeView: View {
         if model.tour != nil {
             EmptyView()
         } else if chosen.isEmpty && model.calls.contains(where: { !$0.done }) {
-            Button { withAnimation(.spring(duration: 0.5)) { satchelOpen = true } } label: {
+            Button { withAnimation(.sheet) { satchelOpen = true } } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "bag.fill").foregroundStyle(Color(red: 1, green: 0.78, blue: 0.42))
                     Text("Choose today's quests from your satchel").font(.system(size: 14, design: .serif))
@@ -174,7 +176,7 @@ struct HomeView: View {
             }
             .padding(.bottom, 10)
         } else if let r = model.newHere.first {
-            Button { withAnimation(.easeInOut(duration: 0.6)) { model.go(.map) } } label: {
+            Button { withAnimation(.screen) { model.go(.map) } } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "sparkles").foregroundStyle(r.color)
                     Text("Something new waits in \(r.name)").font(.system(size: 14, design: .serif))
@@ -191,16 +193,16 @@ struct HomeView: View {
 
     private var cockpitBar: some View {
         HStack(spacing: 0) {
-            barButton("map.fill", "World", badge: !model.newHere.isEmpty, image: UIImage(named: "icon-world.png") ?? UIImage(named: "icon-world-temp.png")) { withAnimation(.easeInOut(duration: 0.6)) { model.go(.map) } }
+            barButton("map.fill", "World", badge: !model.newHere.isEmpty, image: UIImage(named: "icon-world.png") ?? UIImage(named: "icon-world-temp.png")) { withAnimation(.screen) { model.go(.map) } }
             barButton("bag.fill", "Satchel", badge: chosen.isEmpty && model.calls.contains(where: { !$0.done })) {
-                withAnimation(.spring(duration: 0.5)) { satchelOpen = true }
+                withAnimation(.sheet) { satchelOpen = true }
             }
             barButton("book.closed.fill", "Book", badge: model.journey.newPages > 0, image: UIImage(named: "icon-book.png") ?? UIImage(named: "prop-scroll.png")) {
-                withAnimation(.spring(duration: 0.5)) { bookOpen = true }
+                withAnimation(.sheet) { bookOpen = true }
             }
             barButton("flame.fill", "Your Flame", badge: false, image: UIImage(named: "icon-flame.png") ?? SparkTint.image("spark-keyed.png", ember: model.emberID)) {
                 director?.tapped()
-                withAnimation(.spring(duration: 0.5)) { flameOpen = true }
+                withAnimation(.sheet) { flameOpen = true }
             }
         }
         .padding(.vertical, 10)
@@ -234,11 +236,11 @@ struct HomeView: View {
     private func card(_ call: Call, size: CGSize) -> some View {
         let ink = Color(red: 0.27, green: 0.17, blue: 0.1)
         return ZStack(alignment: .bottom) {
-            Color.black.opacity(0.3).ignoresSafeArea().onTapGesture { withAnimation(.spring(duration: 0.4)) { open = nil } }
+            Color.black.opacity(0.3).ignoresSafeArea().onTapGesture { withAnimation(.sheet) { open = nil } }
             VStack(spacing: 10) {
                 HStack {
                     Spacer()
-                    Button { withAnimation(.spring(duration: 0.4)) { open = nil } } label: {
+                    Button { withAnimation(.sheet) { open = nil } } label: {
                         Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(ink.opacity(0.6))
                             .frame(width: 30, height: 30).background(Circle().fill(ink.opacity(0.08)))
                     }
@@ -273,7 +275,7 @@ struct HomeView: View {
         let from = scene.screenPoint(homeUV: spotFor(call), in: fullSize)
         withAnimation { open = nil }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        withAnimation(.spring(duration: 0.4)) { model.complete(call.id) }
+        withAnimation(.sheet) { model.complete(call.id) }
         strand = (from, 0)
         Task { @MainActor in
             for k in 1...36 { try? await Task.sleep(for: .milliseconds(25)); strand = (from, CGFloat(k) / 36) }
@@ -414,6 +416,6 @@ struct QuestJournal: View {
     private func close() {
         let taken = model.calls.filter { $0.chosen }.map(\.title)
         if !taken.isEmpty { model.journey.firstQuests(taken) }          // the Book's page about your first quests
-        withAnimation(.spring(duration: 0.45)) { isOpen = false }
+        withAnimation(.sheet) { isOpen = false }
     }
 }

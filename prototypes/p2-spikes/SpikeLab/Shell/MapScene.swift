@@ -31,6 +31,7 @@ final class MapScene {
 
     // Camera: pan (meters on the map) and zoom (1 = the default view), both on critically damped springs.
     var panTarget = SIMD2<Float>(0, 0), zoomTarget: Float = 1
+    var fingerDown = false
     private(set) var pan = SIMD2<Float>(0, 0), zoom: Float = 1
     private var panVel = SIMD2<Float>(0, 0), zoomVel: Float = 0
     /// The dive: 0 = at the map, 1 = right on top of the realm (the camera rushes down through the clouds).
@@ -232,6 +233,14 @@ final class MapScene {
     }
     func startPan(for r: RealmID) -> SIMD2<Float> { centerPan(on: r.mapPoint, zoom: 1) }
 
+    /// Coming back to the map: the view is over the realm you're in, the dive undone, your Spark there.
+    func arrive(at r: RealmID) {
+        dive = 0; diveVel = 0; diveTarget = 0
+        let p = startPan(for: r); pan = p; panTarget = p; panVel = .zero; zoom = 1; zoomTarget = 1; zoomVel = 0
+        let fc = uv(r.mapPoint)
+        sparkBase = spot(fc.x, fc.y, lift: 0.06) + SIMD3(0.0, 0.03, 0)
+    }
+
     /// Dive into a realm: the camera rises a little, then swoops down onto it through the clouds.
     func startDive(to p: CGPoint) {
         diveFrom = pan
@@ -244,19 +253,23 @@ final class MapScene {
 
     func update(dt: Float) {
         time += dt
-        let w0: Float = 7
+        let w0: Float = 9
         let lim = panLimit(zoom: zoom)
         if let i = CommandLine.arguments.firstIndex(of: "-push"), i + 1 < CommandLine.arguments.count {   // (test: held past a limit)
             let d = CommandLine.arguments[i + 1]
             panTarget = [d == "left" ? -9 : d == "right" ? 9 : panTarget.x, d == "up" ? 9 : d == "down" ? -9 : panTarget.y]
         }
         let pt = simd_clamp(panTarget, -lim - EdgeSafety.rubber, lim + EdgeSafety.rubber)
-        panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
-        pan += panVel * dt
+        if fingerDown {                       // 1:1 under the finger (no lag); its speed carries into the glide
+            let v = (pt - pan) / max(dt, 0.001); panVel = panVel * 0.5 + v * 0.5; pan = pt
+        } else {
+            panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
+            pan += panVel * dt
+        }
         zoomVel += (w0 * w0 * (zoomTarget - zoom) - 2 * w0 * zoomVel) * dt
         zoom += zoomVel * dt
         // The dive follows its own slower spring (a smooth, accelerating swoop).
-        let wd: Float = 3.6
+        let wd: Float = 5.2      // the swoop: quick and accelerating
         diveVel += (wd * wd * (diveTarget - dive) - 2 * wd * diveVel) * dt
         dive += diveVel * dt
 

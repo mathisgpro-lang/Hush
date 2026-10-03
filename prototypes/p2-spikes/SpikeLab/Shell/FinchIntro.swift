@@ -53,11 +53,11 @@ struct FinchIntro: View {
     @State private var lightToast = false
     @State private var answers: [Int: Set<String>] = [:]
     @State private var ring: CGFloat = 0
-    @State private var scene = SanctuaryScene()
+    private var scene: SanctuaryScene { model.sanctuary }
     @State private var worldVitality: Float = 0.12
     @State private var meter = FrameMeter()
     @State private var director: AliveDirector?
-    @State private var flameReady = false
+    private var flameReady: Bool { model.sanctuaryBuilt }
     @State private var bubble: String?
     @FocusState private var typing: Bool
     @State private var full: CGSize = .zero
@@ -74,19 +74,8 @@ struct FinchIntro: View {
 
     var body: some View {
         ZStack {
-            // The intro happens in the Sanctuary itself: grey and silent (the Hush) until your Flame is born.
-            RealityView { content in
-                content.camera = .virtual
-                scene.hideFlameInstantly()
-                do { try await scene.build() } catch { return }
-                content.add(scene.root)
-                scene.setVitality(worldVitality)
-                let d = AliveDirector(seed: 21, meter: meter); d.attach(scene.hero, tempo: 0.6); director = d
-                scene.updates = content.subscribe(to: SceneEvents.Update.self) { e in scene.update(dt: Float(e.deltaTime)) }
-                flameReady = true
-            }
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
+            // The intro happens in the Sanctuary itself (drawn by the app's one 3D view underneath, the same world
+            // home keeps afterwards): grey and silent (the Hush) until your Flame is born.
             DuskBackground().opacity(flameReady ? 0 : 1).animation(.easeOut(duration: 1.2), value: flameReady).allowsHitTesting(false)
             // Everything that belongs to the Flame's spot follows it on screen: the ember you warm sits on the stone
             // circle, the Spark is born from it in the same place, and the glimpse of its future appears there too.
@@ -135,7 +124,15 @@ struct FinchIntro: View {
             if lightToast { toast }
         }
         .animation(.spring(duration: 0.5), value: step)
-        .onAppear { meter.start(); if CommandLine.arguments.contains("-autointro") { autoplay() } }
+        .onAppear {
+            meter.start()
+            scene.hideFlameInstantly()                      // not born yet
+            scene.setVitality(worldVitality)
+            setUpWorld()
+            if CommandLine.arguments.contains("-autointro") { autoplay() }
+        }
+        .onChange(of: model.sanctuaryBuilt) { _, _ in scene.setVitality(worldVitality); setUpWorld() }
+        .onDisappear { meter.stop(); director?.stop() }     // home's own director takes over the same Spark
     }
 
     // MARK: Screens
@@ -428,6 +425,11 @@ struct FinchIntro: View {
         default: break
         }
         if s.rawValue >= IntroStep.q2.rawValue && s != .preparing && s != .firstLight { withAnimation { bubble = nil } }
+    }
+
+    private func setUpWorld() {
+        guard model.sanctuaryBuilt, director == nil else { return }
+        let d = AliveDirector(seed: 21, meter: meter); d.attach(scene.hero, tempo: 0.6); director = d
     }
 
     private func say(_ s: String) {

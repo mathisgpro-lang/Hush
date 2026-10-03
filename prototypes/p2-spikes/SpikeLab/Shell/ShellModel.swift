@@ -1,6 +1,7 @@
 // The app shell (decision 105): one journey you move through — the intro, home (the cockpit), the road map,
 // the worlds. Prototype state only; the real record and engine take over when this moves into app/ (P3).
 import SwiftUI
+import RealityKit
 
 enum Screen: Equatable { case intro, home, map, realm(RealmID) }
 
@@ -116,6 +117,73 @@ final class ShellModel {
     var light: Int = 0                                // today's light sent into the world
     /// What you've lived: the Book writes itself from it; Your Flame sums it up (decisions 128–129).
     let journey = Journey()
+    /// The three worlds, built once and kept alive: going back to a screen shows it instantly instead of reloading
+    /// its paintings (that reload was the biggest lag). Each screen adds its world's root to its view.
+    let sanctuary = SanctuaryScene()
+    let mapScene = MapScene()
+    let grove = GroveScene()
+    var sanctuaryBuilt = false
+    var mapBuilt = false
+    var groveBuilt = false
+    /// One 3D view for the whole app (like a game): all three worlds live under this root; switching screens only
+    /// shows one and hides the others, so nothing is ever rebuilt or re-created.
+    @ObservationIgnored let worldRoot = Entity()
+    @ObservationIgnored var updates: EventSubscription?
+    @ObservationIgnored private var builds: [World: Task<Void, Never>] = [:]
+    enum World { case sanctuary, map, grove }
+    var activeWorld: World {
+        switch screen { case .map: .map; case .realm: .grove; default: .sanctuary }
+    }
+
+    /// Builds a world once (or waits for the build already running), then parks it hidden under the root.
+    func ensure(_ w: World) async {
+        if let t = builds[w] { await t.value; return }
+        let t = Task { @MainActor in
+            switch w {
+            case .sanctuary where !sanctuaryBuilt:
+                if (try? await sanctuary.build()) != nil { sanctuary.root.isEnabled = false; worldRoot.addChild(sanctuary.root); sanctuaryBuilt = true }
+            case .map where !mapBuilt:
+                let lastOpen = roadIndex(roadOrder.last { open.contains($0) } ?? .sanctuary)
+                if (try? await mapScene.build(open: open, flameAt: flameAt, lastOpenRoadIndex: lastOpen, ember: emberID)) != nil {
+                    mapScene.root.isEnabled = false; worldRoot.addChild(mapScene.root); mapBuilt = true
+                }
+            case .grove where !groveBuilt:
+                if (try? await grove.build()) != nil { grove.root.isEnabled = false; worldRoot.addChild(grove.root); groveBuilt = true }
+            default: break
+            }
+        }
+        builds[w] = t
+        await t.value
+    }
+
+    /// Shows the world of the current screen (instant: the others are only hidden).
+    func showActive() {
+        let a = activeWorld
+        sanctuary.root.isEnabled = a == .sanctuary && sanctuaryBuilt
+        mapScene.root.isEnabled = a == .map && mapBuilt
+        grove.root.isEnabled = a == .grove && groveBuilt
+        if !isBuilt(a) { Task { @MainActor in await ensure(a); showActive() } }
+    }
+    func isBuilt(_ w: World) -> Bool { switch w { case .sanctuary: sanctuaryBuilt; case .map: mapBuilt; case .grove: groveBuilt } }
+
+    /// Every frame: only the world on screen moves.
+    func tick(_ dt: Float) {
+        switch activeWorld {
+        case .sanctuary: if sanctuaryBuilt { sanctuary.update(dt: dt) }
+        case .map: if mapBuilt { mapScene.update(dt: dt) }
+        case .grove: if groveBuilt { grove.update(dt: dt) }
+        }
+    }
+
+    /// Once home has settled, quietly build the map and the Grove, one after the other, so opening them is instant.
+    func preloadLater() {
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            await ensure(.map)
+            try? await Task.sleep(for: .seconds(1))
+            await ensure(.grove)
+        }
+    }
     /// The ember you chose in the introduction: your Spark burns in its color (Mathis, 2026-10-03).
     var emberID: String = UserDefaults.standard.string(forKey: "ember.id") ?? "craft"
     func setEmber(_ id: String) { emberID = id; UserDefaults.standard.set(id, forKey: "ember.id") }
@@ -171,7 +239,20 @@ final class ShellModel {
         journey.did(calls[i].title, detail: calls[i].detail, realm: calls[i].realm)
     }
 
+    /// (-perf) When the last screen change was asked for, to log how long until the new world's first frame.
+    @ObservationIgnored var tappedAt: CFTimeInterval = 0
+    func firstFrame(_ what: String) {
+        guard tappedAt > 0, CommandLine.arguments.contains("-perf") else { return }
+        print(String(format: "REACT %@ first frame after %.0f ms", what, (CACurrentMediaTime() - tappedAt) * 1000)); tappedAt = 0
+    }
     func go(_ s: Screen) {
+        tappedAt = CACurrentMediaTime()
+        defer {
+            if s == .map, mapBuilt { mapScene.arrive(at: flameAt) }         // over where you are, the dive undone
+            if case .realm = s, groveBuilt { grove.focus = nil; grove.panTarget = .zero }
+            showActive()
+            firstFrame(isBuilt(activeWorld) ? "\(activeWorld) (shown)" : "\(activeWorld) (building)")
+        }
         if case .realm(let r) = s { newHere.remove(r); flameAt = r; journey.entered(r) }
         if s == .map { journey.sawTheWorld() }
         if s == .home { flameAt = .sanctuary }

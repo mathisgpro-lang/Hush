@@ -120,5 +120,5 @@ struct BookView: View {
         }
     }
 
-    private func close() { withAnimation(.spring(duration: 0.45)) { isOpen = false } }
+    private func close() { withAnimation(.sheet) { isOpen = false } }
 }

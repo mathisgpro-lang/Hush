@@ -78,6 +78,7 @@ final class GroveScene {
     @ObservationIgnored private(set) var pan = SIMD2<Float>(0, 0)
     @ObservationIgnored private var panVel = SIMD2<Float>(0, 0)
     @ObservationIgnored private(set) var panLimit = SIMD2<Float>(0, 0)
+    @ObservationIgnored var fingerDown = false
 
     private func relief(_ g: Float) -> Float { 0.2 * pow(g, 0.6) - 0.065 }      // gentle: no smeared gaps (as the Sanctuary)
     private func depthAt(_ u: Float, _ v: Float) -> Float {
@@ -284,9 +285,13 @@ final class GroveScene {
             panTarget = [d == "left" ? -9 : d == "right" ? 9 : panTarget.x, d == "up" ? 9 : d == "down" ? -9 : panTarget.y]
         }
         let pt = simd_clamp(panTarget, -panLimit - EdgeSafety.rubber, panLimit + EdgeSafety.rubber)
-        let w0: Float = 7.5
-        panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
-        pan += panVel * dt
+        let w0: Float = 9
+        if fingerDown {                       // 1:1 under the finger (no lag); its speed carries into the glide
+            let v = (pt - pan) / max(dt, 0.001); panVel = panVel * 0.5 + v * 0.5; pan = pt
+        } else {
+            panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
+            pan += panVel * dt
+        }
         let pv = SIMD3<Float>(pan.x, pan.y, 0)
         camera.look(at: camLook + pv, from: camPos + pv, relativeTo: nil)
     }

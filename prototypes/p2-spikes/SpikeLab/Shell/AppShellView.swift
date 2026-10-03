@@ -1,5 +1,6 @@
 // The app shell's root: one screen at a time, with movement between them (the intro, home, the road map, a world).
 import SwiftUI
+import RealityKit
 
 struct AppShellView: View {
     @State private var model = ShellModel()
@@ -7,18 +8,28 @@ struct AppShellView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+            WorldLayer(model: model)                 // the one 3D view: the worlds live here, screens float on top
             switch model.screen {
             case .intro:
                 FinchIntro(model: model).transition(.opacity)
             case .home:
                 HomeView(model: model).overlay(DiveArrival(model: model))
-                    .transition(.asymmetric(insertion: .scale(scale: 1.15).combined(with: .opacity), removal: .opacity))
+                    .transition(.asymmetric(insertion: .scale(scale: 1.06).combined(with: .opacity), removal: .opacity))
             case .map:
-                LivingMapView(model: model).transition(.asymmetric(insertion: .scale(scale: 0.85).combined(with: .opacity), removal: .opacity))
+                LivingMapView(model: model).transition(.asymmetric(insertion: .scale(scale: 0.94).combined(with: .opacity), removal: .opacity))
             case .realm(let r):
                 RealmView(model: model, realm: r).overlay(DiveArrival(model: model)).transition(.opacity)
             }
         }
+        .buttonStyle(PressableStyle())          // every button reacts the instant it's touched
+        .task {                                  // (-reacttest) home → map → Grove → map → home, timing each change
+            guard CommandLine.arguments.contains("-reacttest") else { return }
+            for s in [Screen.map, .realm(.grove), .map, .home, .map, .home] {
+                try? await Task.sleep(for: .seconds(5))
+                withAnimation(.screen) { model.go(s) }
+            }
+        }
+        .animation(.screen, value: model.screen)
         .preferredColorScheme(.dark)
         .statusBarHidden(model.screen == .intro)
     }
@@ -34,10 +45,27 @@ struct DiveArrival: View {
             .onAppear {
                 guard model.arrivingByDive else { return }
                 Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(900))        // the realm finishes appearing under the light
-                    withAnimation(.easeOut(duration: 1.2)) { light = 0 }
-                    try? await Task.sleep(for: .milliseconds(1250)); model.arrivingByDive = false
+                    try? await Task.sleep(for: .milliseconds(250))        // the realm is already there (kept alive): clear quickly
+                    withAnimation(.easeOut(duration: 0.55)) { light = 0 }
+                    try? await Task.sleep(for: .milliseconds(600)); model.arrivingByDive = false
                 }
             }
+    }
+}
+
+/// The app's single 3D view (like a game engine's): it holds the Sanctuary, the map and the Grove under one root,
+/// shows the one on screen and moves only that one. Screens are SwiftUI layers on top of it.
+struct WorldLayer: View {
+    let model: ShellModel
+    var body: some View {
+        RealityView { content in
+            content.camera = .virtual
+            content.add(model.worldRoot)
+            await model.ensure(.sanctuary)
+            model.showActive()
+            model.updates = content.subscribe(to: SceneEvents.Update.self) { e in model.tick(Float(e.deltaTime)) }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 }

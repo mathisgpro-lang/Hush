@@ -20,7 +20,7 @@ let groveSpots: [Spot] = [
 struct RealmView: View {
     let model: ShellModel
     let realm: RealmID
-    @State private var scene = GroveScene()
+    private var scene: GroveScene { model.grove }
     @State private var meter = FrameMeter()
     @State private var director: AliveDirector?
     @State private var focused: Spot?
@@ -32,22 +32,9 @@ struct RealmView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                Color.black.ignoresSafeArea()
-                RealityView { content in
-                    content.camera = .virtual
-                    do { try await scene.build() } catch { return }
-                    content.add(scene.root)
-                    scene.hero.tint = SparkTint.shift(model.emberID)       // your ember's color
-                    scene.heartDepth = 6                      // prototype: a Grove that has started to wake
-                    let d = AliveDirector(seed: 9, meter: meter)
-                    d.attach(scene.hero, tempo: 0.55)
-                    director = d
-                    scene.updates = content.subscribe(to: SceneEvents.Update.self) { e in scene.update(dt: Float(e.deltaTime)) }
-                    withAnimation(.easeOut(duration: 0.8)) { ready = true }
-                }
-                .ignoresSafeArea()
-                .scaleEffect(appear ? 1 : 1.25)
-                .onTapGesture { if focused == nil { director?.tapped() } else { unfocus() } }
+                // The Grove is drawn by the app's one 3D view underneath; this layer catches touches.
+                Color.clear.contentShape(Rectangle()).ignoresSafeArea()
+                    .onTapGesture { if focused == nil { director?.tapped() } else { unfocus() } }
 
                 // The spots to explore, attached to their place in the Grove (they move with it as you look around).
                 if ready && focused == nil {
@@ -55,9 +42,8 @@ struct RealmView: View {
                         TimelineView(.animation) { _ in
                             ZStack {
                                 ForEach(groveSpots) { s in
-                                    SpotMarker(spot: s)
+                                    Button { focus(s) } label: { SpotMarker(spot: s) }
                                         .position(scene.screenPoint(s.uv.x, s.uv.y, in: full.size))
-                                        .onTapGesture { focus(s) }
                                         .transition(.scale.combined(with: .opacity))
                                 }
                             }
@@ -74,7 +60,7 @@ struct RealmView: View {
                         TourBubble(text: "The Whispering Grove. Every kind word you send relights one of its lanterns. Come, let's go home and begin.",
                                    button: "Home", next: {
                                        model.tour = nil
-                                       withAnimation(.easeInOut(duration: 0.6)) { model.go(.home) }
+                                       withAnimation(.screen) { model.go(.home) }
                                    }, skip: { withAnimation { model.tour = nil } })
                         .padding(.bottom, 24)
                     } else if let s = focused { spotCard(s) } else if ready { footer }
@@ -84,16 +70,27 @@ struct RealmView: View {
             .overlay { if bookOpen { BookView(model: model, isOpen: $bookOpen, openOn: realm.rawValue).transition(.move(edge: .bottom).combined(with: .opacity)) } }
             .simultaneousGesture(lookAround(geo.size), including: bookOpen ? .subviews : .all)     // the whole screen: drags anywhere look around
         }
-        .onAppear { meter.start(); withAnimation(.easeOut(duration: 1.0)) { appear = true } }
+        .onAppear { meter.start(); setUpWorld() }
+        .onChange(of: model.groveBuilt) { _, _ in setUpWorld() }
         .onDisappear { meter.stop(); director?.stop() }
+    }
+
+    private func setUpWorld() {
+        guard model.groveBuilt, director == nil else { return }
+        scene.hero.tint = SparkTint.shift(model.emberID)       // your ember's color
+        scene.heartDepth = max(scene.heartDepth, 6)            // prototype: a Grove that has started to wake
+        let d = AliveDirector(seed: 9, meter: meter)
+        d.attach(scene.hero, tempo: 0.55)
+        director = d
+        withAnimation(.easeOut(duration: 0.25)) { ready = true }
     }
 
     /// Drag to look around the Grove (Clash of Clans: a little in every direction, rubber-band edges, a glide).
     private func lookAround(_ size: CGSize) -> some Gesture {
-        DragGesture(minimumDistance: 12)
+        DragGesture(minimumDistance: 6)
             .onChanged { v in
                 guard focused == nil else { return }
-                if dragStart == nil { dragStart = scene.pan }
+                if dragStart == nil { dragStart = scene.pan; scene.fingerDown = true }
                 let ppm = Float(size.height) / (2 * GroveScene.distance * tan(GroveScene.fov / 2 * .pi / 180))
                 let raw = (dragStart ?? .zero) + SIMD2(-Float(v.translation.width), Float(v.translation.height)) / ppm
                 scene.panTarget = SIMD2(EdgeSafety.rubberBand(raw.x, scene.panLimit.x), EdgeSafety.rubberBand(raw.y, scene.panLimit.y))
@@ -103,7 +100,7 @@ struct RealmView: View {
                 let ppm = Float(size.height) / (2 * GroveScene.distance * tan(GroveScene.fov / 2 * .pi / 180))
                 let projected = (dragStart ?? .zero) + SIMD2(-Float(v.predictedEndTranslation.width), Float(v.predictedEndTranslation.height)) / ppm
                 scene.panTarget = simd_clamp(projected, -scene.panLimit, scene.panLimit)
-                dragStart = nil
+                dragStart = nil; scene.fingerDown = false
             }
     }
     private func rubber(_ x: Float, _ lim: Float) -> Float {
@@ -137,7 +134,7 @@ struct RealmView: View {
                 .font(.system(size: 14, design: .serif)).foregroundStyle(.white.opacity(0.85))
                 .padding(.horizontal, 16).padding(.vertical, 9).background(Capsule().fill(.black.opacity(0.5)))
             // The Book, open on this world's chapter (decision 129).
-            Button { withAnimation(.spring(duration: 0.5)) { bookOpen = true } } label: {
+            Button { withAnimation(.sheet) { bookOpen = true } } label: {
                 Image(uiImage: UIImage(named: "icon-book.png") ?? UIImage(named: "prop-scroll.png") ?? UIImage()).resizable().scaledToFit()
                     .frame(width: 30, height: 26).padding(8).background(Circle().fill(.black.opacity(0.5)))
                     .overlay(alignment: .topTrailing) {
@@ -180,19 +177,19 @@ struct RealmView: View {
         scene.panTarget = .zero                      // the spot's close-up is framed from the home view
         scene.focus = scene.spot(s.uv.x, s.uv.y)
         scene.hero.look(at: [s.uv.x < 0.5 ? -0.7 : 0.7, s.uv.y > 0.36 ? 0.5 : -0.3])
-        withAnimation(.spring(duration: 0.5)) { focused = s }
+        withAnimation(.sheet) { focused = s }
     }
 
     private func unfocus() {
         scene.focus = nil
         scene.hero.look(at: nil)
-        withAnimation(.spring(duration: 0.5)) { focused = nil }
+        withAnimation(.sheet) { focused = nil }
     }
 
     private func back() {
         unfocus()
         withAnimation(.easeIn(duration: 0.4)) { appear = false }
-        withAnimation(.easeInOut(duration: 0.6)) { model.go(.map) }
+        withAnimation(.screen) { model.go(.map) }
     }
 }
 

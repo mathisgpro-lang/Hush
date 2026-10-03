@@ -445,9 +445,13 @@ final class SanctuaryScene {
             panTarget = [d == "left" ? -9 : d == "right" ? 9 : panTarget.x, d == "up" ? 9 : d == "down" ? -9 : panTarget.y]
         }
         let pt = simd_clamp(panTarget, -panLimit - EdgeSafety.rubber, panLimit + EdgeSafety.rubber)
-        let w0: Float = 7.5
-        panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
-        pan += panVel * dt
+        let w0: Float = 9
+        if fingerDown {                       // 1:1 under the finger (no lag); its speed carries into the glide
+            let v = (pt - pan) / max(dt, 0.001); panVel = panVel * 0.5 + v * 0.5; pan = pt
+        } else {
+            panVel += (w0 * w0 * (pt - pan) - 2 * w0 * panVel) * dt
+            pan += panVel * dt
+        }
         let panV = SIMD3<Float>(pan.x, pan.y, 0)
         // The camera itself moves on springs too (fluid: smooth starts and stops, no sudden changes of speed).
         let wc: Float = 3.4

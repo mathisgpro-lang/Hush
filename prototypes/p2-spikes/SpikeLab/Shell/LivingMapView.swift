@@ -22,7 +22,7 @@ extension RealmID {
 
 struct LivingMapView: View {
     let model: ShellModel
-    @State private var scene = MapScene()
+    private var scene: MapScene { model.mapScene }
     @State private var selected: RealmID?
     @State private var dragStart: SIMD2<Float>?
     @State private var pinchStart: Float?
@@ -45,7 +45,7 @@ struct LivingMapView: View {
                     TourBubble(text: "The Emberlands. Each realm wakes as you grow in its part of life. Our first journey is the Whispering Grove.",
                                button: "Fly there", next: {
                                    model.tour = .grove
-                                   withAnimation(.spring(duration: 0.4)) { selected = .grove }
+                                   withAnimation(.sheet) { selected = .grove }
                                    enter(.grove)
                                }, skip: { withAnimation { model.tour = nil } })
                     .padding(.bottom, 24)
@@ -65,24 +65,14 @@ struct LivingMapView: View {
 
     private func mapLayer(_ full: CGSize) -> some View {
         ZStack {
-            Color.black
-            RealityView { content in
-                content.camera = .virtual
-                let lastOpen = roadIndex(roadOrder.last { model.open.contains($0) } ?? .sanctuary)
-                do { try await scene.build(open: model.open, flameAt: model.flameAt, lastOpenRoadIndex: lastOpen, ember: model.emberID) }
-                catch { print("MAP BUILD FAILED:", error); return }
-                content.add(scene.root)
-                scene.updates = content.subscribe(to: SceneEvents.Update.self) { e in scene.update(dt: Float(e.deltaTime)) }
-                withAnimation(.easeOut(duration: 0.6)) { ready = true }
-            }
-            .opacity(ready ? 1 : 0)
+            Color.clear                                  // the map is drawn by the app's one 3D view underneath
             .contentShape(Rectangle())
             .simultaneousGesture(moveAround(full))
             .simultaneousGesture(pinch)
             .simultaneousGesture(SpatialTapGesture().onEnded { v in tapped(at: v.location, in: full) })
 
             // The realms, floating over the map where they are painted (they move with it).
-            if ready && !diving {
+            if model.mapBuilt && !diving {
                 TimelineView(.animation) { _ in
                     ZStack {
                         ForEach(roadOrder) { r in
@@ -107,7 +97,7 @@ struct LivingMapView: View {
         DragGesture(minimumDistance: 6)
             .onChanged { v in
                 guard !diving else { return }
-                if dragStart == nil { dragStart = scene.pan }
+                if dragStart == nil { dragStart = scene.pan; scene.fingerDown = true }
                 let raw = (dragStart ?? .zero) + SIMD2(-Float(v.translation.width), Float(v.translation.height)) / ppm(size)
                 let lim = scene.panLimit(zoom: scene.zoom)
                 scene.panTarget = SIMD2(EdgeSafety.rubberBand(raw.x, lim.x), EdgeSafety.rubberBand(raw.y, lim.y))
@@ -117,7 +107,7 @@ struct LivingMapView: View {
                 let projected = (dragStart ?? .zero) + SIMD2(-Float(v.predictedEndTranslation.width), Float(v.predictedEndTranslation.height)) / ppm(size)
                 let lim = scene.panLimit(zoom: scene.zoom)
                 scene.panTarget = simd_clamp(projected, -lim, lim)
-                dragStart = nil
+                dragStart = nil; scene.fingerDown = false
             }
     }
 
@@ -173,12 +163,12 @@ struct LivingMapView: View {
             return (r, min(dl, dp))
         }
         guard let best = hits.min(by: { $0.1 < $1.1 }), best.1 < 90 else {
-            if selected != nil { withAnimation(.spring(duration: 0.4)) { selected = nil } }
+            if selected != nil { withAnimation(.sheet) { selected = nil } }
             return
         }
         let r = best.0
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        withAnimation(.spring(duration: 0.45)) { selected = r }
+        withAnimation(.sheet) { selected = r }
         // Glide so the realm sits above its card.
         scene.panTarget = scene.centerPan(on: CGPoint(x: r.mapPoint.x, y: r.mapPoint.y + 160), zoom: scene.zoom)
     }
@@ -195,7 +185,7 @@ struct LivingMapView: View {
                     Text(r.pillar).font(.system(size: 12, weight: .medium, design: .serif)).foregroundStyle(r.color)
                 }
                 Spacer()
-                Button { withAnimation(.spring(duration: 0.4)) { selected = nil } } label: {
+                Button { withAnimation(.sheet) { selected = nil } } label: {
                     Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(.white.opacity(0.7))
                         .frame(width: 30, height: 30).background(Circle().fill(.white.opacity(0.08)))
                 }
@@ -221,7 +211,7 @@ struct LivingMapView: View {
 
     private var header: some View {
         HStack {
-            Button { withAnimation(.easeInOut(duration: 0.6)) { model.go(.home) } } label: {
+            Button { withAnimation(.screen) { model.go(.home) } } label: {
                 Label("Home", systemImage: "house.fill").font(.system(size: 15, design: .serif))
                     .padding(.horizontal, 14).padding(.vertical, 9).background(Capsule().fill(.black.opacity(0.55))).foregroundStyle(.white)
             }
@@ -236,15 +226,15 @@ struct LivingMapView: View {
     /// screen, and the realm opens around you.
     private func enter(_ r: RealmID) {
         guard !diving else { return }
-        withAnimation(.easeOut(duration: 0.3)) { diving = true }
+        withAnimation(.easeOut(duration: 0.2)) { diving = true }
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         scene.startDive(to: r.mapPoint)
         model.arrivingByDive = true
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(1250))          // the swoop itself, seen
+            try? await Task.sleep(for: .milliseconds(820))           // the swoop itself, seen (quick, like a game)
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            withAnimation(.easeIn(duration: 0.45)) { flash = 1 }     // the realm's light takes over at the very end
-            try? await Task.sleep(for: .milliseconds(470))
+            withAnimation(.easeIn(duration: 0.28)) { flash = 1 }     // the realm's light takes over at the very end
+            try? await Task.sleep(for: .milliseconds(290))
             model.go(r == .sanctuary ? .home : .realm(r))
         }
     }
