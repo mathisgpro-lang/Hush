@@ -80,7 +80,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 
 ## ▶ Where we left off: RESUME HERE (updated 2026-10-03, decisions 121–129)
 
-**Current work: P2.5 iteration 2** plus the home bar (spec `docs/plan-2.0/p25-book-flame-spec.md`, approved). SpikeLab, `prototypes/p2-spikes`.
+**Current work: P2.5 iteration 2** plus the home bar and game-speed reactivity (decision 130: one shared 3D view `WorldLayer` in `Shell/AppShellView.swift`; worlds owned by `ShellModel`) (spec `docs/plan-2.0/p25-book-flame-spec.md`, approved). SpikeLab, `prototypes/p2-spikes`.
 - ✅ On the iPhone:
   - the floating Spark in the ember's color (`Shell/SparkTint.swift`);
   - the Sanctuary;
