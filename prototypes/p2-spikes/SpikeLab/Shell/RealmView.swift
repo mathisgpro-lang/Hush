@@ -27,6 +27,7 @@ struct RealmView: View {
     @State private var ready = false
     @State private var appear = false
     @State private var dragStart: SIMD2<Float>?
+    @State private var bookOpen = false
 
     var body: some View {
         GeometryReader { geo in
@@ -36,6 +37,7 @@ struct RealmView: View {
                     content.camera = .virtual
                     do { try await scene.build() } catch { return }
                     content.add(scene.root)
+                    scene.hero.tint = SparkTint.shift(model.emberID)       // your ember's color
                     scene.heartDepth = 6                      // prototype: a Grove that has started to wake
                     let d = AliveDirector(seed: 9, meter: meter)
                     d.attach(scene.hero, tempo: 0.55)
@@ -79,7 +81,8 @@ struct RealmView: View {
                 }
                 .padding(.horizontal, 16)
             }
-            .simultaneousGesture(lookAround(geo.size))     // the whole screen: drags anywhere look around
+            .overlay { if bookOpen { BookView(model: model, isOpen: $bookOpen, openOn: realm.rawValue).transition(.move(edge: .bottom).combined(with: .opacity)) } }
+            .simultaneousGesture(lookAround(geo.size), including: bookOpen ? .subviews : .all)     // the whole screen: drags anywhere look around
         }
         .onAppear { meter.start(); withAnimation(.easeOut(duration: 1.0)) { appear = true } }
         .onDisappear { meter.stop(); director?.stop() }
@@ -129,10 +132,20 @@ struct RealmView: View {
     }
 
     private var footer: some View {
-        Text("Tap a glowing spot to explore")
-            .font(.system(size: 14, design: .serif)).foregroundStyle(.white.opacity(0.85))
-            .padding(.horizontal, 16).padding(.vertical, 9).background(Capsule().fill(.black.opacity(0.5)))
-            .padding(.bottom, 30)
+        HStack(spacing: 10) {
+            Text("Tap a glowing spot to explore")
+                .font(.system(size: 14, design: .serif)).foregroundStyle(.white.opacity(0.85))
+                .padding(.horizontal, 16).padding(.vertical, 9).background(Capsule().fill(.black.opacity(0.5)))
+            // The Book, open on this world's chapter (decision 129).
+            Button { withAnimation(.spring(duration: 0.5)) { bookOpen = true } } label: {
+                Image(uiImage: UIImage(named: "icon-book.png") ?? UIImage(named: "prop-scroll.png") ?? UIImage()).resizable().scaledToFit()
+                    .frame(width: 30, height: 26).padding(8).background(Circle().fill(.black.opacity(0.5)))
+                    .overlay(alignment: .topTrailing) {
+                        if model.journey.newPages > 0 { Circle().fill(Color(red: 1, green: 0.55, blue: 0.2)).frame(width: 10, height: 10) }
+                    }
+            }
+        }
+        .padding(.bottom, 30)
     }
 
     private func spotCard(_ s: Spot) -> some View {

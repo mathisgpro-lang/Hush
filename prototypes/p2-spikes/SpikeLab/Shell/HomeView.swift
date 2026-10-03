@@ -14,6 +14,8 @@ struct HomeView: View {
     @State private var toast: String?
     @State private var dragStartPan: SIMD2<Float>?
     @State private var satchelOpen = false
+    @State private var bookOpen = CommandLine.arguments.contains("-book")
+    @State private var flameOpen = CommandLine.arguments.contains("-flamesheet")
     @State private var fullSize: CGSize = .zero
 
     /// Where the quests you take wait in the Sanctuary (home painting uv, v up): on the ground around the circle.
@@ -33,6 +35,7 @@ struct HomeView: View {
                     content.camera = .virtual
                     do { try await scene.build() } catch { print("SCENE BUILD FAILED:", error); return }
                     content.add(scene.root)
+                    scene.hero.tint = SparkTint.shift(model.emberID)       // your ember's color
                     scene.setVitality(1)
                     let d = AliveDirector(seed: 5, meter: meter)
                     d.attach(scene.hero, tempo: 0.55)
@@ -81,8 +84,10 @@ struct HomeView: View {
                 if let call = open { card(call, size: geo.size) }
                 tourLayer
                 if satchelOpen { QuestJournal(model: model, isOpen: $satchelOpen).transition(.move(edge: .bottom).combined(with: .opacity)) }
+                if bookOpen { BookView(model: model, isOpen: $bookOpen, openOn: "sanctuary").transition(.move(edge: .bottom).combined(with: .opacity)) }
+                if flameOpen { FlameSheet(model: model, isOpen: $flameOpen).transition(.move(edge: .bottom).combined(with: .opacity)) }
             }
-            .simultaneousGesture(lookAround(geo.size), including: satchelOpen || open != nil ? .subviews : .all)
+            .simultaneousGesture(lookAround(geo.size), including: satchelOpen || bookOpen || flameOpen || open != nil ? .subviews : .all)
         }
         .onAppear { meter.start() }
         .onDisappear { meter.stop(); director?.stop() }
@@ -186,12 +191,17 @@ struct HomeView: View {
 
     private var cockpitBar: some View {
         HStack(spacing: 0) {
-            barButton("map.fill", "World", badge: !model.newHere.isEmpty) { withAnimation(.easeInOut(duration: 0.6)) { model.go(.map) } }
+            barButton("map.fill", "World", badge: !model.newHere.isEmpty, image: UIImage(named: "icon-world.png") ?? UIImage(named: "icon-world-temp.png")) { withAnimation(.easeInOut(duration: 0.6)) { model.go(.map) } }
             barButton("bag.fill", "Satchel", badge: chosen.isEmpty && model.calls.contains(where: { !$0.done })) {
                 withAnimation(.spring(duration: 0.5)) { satchelOpen = true }
             }
-            barButton("book.closed.fill", "Book", badge: false) { flash("The Book of Your Flame opens after 10 days lived.") }
-            barButton("flame.fill", "Your Flame", badge: false) { director?.tapped() }
+            barButton("book.closed.fill", "Book", badge: model.journey.newPages > 0, image: UIImage(named: "icon-book.png") ?? UIImage(named: "prop-scroll.png")) {
+                withAnimation(.spring(duration: 0.5)) { bookOpen = true }
+            }
+            barButton("flame.fill", "Your Flame", badge: false, image: UIImage(named: "icon-flame.png") ?? SparkTint.image("spark-keyed.png", ember: model.emberID)) {
+                director?.tapped()
+                withAnimation(.spring(duration: 0.5)) { flameOpen = true }
+            }
         }
         .padding(.vertical, 10)
         .background(RoundedRectangle(cornerRadius: 24).fill(Color(red: 0.08, green: 0.06, blue: 0.05).opacity(0.78)))
@@ -199,11 +209,14 @@ struct HomeView: View {
         .padding(.bottom, 4)
     }
 
-    private func barButton(_ symbol: String, _ label: String, badge: Bool, action: @escaping () -> Void) -> some View {
+    private func barButton(_ symbol: String, _ label: String, badge: Bool, image: UIImage? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 4) {
                 ZStack(alignment: .topTrailing) {
-                    if symbol == "bag.fill", let img = UIImage(named: "satchel.png") {
+                    if let image {                                       // painted icons (stand-ins until Codex's)
+                        Image(uiImage: image).resizable().scaledToFit().frame(width: 32, height: 28)
+                            .shadow(color: .orange.opacity(badge ? 0.8 : 0.3), radius: badge ? 8 : 3)
+                    } else if symbol == "bag.fill", let img = UIImage(named: "satchel.png") {
                         Image(uiImage: img).resizable().scaledToFit().frame(width: 34, height: 26)     // Codex's satchel
                             .shadow(color: .orange.opacity(badge ? 0.8 : 0.3), radius: badge ? 8 : 3)
                     } else {
@@ -398,5 +411,9 @@ struct QuestJournal: View {
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(call.chosen ? call.realm.color.opacity(0.8) : Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.35), lineWidth: call.chosen ? 1.5 : 1))
     }
 
-    private func close() { withAnimation(.spring(duration: 0.45)) { isOpen = false } }
+    private func close() {
+        let taken = model.calls.filter { $0.chosen }.map(\.title)
+        if !taken.isEmpty { model.journey.firstQuests(taken) }          // the Book's page about your first quests
+        withAnimation(.spring(duration: 0.45)) { isOpen = false }
+    }
 }

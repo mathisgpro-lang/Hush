@@ -114,6 +114,11 @@ final class ShellModel {
     var flameAt: RealmID = .sanctuary
     var calls: [Call] = []
     var light: Int = 0                                // today's light sent into the world
+    /// What you've lived: the Book writes itself from it; Your Flame sums it up (decisions 128–129).
+    let journey = Journey()
+    /// The ember you chose in the introduction: your Spark burns in its color (Mathis, 2026-10-03).
+    var emberID: String = UserDefaults.standard.string(forKey: "ember.id") ?? "craft"
+    func setEmber(_ id: String) { emberID = id; UserDefaults.standard.set(id, forKey: "ember.id") }
     /// Set when a realm is entered by the map's dive: the realm then opens out of the dive's light.
     var arrivingByDive = false
     /// The guided tour right after the introduction: the Sanctuary's options, the world map, the Grove.
@@ -121,6 +126,7 @@ final class ShellModel {
     var tour: TourStep?
 
     init() {
+        if let i = CommandLine.arguments.firstIndex(of: "-ember"), i + 1 < CommandLine.arguments.count { setEmber(CommandLine.arguments[i + 1]) }   // (test)
         makeCalls()
         if CommandLine.arguments.contains("-quests") { for id in ["a", "c", "d"] { toggleChosen(id) } }   // (test: three taken)
     }
@@ -162,10 +168,12 @@ final class ShellModel {
         guard let i = calls.firstIndex(where: { $0.id == id }) else { return }
         calls[i].done = true
         light += 1
+        journey.did(calls[i].title, detail: calls[i].detail, realm: calls[i].realm)
     }
 
     func go(_ s: Screen) {
-        if case .realm(let r) = s { newHere.remove(r); flameAt = r }
+        if case .realm(let r) = s { newHere.remove(r); flameAt = r; journey.entered(r) }
+        if s == .map { journey.sawTheWorld() }
         if s == .home { flameAt = .sanctuary }
         screen = s
     }

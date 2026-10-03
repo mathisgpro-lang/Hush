@@ -69,7 +69,7 @@ struct LivingMapView: View {
             RealityView { content in
                 content.camera = .virtual
                 let lastOpen = roadIndex(roadOrder.last { model.open.contains($0) } ?? .sanctuary)
-                do { try await scene.build(open: model.open, flameAt: model.flameAt, lastOpenRoadIndex: lastOpen) }
+                do { try await scene.build(open: model.open, flameAt: model.flameAt, lastOpenRoadIndex: lastOpen, ember: model.emberID) }
                 catch { print("MAP BUILD FAILED:", error); return }
                 content.add(scene.root)
                 scene.updates = content.subscribe(to: SceneEvents.Update.self) { e in scene.update(dt: Float(e.deltaTime)) }

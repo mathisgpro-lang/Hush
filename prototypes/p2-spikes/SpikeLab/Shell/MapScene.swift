@@ -75,7 +75,7 @@ final class MapScene {
 
     // MARK: Build
 
-    func build(open: Set<RealmID>, flameAt: RealmID, lastOpenRoadIndex: Int) async throws {
+    func build(open: Set<RealmID>, flameAt: RealmID, lastOpenRoadIndex: Int, ember: String = "craft") async throws {
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
         let tex = try await TextureResource(named: "map-paint.png")
         let motion = try await TextureResource(named: "map-motion.png", options: .init(semantic: .raw))
@@ -207,7 +207,9 @@ final class MapScene {
         }
 
         // Your Spark, hovering where you are.
-        let sparkTex = try await TextureResource(named: "spark-keyed.png")
+        let sparkTex: TextureResource = if let cg = SparkTint.image("spark-keyed.png", ember: ember)?.cgImage {
+            try await TextureResource(image: cg, options: .init(semantic: .color))
+        } else { try await TextureResource(named: "spark-keyed.png") }
         var su = UnlitMaterial(); su.color = .init(tint: .white, texture: .init(sparkTex))
         su.blending = .transparent(opacity: .init(floatLiteral: 1.0)); su.writesDepth = false
         let sp = ModelEntity(mesh: .generatePlane(width: 0.03, height: 0.03 * Float(sparkTex.height) / Float(sparkTex.width)), materials: [su])

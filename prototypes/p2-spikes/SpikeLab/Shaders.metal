@@ -663,6 +663,19 @@ void sparkFire(realitykit::surface_parameters params)
     float aSoft = float(params.textures().base_color().sample(s, suv, bias(1.2)).a);
     float a = mix(float(col.a), aSoft, 0.6);
     float3 rgb = float3(col.rgb);
+    // Your ember's color (SparkTint): the fire's hue turns (YIQ rotation keeps its brightness), the eyes stay as painted.
+    {
+        float turn = params.material_constants().roughness_scale() * 6.2831853;
+        float satK = params.material_constants().clearcoat_scale() * 2.0;
+        float Y = dot(rgb, float3(0.299, 0.587, 0.114));
+        float k = smoothstep(0.12, 0.32, Y);              // only the darkest strokes (pupils, lashes) keep their paint
+        float I = dot(rgb, float3(0.596, -0.274, -0.322));
+        float Q = dot(rgb, float3(0.211, -0.523, 0.312));
+        float cs = cos(turn), sn = -sin(turn);          // the same direction as Core Image's hue adjust (the pictures)
+        float I2 = (I * cs - Q * sn) * satK, Q2 = (I * sn + Q * cs) * satK;
+        float3 tinted = float3(Y + 0.956 * I2 + 0.621 * Q2, Y - 0.272 * I2 - 0.647 * Q2, Y - 1.106 * I2 + 1.703 * Q2);
+        rgb = mix(rgb, max(tinted, 0.0), k * step(0.0001, abs(turn) + abs(satK - 1.0)));
+    }
     // A warm pulse in its lower body, like a heartbeat.
     float core = 1.0 - smoothstep(0.0, 0.22, length((uv - float2(0.5, 0.24)) / float2(1.0, 0.8)));
     float beat = pow(0.5 + 0.5 * sin(t * 2.3), 8.0) + 0.35 * pow(0.5 + 0.5 * sin(t * 2.3 - 0.6), 12.0);

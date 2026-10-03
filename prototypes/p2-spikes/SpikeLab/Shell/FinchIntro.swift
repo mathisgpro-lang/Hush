@@ -104,7 +104,7 @@ struct FinchIntro: View {
                         }
                         if let m = morph {
                             let h = f.height * Self.stageHeights[m] / Self.stageHeights[0] * 0.95
-                            Image(uiImage: UIImage(named: "\(Self.stages[m]).png") ?? UIImage()).resizable().scaledToFit()
+                            Image(uiImage: SparkTint.image("\(Self.stages[m]).png", ember: model.emberID) ?? UIImage()).resizable().scaledToFit()
                                 .frame(height: h)
                                 .position(x: f.feet.x, y: f.feet.y - h * 0.5 + f.height * 0.08)
                                 .id(m).transition(.scale(scale: 0.8).combined(with: .opacity))
@@ -460,6 +460,7 @@ struct FinchIntro: View {
         FeelHaptics.shared.ignite(); FeelSound.shared.ignite(pitch: 2)
         withAnimation(.easeOut(duration: 0.4)) { rays = true }
         withAnimation(.easeOut(duration: 0.7)) { emberGone = 1 }
+        if let e = ember { model.setEmber(e.id); scene.hero.tint = SparkTint.shift(e.id) }   // born in your ember's color
         go(.born)
         // Your Flame is born on the stone circle, and color floods back into the Sanctuary.
         scene.flameTarget = 1
@@ -530,7 +531,8 @@ struct FinchIntro: View {
     }
 
     private func finish() {
-        if let e = ember { model.chose(e.interest) }
+        if let e = ember { model.chose(e.interest); model.setEmber(e.id) }
+        model.journey.born(name: name.trimmingCharacters(in: .whitespaces), ember: ember?.word ?? "light")   // the Book's first page
         FeelHaptics.shared.rise(); FeelSound.shared.rise()
         withAnimation { bubble = nil }
         scene.focus = nil                            // the camera pulls back: the whole Sanctuary

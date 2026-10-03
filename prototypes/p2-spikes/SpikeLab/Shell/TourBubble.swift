@@ -4,6 +4,7 @@ import SwiftUI
 
 struct TourBubble: View {
     let text: String
+    var ember: String = UserDefaults.standard.string(forKey: "ember.id") ?? "craft"
     let button: String
     var pointsDown = true
     let next: () -> Void
@@ -12,7 +13,7 @@ struct TourBubble: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 10) {
-                Image(uiImage: UIImage(named: "spark-keyed.png") ?? UIImage()).resizable().scaledToFit().frame(width: 34, height: 44)
+                Image(uiImage: SparkTint.image("spark-keyed.png", ember: ember) ?? UIImage()).resizable().scaledToFit().frame(width: 34, height: 44)
                     .shadow(color: .orange.opacity(0.8), radius: 8)
                 Text(text).font(.system(size: 16, design: .serif)).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
             }

@@ -45,6 +45,8 @@ final class HeroRig: FlameRig {
     private var hoverTime: Float = 0
     /// How high a spirit floats above its spot (rig units).
     var hoverHeight: Float = 0.06
+    /// Your ember's color on the Spark's fire (SparkTint): hue rotation (radians) and saturation.
+    var tint: (angle: Float, saturation: Float) = (0, 1)
     /// A stationary Flame stays exactly where it sits (no drifting, no leaning toward fingers or moths): only in-place life.
     var stationary = false
     init(base: String = "hero", footInset: Float = 0.044, reflection: Bool = true, glows: Bool = true, wander: Float = 0.06, spirit: Bool = false) {
@@ -183,7 +185,11 @@ final class HeroRig: FlameRig {
             guard var comp = e.model, var m = comp.materials.first as? CustomMaterial else { continue }
             let b = (inScene && e === hero) ? brightness + 10 : brightness
             m.custom.value = [mood, b, drag.x, drag.y]
-            if spirit { m.metallic = .init(floatLiteral: hour / 24) }
+            if spirit {
+                m.metallic = .init(floatLiteral: hour / 24)
+                m.roughness = .init(floatLiteral: (tint.angle / (2 * .pi)).truncatingRemainder(dividingBy: 1) + (tint.angle < 0 ? 1 : 0))   // hue turn 0…1
+                m.clearcoat = .init(floatLiteral: tint.saturation * 0.5)                                   // saturation ÷ 2
+            }
             comp.materials = [m]; e.model = comp
         }
         if body.landed > 0.2, let puff = landingPuff, var pe = puff.components[ParticleEmitterComponent.self] {
