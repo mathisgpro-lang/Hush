@@ -17,6 +17,15 @@ enum RealmContent {
         }
     }
 
+    /// Where your quests wait in each realm (on open ground, clear of its places to explore).
+    static func questSpots(_ r: RealmID) -> [SIMD2<Float>]? {
+        switch r {
+        case .grove: [[0.27, 0.40], [0.73, 0.40], [0.6, 0.29]]
+        case .stillwater: [[0.27, 0.39], [0.69, 0.37], [0.6, 0.27]]
+        default: nil
+        }
+    }
+
     static func spots(_ r: RealmID) -> [Spot] {
         switch r {
         case .grove: groveSpots
@@ -24,7 +33,7 @@ enum RealmContent {
             Spot(id: "lotus", title: "The Lotus Path", line: "Stepping stones appear one by one, each time you stop and breathe. Today the water is a little clearer.", symbol: "leaf.circle.fill", uv: [0.47, 0.545], action: "Sit by the water (a real calm moment)"),
             Spot(id: "ilo", title: "Ilo", line: "A silver heron on one leg, whispering: “…be still… and you'll see yourself…”", symbol: "bird.fill", uv: [0.86, 0.45]),
             Spot(id: "pavilion", title: "The Pavilion of Breath", line: "Far out on the water, a pavilion floats. One day the path will reach it.", symbol: "wind", uv: [0.62, 0.64]),
-            Spot(id: "shore", title: "The Gratitude Shore", line: "Smooth stones you've written on, warm to the touch. Each one, a thing you were grateful for.", symbol: "heart.text.square.fill", uv: [0.22, 0.21]),
+            Spot(id: "shore", title: "The Gratitude Shore", line: "Smooth stones you've written on, warm to the touch. Each one, a thing you were grateful for.", symbol: "heart.text.square.fill", uv: [0.15, 0.29]),
         ]
         case .highlands: [
             Spot(id: "stairs", title: "The Foot of the Stairs", line: "Where every road begins. One step today is one stair of the mountain.", symbol: "figure.stairs", uv: [0.4, 0.27], action: "Take a walk (a real Body action)"),

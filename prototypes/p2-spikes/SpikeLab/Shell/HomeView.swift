@@ -6,7 +6,12 @@ import RealityKit
 
 struct HomeView: View {
     let model: ShellModel
-    private var scene: SanctuaryScene { model.sanctuary }
+    /// Which world you're in (Mathis: the same interface in every world; only the world changes).
+    var world: RealmID = .sanctuary
+    private var scene: LivingWorld { world == .sanctuary ? model.sanctuary : model.realmScene(world) }
+    private var realmScene: RealmScene? { world == .sanctuary ? nil : model.realmScene(world) }
+    private var built: Bool { world == .sanctuary ? model.sanctuaryBuilt : model.realmsBuilt.contains(world) }
+    @State private var focused: Spot?
     @State private var meter = FrameMeter()
     @State private var director: AliveDirector?
     @State private var open: Call?
@@ -18,8 +23,7 @@ struct HomeView: View {
     @State private var flameOpen = CommandLine.arguments.contains("-flamesheet")
     @State private var fullSize: CGSize = .zero
 
-    /// Where the quests you take wait in the Sanctuary (home painting uv, v up): on the ground around the circle.
-    private let questSpots: [SIMD2<Float>] = [[0.30, 0.425], [0.775, 0.44], [0.42, 0.33]]
+    private var questSpots: [SIMD2<Float>] { scene.questSpots }
     private var chosen: [Call] { model.calls.filter { $0.chosen && !$0.done } }
     /// Each quest keeps its spot for the day (finishing one never moves the others).
     private func spotFor(_ call: Call) -> SIMD2<Float> {
@@ -39,11 +43,18 @@ struct HomeView: View {
                 // spot when you look around). Tap one to do it.
                 GeometryReader { full in
                     // Redrawn every frame only while quests are out and nothing covers them.
-                    TimelineView(.animation(minimumInterval: nil, paused: chosen.isEmpty || model.overlayOpen)) { _ in
+                    TimelineView(.animation(minimumInterval: nil, paused: (chosen.isEmpty && world == .sanctuary) || model.overlayOpen || !built)) { _ in
                         ZStack {
+                            // The realm's own places to explore (its Keeper, its landmarks), only in realms.
+                            if focused == nil {
+                                ForEach(RealmContent.spots(world)) { s in
+                                    Button { focus(s) } label: { SpotMarker(spot: s) }
+                                        .position(scene.screenPoint(world: s.uv, in: full.size))
+                                }
+                            }
                             ForEach(chosen) { call in
                                 Button { withAnimation(.sheet) { open = call } } label: { QuestObject(call: call) }
-                                    .position(scene.screenPoint(homeUV: spotFor(call), in: full.size))
+                                    .position(scene.screenPoint(world: spotFor(call), in: full.size))
                                     .transition(.scale(scale: 0.2).combined(with: .opacity))
                             }
                         }
@@ -58,7 +69,7 @@ struct HomeView: View {
                     // It flies frame by frame (time-based, no steps), easing in and out along an arc.
                     TimelineView(.animation) { tl in
                         let k = min(1, CGFloat(tl.date.timeIntervalSince(s.start) / 0.9)), t = k * k * (3 - 2 * k)
-                        let to = scene.screenPoint(homeUV: [0.493, 0.56], in: fullSize)
+                        let to = scene.screenPoint(world: scene.flameUV, in: fullSize)
                         let p = CGPoint(x: s.from.x + (to.x - s.from.x) * t, y: s.from.y + (to.y - s.from.y) * t - sin(t * .pi) * 80)
                         Circle().fill(RadialGradient(colors: [.white, Color(red: 1, green: 0.8, blue: 0.4), .clear], center: .center, startRadius: 1, endRadius: 22))
                             .frame(width: 44, height: 44).scaleEffect(1 - 0.35 * t).position(p)
@@ -76,33 +87,79 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 16)
 
+                if let s = focused { VStack { Spacer(); spotCard(s).padding(.horizontal, 16) } }
                 if let call = open { card(call, size: geo.size) }
                 tourLayer
                 if satchelOpen { QuestJournal(model: model, isOpen: $satchelOpen).transition(.move(edge: .bottom).combined(with: .opacity)) }
-                if bookOpen { BookView(model: model, isOpen: $bookOpen, openOn: "sanctuary").transition(.move(edge: .bottom).combined(with: .opacity)) }
+                if bookOpen { BookView(model: model, isOpen: $bookOpen, openOn: world.rawValue).transition(.move(edge: .bottom).combined(with: .opacity)) }
                 if flameOpen { FlameSheet(model: model, isOpen: $flameOpen).transition(.move(edge: .bottom).combined(with: .opacity)) }
             }
             .simultaneousGesture(lookAround(geo.size), including: satchelOpen || bookOpen || flameOpen || open != nil ? .subviews : .all)
         }
         .onAppear { meter.start(); setUpWorld() }
         .onChange(of: satchelOpen || bookOpen || flameOpen || open != nil) { _, covered in model.overlayOpen = covered }
-        .onChange(of: model.sanctuaryBuilt) { _, _ in setUpWorld() }
+        .onChange(of: built) { _, _ in setUpWorld() }
         .onDisappear { meter.stop(); director?.stop(); model.overlayOpen = false }
     }
 
     /// Your Spark in your color, the world bright, its little life director; then the other worlds preload.
     private func setUpWorld() {
-        guard model.sanctuaryBuilt, director == nil else { return }
+        guard built, director == nil else { return }
         scene.hero.tint = SparkTint.shift(model.emberID)
-        scene.flameTarget = 1
-        scene.setVitality(1)
+        if world == .sanctuary {
+            model.sanctuary.flameTarget = 1
+            model.sanctuary.setVitality(1)
+            model.preloadLater()
+        } else if let rs = realmScene {
+            // How awake the realm is comes from your real actions in its pillar (each relights a few of its lights).
+            let lit = Float(model.journey.light(for: world)) * 3
+            rs.heartDepth = max(rs.heartDepth, world == .grove ? max(6, lit) : lit)
+        }
         let d = AliveDirector(seed: 5, meter: meter)
         d.attach(scene.hero, tempo: 0.55)
         director = d
-        model.preloadLater()
     }
 
-    private func ppm(_ size: CGSize) -> CGFloat { size.height / CGFloat(SanctuaryScene.visibleHeight) * 0.98 }
+    /// Explore a realm's place: the camera glides to it and it tells its story.
+    private func focus(_ s: Spot) {
+        guard let rs = realmScene else { return }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        rs.panTarget = .zero
+        rs.focus = rs.spot(s.uv.x, s.uv.y)
+        rs.hero.look(at: [s.uv.x < 0.5 ? -0.7 : 0.7, s.uv.y > 0.36 ? 0.5 : -0.3])
+        withAnimation(.sheet) { focused = s }
+    }
+    private func unfocus() {
+        realmScene?.focus = nil
+        realmScene?.hero.look(at: nil)
+        withAnimation(.sheet) { focused = nil }
+    }
+    private func spotCard(_ s: Spot) -> some View {
+        VStack(spacing: 10) {
+            HStack {
+                Image(systemName: s.symbol).foregroundStyle(world.color)
+                Text(s.title).font(.system(size: 22, design: .serif))
+                Spacer()
+                Button { unfocus() } label: {
+                    Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).frame(width: 30, height: 30).background(Circle().fill(.white.opacity(0.1)))
+                }
+            }
+            Text(s.line).font(.system(size: 15, design: .serif)).foregroundStyle(.white.opacity(0.85)).frame(maxWidth: .infinity, alignment: .leading)
+            if s.action != nil {
+                Button { unfocus(); withAnimation(.sheet) { satchelOpen = true } } label: {
+                    Text("Find a quest for it in your satchel").font(.system(size: 16, design: .serif)).frame(maxWidth: .infinity).padding(.vertical, 11)
+                        .background(Capsule().fill(world.color.opacity(0.35))).overlay(Capsule().stroke(world.color, lineWidth: 1))
+                }
+            }
+        }
+        .foregroundStyle(.white).padding(18)
+        .background(RoundedRectangle(cornerRadius: 24).fill(Color(red: 0.07, green: 0.06, blue: 0.08).opacity(0.92)))
+        .overlay(RoundedRectangle(cornerRadius: 24).stroke(world.color.opacity(0.5), lineWidth: 1))
+        .padding(.bottom, 110)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    private func ppm(_ size: CGSize) -> CGFloat { size.height * CGFloat(scene.pointsPerMeterScale) }
 
     /// Drag to look around the Sanctuary, a little in any direction (Clash of Clans–style): past the limit the
     /// world resists like a rubber band, and letting go glides on (momentum), then settles back inside.
@@ -130,8 +187,12 @@ struct HomeView: View {
 
     private var topBar: some View {
         VStack(spacing: 4) {
-            Text("Sanctuary").font(.system(size: 34, weight: .regular, design: .serif)).foregroundStyle(.white)
+            Text(world == .sanctuary ? "Sanctuary" : world.name).font(.system(size: world == .sanctuary ? 34 : 28, weight: .regular, design: .serif)).foregroundStyle(.white)
                 .shadow(color: .black.opacity(0.4), radius: 6)
+            if let rs = realmScene {                                     // how awake this realm is
+                Text("\(world.pillar) · \(Restoration.names[Restoration.level(depth: rs.heartDepth)]) · \(rs.litCount) \(RealmContent.lights(world)) lit")
+                    .font(.system(size: 12, weight: .medium, design: .serif)).foregroundStyle(world.color)
+            }
             HStack(spacing: 6) {
                 Image(systemName: "sun.max.fill").font(.caption)
                 Text(model.light == 0 ? "Your day is ready" : "\(model.light) light sent into the world today")
@@ -144,7 +205,17 @@ struct HomeView: View {
 
     /// The tour's first stops: the satchel, then the world.
     @ViewBuilder private var tourLayer: some View {
-        if model.tour == .satchel || model.tour == .world {
+        if model.tour == .grove && world == .grove && built {
+            VStack {
+                Spacer()
+                TourBubble(text: "The Whispering Grove. Every kind word you send relights one of its lanterns. You can live here too: your satchel and your quests come with you to every world.",
+                           button: "Home", next: {
+                               model.tour = nil
+                               withAnimation(.screen) { model.go(.home) }
+                           }, skip: { withAnimation { model.tour = nil } })
+                .padding(.horizontal, 16).padding(.bottom, 118)
+            }
+        } else if (model.tour == .satchel || model.tour == .world) && world == .sanctuary {
             VStack {
                 Spacer()
                 Group {
@@ -182,7 +253,7 @@ struct HomeView: View {
                 .foregroundStyle(.white)
             }
             .padding(.bottom, 10)
-        } else if let r = model.newHere.first {
+        } else if let r = model.newHere.first(where: { $0 != world }) {
             Button { withAnimation(.screen) { model.go(.map) } } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "sparkles").foregroundStyle(r.color)
@@ -279,7 +350,7 @@ struct HomeView: View {
     }
 
     private func finish(_ call: Call, size: CGSize) {
-        let from = scene.screenPoint(homeUV: spotFor(call), in: fullSize)
+        let from = scene.screenPoint(world: spotFor(call), in: fullSize)
         withAnimation { open = nil }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         withAnimation(.sheet) { model.complete(call.id) }
@@ -288,6 +359,7 @@ struct HomeView: View {
             try? await Task.sleep(for: .milliseconds(900))
             strand = nil
             UINotificationFeedbackGenerator().notificationOccurred(.success)
+            if call.realm == world { realmScene?.act() }        // done here, for this realm: its next lights relight
             director?.actionCompleted(call.realm == .grove ? .heart : call.realm == .library ? .mind : call.realm == .highlands ? .body : .spirit)
         }
     }

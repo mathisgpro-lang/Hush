@@ -19,7 +19,7 @@ struct AppShellView: View {
             case .map:
                 LivingMapView(model: model).transition(.asymmetric(insertion: .scale(scale: 0.94).combined(with: .opacity), removal: .opacity))
             case .realm(let r):
-                RealmView(model: model, realm: r).overlay(DiveArrival(model: model)).transition(.opacity)
+                HomeView(model: model, world: r).id(r).overlay(DiveArrival(model: model)).transition(.opacity)   // the same interface in every world
             }
         }
         .buttonStyle(PressableStyle())          // every button reacts the instant it's touched

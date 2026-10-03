@@ -71,6 +71,7 @@ final class RealmScene {
     private var id: String { realm.rawValue }
     /// Where the Spark hovers (the center of the realm's stone circle, painting uv, v up).
     @ObservationIgnored private var circleUV = SIMD2<Float>(0.5, 0.335)
+    var circle: SIMD2<Float> { circleUV }
 
     /// The swipeable Grove (iteration 2): Codex's side panels stitched around the painting (tools/build_grove.py).
     @ObservationIgnored private lazy var layout: (total: Float, homeX0: Float, homeW: Float)? = {
