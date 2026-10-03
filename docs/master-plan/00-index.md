@@ -91,7 +91,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
   - no edges anywhere (`Shell/EdgeSafety.swift`);
   - **the Book that writes itself** (`Shell/Journey.swift`, `Shell/BookView.swift`);
   - **Your Flame** (`Shell/FlameSheet.swift`).
-- **Smoothness:** 60 fps measured by day with everything on (after branching `s2hourLight`). Sunset measured ~40 before the cheaper rays. **Re-measure at `-hour 18.5` and `-hour 23` with the phone awake**, and cut more if needed (candidates: the land shader's foliage sway, the sea's two reads, MSAA).
+- ✅ **Smoothness:** a steady 60 fps on the iPhone 15 with everything on, measured at 11:50, 17:00, 18:30 and 23:00 (2026-10-03).
 - **Waiting on Codex (limit until 2026-10-07 20:15):** `scripts/p25-iter2.sh` (map side panels, then icons: world, book, flame). Then key the icons into `Assets/icon-world.png`, `icon-book.png`, `icon-flame.png` (the bar picks them up automatically), stitch the map panels, and remove the cloud border.
 - Test flags: `-skipintro`, `-autointro`, `-map`, `-grove`, `-quests`, `-book`, `-flamesheet`, `-ember heart|mind|body|spirit|craft|world`, `-seedjourney`, `-freshjourney`, `-push up|down|left|right`, `-hour N`, `-perf`, `-noelements`, `-noflames`, `-nospray`, `-noflies`, `-onlyland`.
 - Later: the 11 P3 review findings before building P3; sound from free libraries (ask before downloads).
