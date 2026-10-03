@@ -21,13 +21,13 @@ final class WorldElements {
             let e = Entity()
             e.components.set(flame(size: s))
             e.position = spot(u, v) + SIMD3(0, 0, 0.004)
-            root.addChild(e); flames.append(e)
+            if !CommandLine.arguments.contains("-noflames") { root.addChild(e); flames.append(e) }
         }
         // Waterfall feet: spray and rolling mist.
         for (u, v, s) in [(0.587, 0.155, 1.6), (0.865, 0.28, 1.4), (0.962, 0.427, 1.0), (0.03, 0.38, 0.8)] as [(Float, Float, Float)] {
             let spray = Entity(); spray.components.set(sprayEmitter(size: s))
             spray.position = spot(u, v) + SIMD3(0, 0.004, 0.004)
-            root.addChild(spray)            // (the rolling mist lives in the painting and the land shader: one emitter less each)
+            if !CommandLine.arguments.contains("-nospray") { root.addChild(spray) }            // (the rolling mist lives in the painting and the land shader: one emitter less each)
         }
         // Fish glints on the open sea (lower right).
         let glints = Entity()
@@ -48,7 +48,7 @@ final class WorldElements {
         f.mainEmitter.color = .constant(.single(UIColor(red: 0.85, green: 1, blue: 0.45, alpha: 1)))
         f.mainEmitter.opacityCurve = .gradualFadeInOut
         ff.components.set(f); ff.position = spot(0.5, 0.42) + SIMD3(0, 0.05, 0.08)
-        root.addChild(ff); fireflies = ff
+        if !CommandLine.arguments.contains("-noflies") { root.addChild(ff); fireflies = ff }
         // Clouds drifting across the sky, just in front of it and behind everything nearer. Not needed when the
         // world has a real sky layer (its own clouds drift): cards in front of the land read as grey fog.
         guard withClouds else { return }

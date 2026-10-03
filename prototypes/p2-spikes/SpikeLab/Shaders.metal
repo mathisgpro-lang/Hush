@@ -349,46 +349,68 @@ float3 s2hourLight(float3 rgb, float2 uv, float skyM, float seaM, float hour, fl
     float day = smoothstep(9.5, 11.5, hour) * (1.0 - smoothstep(16.0, 18.0, hour));
     float dusk = saturate(1.0 - night - morning - day);
     // ---- The light of the hour. Day and morning are clear and vivid, never grey (Mathis, 2026-10-02). ----
+    // Each mood is only computed when its hour is on (most of the day only one is): every pixel of three
+    // full-screen layers runs this, so skipping the hidden ones is what keeps the phone at 60 frames a second.
     float g0 = dot(rgb, float3(0.299, 0.587, 0.114));
-    // Day sky: a clear blue (deep overhead, pale at the horizon) with the painted clouds turned white. In the
-    // sunset plate the clouds are lavender and the gaps orange, so "how little red over blue" finds the clouds.
-    float cloud = 1.0 - smoothstep(0.2, 0.42, rgb.r - rgb.b);
-    float3 blue = mix(float3(0.62, 0.80, 0.98), float3(0.24, 0.52, 0.93), smoothstep(0.78, 1.0, uv.y));
-    float3 cloudCol = mix(float3(0.80, 0.84, 0.94), float3(1.0, 0.99, 0.97), smoothstep(0.36, 0.62, g0));
-    float3 daySky = mix(blue, cloudCol, cloud * 0.9);
-    // Day sea: blue and turquoise, keeping the painted waves' light and shade; the near water stays turquoise.
-    float3 seaBase = mix(float3(0.06, 0.64, 0.74), float3(0.16, 0.44, 0.80), smoothstep(0.3, 0.79, uv.y));
-    float3 seaDay = seaBase * (0.55 + 0.9 * g0) + float3(1.0) * smoothstep(0.82, 0.96, g0) * 0.5;
-    float seaAmt = seaM * (0.35 + 0.55 * smoothstep(0.3, 0.75, uv.y));
-    // Day land: the dusk's orange balanced toward neutral, a touch more saturated and brighter.
-    float3 dayRGB = s2sat(rgb * float3(0.92, 1.0, 1.09), 1.15) * 1.07;
-    dayRGB = mix(dayRGB, daySky, skyM);
-    dayRGB = mix(dayRGB, seaDay, seaAmt);
-    // Morning: soft and pastel, pink and gold; a sky between dawn and blue.
-    float3 mornRGB = s2sat(rgb * float3(1.0, 0.97, 1.04), 1.05) * 1.04 + float3(0.03, 0.01, 0.03);
-    mornRGB = mix(mornRGB, mix(rgb, daySky, 0.45) * 1.05, skyM);
-    mornRGB = mix(mornRGB, mix(mornRGB, seaDay, 0.5), seaAmt);
-    // Night: deep blue, the world falls asleep; stars and a moon glow; fires and the Flame shine.
-    float3 nightRGB = float3(g0) * float3(0.32, 0.40, 0.66) * 0.62 + rgb * 0.08;
-    float star = smoothstep(0.988, 1.0, s2hash(floor(uv * float2(470.0 / ratio * 0.4615, 470.0)))) * (0.6 + 0.4 * sin(t * 3.0 + uv.x * 90.0));   // square cells: dots, not dashes
-    float3 nightSky = mix(float3(0.05, 0.07, 0.18), float3(0.16, 0.2, 0.38), saturate(1.0 - (uv.y - 0.7) * 3.0));
-    // The moon crosses the sky through the night (20:00 → 06:00).
-    float moonT = saturate(fmod(hour - 20.0 + 24.0, 24.0) / 10.0);
-    float2 moonP = float2(sunU + mix(0.07, -0.33, moonT) * ratio, 0.8 + 0.09 * sin(moonT * 3.14159));
-    float2 moonD = float2((uv.x - moonP.x) * asp, uv.y - moonP.y);
-    nightSky += float3(0.95, 0.95, 1.0) * (smoothstep(0.018, 0.014, length(moonD)) + exp(-length(moonD) * 18.0) * 0.25);
-    nightRGB = mix(nightRGB, nightSky + star, skyM);
-    rgb = rgb * dusk + dayRGB * day + mornRGB * morning + nightRGB * night;
+    float3 outRGB = rgb * dusk;
+    float3 daySky = float3(0), seaDay = float3(0);
+    float seaAmt = 0.0;
+    if (day + morning > 0.001) {
+        // Day sky: a clear blue with the painted clouds turned white (in the sunset plate the clouds are lavender
+        // and the gaps orange, so "how little red over blue" finds the clouds).
+        if (skyM > 0.001) {
+            float cloud = 1.0 - smoothstep(0.2, 0.42, rgb.r - rgb.b);
+            float3 blue = mix(float3(0.62, 0.80, 0.98), float3(0.24, 0.52, 0.93), smoothstep(0.78, 1.0, uv.y));
+            float3 cloudCol = mix(float3(0.80, 0.84, 0.94), float3(1.0, 0.99, 0.97), smoothstep(0.36, 0.62, g0));
+            daySky = mix(blue, cloudCol, cloud * 0.9);
+        }
+        // Day sea: blue and turquoise, keeping the painted waves' light and shade.
+        if (seaM > 0.001) {
+            float3 seaBase = mix(float3(0.06, 0.64, 0.74), float3(0.16, 0.44, 0.80), smoothstep(0.3, 0.79, uv.y));
+            seaDay = seaBase * (0.55 + 0.9 * g0) + float3(1.0) * smoothstep(0.82, 0.96, g0) * 0.5;
+            seaAmt = seaM * (0.35 + 0.55 * smoothstep(0.3, 0.75, uv.y));
+        }
+    }
+    if (day > 0.001) {
+        // Day land: the dusk's orange balanced toward neutral, a touch more saturated and brighter.
+        float3 dayRGB = s2sat(rgb * float3(0.92, 1.0, 1.09), 1.15) * 1.07;
+        dayRGB = mix(dayRGB, daySky, skyM);
+        dayRGB = mix(dayRGB, seaDay, seaAmt);
+        outRGB += dayRGB * day;
+    }
+    if (morning > 0.001) {
+        // Morning: soft and pastel, pink and gold; a sky between dawn and blue.
+        float3 mornRGB = s2sat(rgb * float3(1.0, 0.97, 1.04), 1.05) * 1.04 + float3(0.03, 0.01, 0.03);
+        mornRGB = mix(mornRGB, mix(rgb, daySky, 0.45) * 1.05, skyM);
+        mornRGB = mix(mornRGB, mix(mornRGB, seaDay, 0.5), seaAmt);
+        outRGB += mornRGB * morning;
+    }
+    if (night > 0.001) {
+        // Night: deep blue, the world falls asleep; stars and a moon glow; fires and the Flame shine.
+        float3 nightRGB = float3(g0) * float3(0.32, 0.40, 0.66) * 0.62 + rgb * 0.08;
+        if (skyM > 0.001) {
+            float star = smoothstep(0.988, 1.0, s2hash(floor(uv * float2(470.0 / ratio * 0.4615, 470.0)))) * (0.6 + 0.4 * sin(t * 3.0 + uv.x * 90.0));   // square cells: dots, not dashes
+            float3 nightSky = mix(float3(0.05, 0.07, 0.18), float3(0.16, 0.2, 0.38), saturate(1.0 - (uv.y - 0.7) * 3.0));
+            // The moon crosses the sky through the night (20:00 → 06:00).
+            float moonT = saturate(fmod(hour - 20.0 + 24.0, 24.0) / 10.0);
+            float2 moonP = float2(sunU + mix(0.07, -0.33, moonT) * ratio, 0.8 + 0.09 * sin(moonT * 3.14159));
+            float2 moonD = float2((uv.x - moonP.x) * asp, uv.y - moonP.y);
+            nightSky += float3(0.95, 0.95, 1.0) * (smoothstep(0.018, 0.014, length(moonD)) + exp(-length(moonD) * 18.0) * 0.25);
+            nightRGB = mix(nightRGB, nightSky + star, skyM);
+        }
+        outRGB += nightRGB * night;
+    }
+    rgb = outRGB;
 
     // Sun rays (low sun at dusk and morning, softer at midday, none at night).
     float2 sunP = float2(sunU, 0.82);
     float2 dv = uv - sunP; dv.x *= asp;
     float fall2 = exp(-length(dv) * 2.6);
     float rays = (dusk + morning * 0.8 + day * 0.35) * fall2;
-    if (rays > 0.01) {          // only where the rays can show (saves the work everywhere else)
+    if (rays > 0.1) {           // only near the sun, where the rays really show (the rest of the screen skips it)
         float ang = atan2(dv.y, dv.x);
-        float shafts = s2noise(float2(ang * 9.0 + t * 0.06, 1.7)) * 0.65 + s2noise(float2(ang * 23.0 - t * 0.04, 4.2)) * 0.35;
-        shafts = smoothstep(0.45, 1.0, shafts);
+        float shafts = s2noise(float2(ang * 11.0 + t * 0.05, 1.7));
+        shafts = smoothstep(0.45, 1.0, shafts) * smoothstep(0.1, 0.2, rays);   // fades in: no visible edge
         rgb += float3(1.0, 0.78, 0.5) * shafts * rays * (0.14 + 0.04 * sin(t * 0.7));
     }
 

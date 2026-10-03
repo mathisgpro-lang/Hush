@@ -78,13 +78,22 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-02 night, decisions 121–126)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-03, decisions 121–129)
 
-**Current work: P2.5 iteration 2** (plan `docs/plan-2.0/p25-iteration-2.md`; Mathis reviews at the end). SpikeLab, `prototypes/p2-spikes`.
-- ✅ Built and on the iPhone: the Spark (floating, hour-lit); the Sanctuary sharp and vibrant; the Quest Satchel with Codex's props; the living map (realm cards, bird's dive); the swipeable Grove (Codex panels, `tools/build_grove.py`); the intro (hatching on the circle, evolution glimpse, guided tour); no edges at any look-around limit (`Shell/EdgeSafety.swift`).
-- **Waiting:** Codex's map side panels (`map-left/right.png` in `scripts/p25-iter2.sh`); Codex is at its usage limit until **2026-10-07 20:15**. Then stitch them around the map and remove the cloud border.
-- **Open: smoothness.** The phone measured ~40 fps with everything on (60 without the particle effects), but the readings were mixed with Mathis using the phone. Re-measure undisturbed (`-perf`), then cut what costs most (candidates: the 2x land texture, now 1.4x; particle emitters; the Spark's extra shader reads).
-- Test flags: `-skipintro`, `-autointro`, `-map`, `-grove`, `-quests`, `-push up|down|left|right`, `-hour N`, `-perf`, `-noelements`, `-onlyland`.
+**Current work: P2.5 iteration 2** plus the home bar (spec `docs/plan-2.0/p25-book-flame-spec.md`, approved). SpikeLab, `prototypes/p2-spikes`.
+- ✅ On the iPhone:
+  - the floating Spark in the ember's color (`Shell/SparkTint.swift`);
+  - the Sanctuary;
+  - the Quest Satchel with props;
+  - the living map with the dive;
+  - the swipeable Grove;
+  - the intro and tour;
+  - no edges anywhere (`Shell/EdgeSafety.swift`);
+  - **the Book that writes itself** (`Shell/Journey.swift`, `Shell/BookView.swift`);
+  - **Your Flame** (`Shell/FlameSheet.swift`).
+- **Smoothness:** 60 fps measured by day with everything on (after branching `s2hourLight`). Sunset measured ~40 before the cheaper rays. **Re-measure at `-hour 18.5` and `-hour 23` with the phone awake**, and cut more if needed (candidates: the land shader's foliage sway, the sea's two reads, MSAA).
+- **Waiting on Codex (limit until 2026-10-07 20:15):** `scripts/p25-iter2.sh` (map side panels, then icons: world, book, flame). Then key the icons into `Assets/icon-world.png`, `icon-book.png`, `icon-flame.png` (the bar picks them up automatically), stitch the map panels, and remove the cloud border.
+- Test flags: `-skipintro`, `-autointro`, `-map`, `-grove`, `-quests`, `-book`, `-flamesheet`, `-ember heart|mind|body|spirit|craft|world`, `-seedjourney`, `-freshjourney`, `-push up|down|left|right`, `-hour N`, `-perf`, `-noelements`, `-noflames`, `-nospray`, `-noflies`, `-onlyland`.
 - Later: the 11 P3 review findings before building P3; sound from free libraries (ask before downloads).
 
 ---

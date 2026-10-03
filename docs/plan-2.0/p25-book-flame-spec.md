@@ -17,17 +17,19 @@ Until Codex delivers, the bar uses stand-ins from the art we already have:
 - a round crop of the map for **World**;
 - the scroll prop for **Book**.
 
-## 2. The Book: the story of the place you're in
+## 2. The Book writes itself as you live (decision 129)
 
-- **Opens on the world you're standing in.** In the Sanctuary, it's the Sanctuary's pages; in the Grove, the Grove's.
-- **Looks like** the satchel's journal: parchment, gold-leaf corners, a ribbon. Swipe to turn pages.
-- **One chapter per world.** Each has four pages:
-  1. **This place:** what the world is, in a few warm lines, with a painted vignette.
-  2. **Its story:** the lore you've found here. Scenes you've seen can be replayed, such as the First Words in the Sanctuary. Pages you haven't found yet stay blank, with a soft hint.
-  3. **What lives here:** the characters and spots. In the Grove: Nim & Ro, the Gathering, the quiet pool.
-  4. **Your part in it:** what you've woken here, in plain numbers. In the Grove: "118 of 474 lanterns lit". It also says what wakes it next ("each kind word relights a lantern").
-- **Locked worlds** have a chapter too: one page, written as a legend ("They say beyond the Highlands…") and what opens them. Never a grey lock screen.
-- **Later**, the Chronicle of your weeks (Plan 2.0) becomes the Book's last section, so the story of the worlds and the story of your life live in one book.
+- **It starts almost empty.** Page one is written the night your Spark is born, using your name and your ember.
+- **Every page comes from something you really did, on that day**, in the story's voice and with your words in it:
+  - your first quests;
+  - each day lived (its page fills up as the day goes on);
+  - the first time you saw the Emberlands;
+  - the first time you entered the Grove;
+  - each lantern your kindness relit.
+- **Chapters are the worlds you've been to**, in the order of the road. It opens on the world you're in, at the latest page.
+- **The last page is always blank:** "The next page is yours to write."
+- **Built:** `Shell/Journey.swift` (the record, kept on the phone) and `Shell/BookView.swift` (the parchment book).
+- **Later:** the scenes you've seen (the First Words) can be replayed from their pages, and more moments write pages (naming the Flame, each new realm, the weekly Gathering).
 
 ## 3. Your Flame: where you are in your journey
 
@@ -42,7 +44,7 @@ It opens as a full sheet with the Spark large and alive at the top. It reacts wh
 | **Vitality** | How bright you've been lately, in one sentence ("Bright: you've lived 5 of the last 7 days"). |
 | **Next** | One line about the next milestone ("In 2 days, I'll want a name"). |
 
-### The open question: "days in a row"
+### Settled: no "days in a row" (decision 128)
 
 Plan 2.0 (Part 1 and the intro spec) rules out streak counters. A streak that breaks makes people feel they've lost it all, which breaks a non-negotiable.
 
