@@ -39,7 +39,7 @@ struct BookView: View {
                 Capsule().fill(ink.opacity(0.3)).frame(width: 40, height: 5).padding(.top, 10)
                 HStack(alignment: .firstTextBaseline) {
                     Text(model.journey.name.isEmpty ? "The Book of Your Flame" : "The Book of \(model.journey.name)'s Flame")
-                        .font(.system(size: 22, design: .serif)).foregroundStyle(ink)
+                        .font(.story(22)).foregroundStyle(ink)
                     Spacer()
                     Button { close() } label: {
                         Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(ink.opacity(0.6))
@@ -84,7 +84,7 @@ struct BookView: View {
                     Button {
                         withAnimation(.spring(duration: 0.35)) { chapter = w; page = max(0, pages.count - 1) }
                     } label: {
-                        Text(worldName(w)).font(.system(size: 13, weight: .semibold, design: .serif))
+                        Text(worldName(w)).font(.ui(13, .bold))
                             .padding(.horizontal, 12).padding(.vertical, 6)
                             .background(Capsule().fill(chapter == w ? Color(red: 0.45, green: 0.32, blue: 0.15) : .clear))
                             .overlay(Capsule().stroke(Color(red: 0.45, green: 0.32, blue: 0.15).opacity(0.6), lineWidth: 1))
@@ -104,9 +104,9 @@ struct BookView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(gold.opacity(0.5), lineWidth: 1))
             Text("Day \(model.journey.dayNumber(of: p.date)) · \(p.date.formatted(.dateTime.day().month(.wide)))")
-                .font(.system(size: 12, weight: .medium, design: .serif)).foregroundStyle(ink.opacity(0.55))
-            Text(p.title).font(.system(size: 24, design: .serif)).foregroundStyle(ink)
-            Text(p.text).font(.system(size: 16, design: .serif)).foregroundStyle(ink.opacity(0.85)).lineSpacing(4)
+                .font(.ui(12, .semibold)).foregroundStyle(ink.opacity(0.55))
+            Text(p.title).font(.story(26, .semibold)).foregroundStyle(ink)
+            Text(p.text).font(.story(17)).foregroundStyle(ink.opacity(0.85)).lineSpacing(4)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
@@ -118,9 +118,9 @@ struct BookView: View {
             Spacer()
             Image(systemName: "pencil.and.scribble").font(.system(size: 30)).foregroundStyle(gold)
             Text(first ? "The pages are still empty." : "The next page is yours to write.")
-                .font(.system(size: 20, design: .serif)).foregroundStyle(ink)
+                .font(.story(20)).foregroundStyle(ink)
             Text(first ? "Every real thing you do will write a line here." : "Live something today, and your Spark will write it down.")
-                .font(.system(size: 15, design: .serif)).foregroundStyle(ink.opacity(0.65)).multilineTextAlignment(.center)
+                .font(.ui(15)).foregroundStyle(ink.opacity(0.65)).multilineTextAlignment(.center)
             Spacer()
         }
         .padding(.horizontal, 30)

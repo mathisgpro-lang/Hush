@@ -35,8 +35,8 @@ struct FlameSheet: View {
                     }
                     .frame(height: 140)
                     VStack(spacing: 2) {
-                        Text(j.name.isEmpty ? "Your Spark" : "\(j.name)'s Spark").font(.system(size: 26, design: .serif)).foregroundStyle(cream)
-                        Text("Spark · day \(j.dayNumber())").font(.system(size: 14, design: .serif)).foregroundStyle(gold)
+                        Text(j.name.isEmpty ? "Your Spark" : "\(j.name)'s Spark").font(.story(26)).foregroundStyle(cream)
+                        Text("Spark · day \(j.dayNumber())").font(.ui(14)).foregroundStyle(gold)
                     }
                     stageStrip
                     card { levelCard }
@@ -50,7 +50,7 @@ struct FlameSheet: View {
                     card {
                         HStack(spacing: 10) {
                             Image(systemName: "sparkles").foregroundStyle(gold)
-                            Text(nextLine).font(.system(size: 15, design: .serif)).foregroundStyle(cream)
+                            Text(nextLine).font(.ui(15)).foregroundStyle(cream)
                             Spacer()
                         }
                     }
@@ -73,7 +73,7 @@ struct FlameSheet: View {
                     Image(uiImage: SparkTint.image("\(Self.stages[i]).png", ember: model.emberID) ?? UIImage()).resizable().scaledToFit()
                         .frame(height: CGFloat(30 + i * 7))
                         .colorMultiply(i == 0 ? .white : .black).opacity(i == 0 ? 1 : 0.55)      // the next ones: silhouettes
-                    Text(i == 4 ? "?" : Self.stageNames[i]).font(.system(size: 10, design: .serif)).foregroundStyle(cream.opacity(i == 0 ? 1 : 0.45))
+                    Text(i == 4 ? "?" : Self.stageNames[i]).font(.ui(10)).foregroundStyle(cream.opacity(i == 0 ? 1 : 0.45))
                 }
             }
         }
@@ -84,14 +84,14 @@ struct FlameSheet: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .lastTextBaseline) {
                 VStack(spacing: 0) {
-                    Text("\(l.level)").font(.system(size: 34, weight: .heavy, design: .rounded)).foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
+                    Text("\(l.level)").font(.num(34, .heavy)).foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
                     Text("LEVEL").font(.system(size: 9, weight: .bold)).foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05).opacity(0.8))
                 }
                 .frame(width: 70, height: 64).background(RoundedRectangle(cornerRadius: 12).fill(LinearGradient(colors: [gold, Color(red: 0.93, green: 0.5, blue: 0.2)], startPoint: .top, endPoint: .bottom)))
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(j.totalXP.formatted()).font(.system(size: 28, weight: .bold, design: .rounded)).foregroundStyle(cream).monospacedDigit()
-                    Text("XP earned").font(.system(size: 11, design: .serif)).foregroundStyle(cream.opacity(0.6))
+                    Text(j.totalXP.formatted()).font(.num(28, .bold)).foregroundStyle(cream).monospacedDigit()
+                    Text("XP earned").font(.ui(11)).foregroundStyle(cream.opacity(0.6))
                 }
             }
             HStack(spacing: 3) {
@@ -99,7 +99,7 @@ struct FlameSheet: View {
                     RoundedRectangle(cornerRadius: 2).fill(Double(i) < Double(24 * l.into) / Double(max(1, l.span)) ? Color.orange : cream.opacity(0.12)).frame(height: 9)
                 }
             }
-            Text("\(l.span - l.into) XP to level \(l.level + 1)").font(.system(size: 12, design: .serif)).foregroundStyle(cream.opacity(0.6)).frame(maxWidth: .infinity)
+            Text("\(l.span - l.into) XP to level \(l.level + 1)").font(.ui(12)).foregroundStyle(cream.opacity(0.6)).frame(maxWidth: .infinity)
         }
     }
 
@@ -108,12 +108,12 @@ struct FlameSheet: View {
         return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
                 Image(systemName: "flame.fill").foregroundStyle(.orange)
-                Text("\(s.current)").font(.system(size: 30, design: .serif)).foregroundStyle(gold)
+                Text("\(s.current)").font(.story(30)).foregroundStyle(gold)
             }
-            Text("days in a row").font(.system(size: 13, weight: .semibold, design: .serif)).foregroundStyle(cream)
+            Text("days in a row").font(.ui(13, .bold)).foregroundStyle(cream)
             HStack(spacing: 3) {
                 ForEach(0..<2, id: \.self) { i in Image(systemName: i < s.shields ? "shield.fill" : "shield").font(.system(size: 11)) }
-                Text("best \(s.best)").font(.system(size: 11, design: .serif)).padding(.leading, 4)
+                Text("best \(s.best)").font(.ui(11)).padding(.leading, 4)
             }
             .foregroundStyle(Color(red: 0.7, green: 0.85, blue: 1))
         }
@@ -123,9 +123,9 @@ struct FlameSheet: View {
     private var attributes: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Your rating").font(.system(size: 15, weight: .semibold, design: .serif)).foregroundStyle(cream)
+                Text("Your rating").font(.ui(15, .bold)).foregroundStyle(cream)
                 Spacer()
-                Text("Day 1 → today").font(.system(size: 11, design: .serif)).foregroundStyle(cream.opacity(0.5))
+                Text("Day 1 → today").font(.ui(11)).foregroundStyle(cream.opacity(0.5))
             }
             ForEach(Pillar6.allCases, id: \.self) { p in
                 let v = j.attribute(p)
@@ -133,12 +133,12 @@ struct FlameSheet: View {
                     Image(systemName: p.realm.symbol).foregroundStyle(p.realm.color).frame(width: 22)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(p.attribute.uppercased()).font(.system(size: 12, weight: .semibold)).tracking(1.5).foregroundStyle(cream.opacity(0.85))
-                        Text("\(p.rawValue) · \(p.realm.name)").font(.system(size: 10, design: .serif)).foregroundStyle(cream.opacity(0.4))
+                        Text("\(p.rawValue) · \(p.realm.name)").font(.ui(10)).foregroundStyle(cream.opacity(0.4))
                     }
                     Spacer()
-                    Text("0 →").font(.system(size: 12, design: .rounded)).foregroundStyle(cream.opacity(0.35))
+                    Text("0 →").font(.num(12)).foregroundStyle(cream.opacity(0.35))
                     if v > 0 { Image(systemName: "arrowtriangle.up.fill").font(.system(size: 9)).foregroundStyle(Color(red: 0.5, green: 0.9, blue: 0.5)) }
-                    Text("\(v)").font(.system(size: 28, weight: .bold, design: .rounded)).monospacedDigit().foregroundStyle(v > 0 ? cream : cream.opacity(0.3))
+                    Text("\(v)").font(.num(28, .bold)).monospacedDigit().foregroundStyle(v > 0 ? cream : cream.opacity(0.3))
                 }
             }
         }
@@ -148,9 +148,9 @@ struct FlameSheet: View {
         let d = min(j.dayNumber(), Progression.arcLength)
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("The first arc").font(.system(size: 15, weight: .semibold, design: .serif)).foregroundStyle(cream)
+                Text("The first arc").font(.ui(15, .bold)).foregroundStyle(cream)
                 Spacer()
-                Text("Day \(d) / \(Progression.arcLength)").font(.system(size: 13, weight: .semibold, design: .serif)).foregroundStyle(gold)
+                Text("Day \(d) / \(Progression.arcLength)").font(.ui(13, .bold)).foregroundStyle(gold)
             }
             GeometryReader { g in
                 Capsule().fill(cream.opacity(0.12))
@@ -158,41 +158,41 @@ struct FlameSheet: View {
             }
             .frame(height: 8)
             Text(d >= Progression.arcLength ? "You graduated. A new arc begins." : "At day 66, your Spark graduates: the habits you built become part of who you are.")
-                .font(.system(size: 12, design: .serif)).foregroundStyle(cream.opacity(0.6))
+                .font(.ui(12)).foregroundStyle(cream.opacity(0.6))
         }
     }
 
     private var week: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("This week").font(.system(size: 15, weight: .semibold, design: .serif)).foregroundStyle(cream)
+            Text("This week").font(.ui(15, .bold)).foregroundStyle(cream)
             HStack {
                 ForEach(Array(zip(["M", "T", "W", "T", "F", "S", "S"], j.thisWeek).enumerated()), id: \.offset) { _, d in
                     VStack(spacing: 4) {
                         Image(systemName: "flame.fill").font(.system(size: 20))
                             .foregroundStyle(d.1 ? AnyShapeStyle(LinearGradient(colors: [Color(red: 1, green: 0.9, blue: 0.5), .orange], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(cream.opacity(0.15)))
 
-                        Text(d.0).font(.system(size: 11, design: .serif)).foregroundStyle(cream.opacity(0.55))
+                        Text(d.0).font(.ui(11)).foregroundStyle(cream.opacity(0.55))
                     }
                     .frame(maxWidth: .infinity)
                 }
             }
-            Text("A fresh week begins every Monday.").font(.system(size: 12, design: .serif)).foregroundStyle(cream.opacity(0.5))
+            Text("A fresh week begins every Monday.").font(.ui(12)).foregroundStyle(cream.opacity(0.5))
         }
     }
 
     private var sixLights: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Your six lights").font(.system(size: 15, weight: .semibold, design: .serif)).foregroundStyle(cream)
+            Text("Your six lights").font(.ui(15, .bold)).foregroundStyle(cream)
             ForEach(Self.lights, id: \.1) { realm, pillar in
                 let n = j.light(for: realm), level = n / 3 + 1, part = CGFloat(n % 3) / 3
                 HStack(spacing: 10) {
                     Image(systemName: realm.symbol).foregroundStyle(realm.color).frame(width: 22)
                     VStack(alignment: .leading, spacing: 3) {
                         HStack {
-                            Text(pillar).font(.system(size: 14, design: .serif)).foregroundStyle(cream)
-                            Text("· \(realm.name)").font(.system(size: 11, design: .serif)).foregroundStyle(cream.opacity(0.45))
+                            Text(pillar).font(.ui(14)).foregroundStyle(cream)
+                            Text("· \(realm.name)").font(.ui(11)).foregroundStyle(cream.opacity(0.45))
                             Spacer()
-                            Text(n == 0 ? "not lit yet" : "level \(level)").font(.system(size: 11, design: .serif)).foregroundStyle(n == 0 ? cream.opacity(0.4) : realm.color)
+                            Text(n == 0 ? "not lit yet" : "level \(level)").font(.ui(11)).foregroundStyle(n == 0 ? cream.opacity(0.4) : realm.color)
                         }
                         Capsule().fill(cream.opacity(0.1)).frame(height: 5)
                             .overlay(alignment: .leading) { GeometryReader { g in
@@ -212,9 +212,9 @@ struct FlameSheet: View {
 
     private func stat(_ big: String, _ label: String, _ line: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(big).font(.system(size: 30, design: .serif)).foregroundStyle(gold)
-            Text(label).font(.system(size: 13, weight: .semibold, design: .serif)).foregroundStyle(cream)
-            Text(line).font(.system(size: 11, design: .serif)).foregroundStyle(cream.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
+            Text(big).font(.story(30)).foregroundStyle(gold)
+            Text(label).font(.ui(13, .bold)).foregroundStyle(cream)
+            Text(line).font(.ui(11)).foregroundStyle(cream.opacity(0.55)).fixedSize(horizontal: false, vertical: true)
         }
     }
 

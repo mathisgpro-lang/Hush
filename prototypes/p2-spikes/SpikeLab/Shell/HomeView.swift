@@ -79,7 +79,7 @@ struct HomeView: View {
                 VStack(spacing: 0) {
                     topBar
                     Spacer()
-                    if let toast { Text(toast).font(.system(size: 14, design: .serif)).padding(.horizontal, 14).padding(.vertical, 8)
+                    if let toast { Text(toast).font(.ui(14)).padding(.horizontal, 14).padding(.vertical, 8)
                         .background(Capsule().fill(.black.opacity(0.6))).foregroundStyle(.white).transition(.opacity).padding(.bottom, 8) }
                     hint
                     cockpitBar
@@ -148,16 +148,16 @@ struct HomeView: View {
         VStack(spacing: 10) {
             HStack {
                 Image(systemName: s.symbol).foregroundStyle(world.color)
-                Text(s.title).font(.system(size: 22, design: .serif))
+                Text(s.title).font(.story(22))
                 Spacer()
                 Button { unfocus() } label: {
                     Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).frame(width: 30, height: 30).background(Circle().fill(.white.opacity(0.1)))
                 }
             }
-            Text(s.line).font(.system(size: 15, design: .serif)).foregroundStyle(.white.opacity(0.85)).frame(maxWidth: .infinity, alignment: .leading)
+            Text(s.line).font(.ui(15)).foregroundStyle(.white.opacity(0.85)).frame(maxWidth: .infinity, alignment: .leading)
             if s.action != nil {
                 Button { unfocus(); withAnimation(.sheet) { satchelOpen = true } } label: {
-                    Text("Find a quest for it in your satchel").font(.system(size: 16, design: .serif)).frame(maxWidth: .infinity).padding(.vertical, 11)
+                    Text("Find a quest for it in your satchel").font(.ui(16)).frame(maxWidth: .infinity).padding(.vertical, 11)
                         .background(Capsule().fill(world.color.opacity(0.35))).overlay(Capsule().stroke(world.color, lineWidth: 1))
                 }
             }
@@ -197,16 +197,16 @@ struct HomeView: View {
 
     private var topBar: some View {
         VStack(spacing: 4) {
-            Text(world == .sanctuary ? "Sanctuary" : world.name).font(.system(size: world == .sanctuary ? 34 : 28, weight: .regular, design: .serif)).foregroundStyle(.white)
+            Text(world == .sanctuary ? "Sanctuary" : world.name).font(.story(world == .sanctuary ? 36 : 30, .medium)).foregroundStyle(.white)
                 .shadow(color: .black.opacity(0.4), radius: 6)
             if let rs = realmScene {                                     // how awake this realm is
                 Text("\(world.pillar) · \(Restoration.names[Restoration.level(depth: rs.heartDepth)]) · \(rs.litCount) \(RealmContent.lights(world)) lit")
-                    .font(.system(size: 12, weight: .medium, design: .serif)).foregroundStyle(world.color)
+                    .font(.ui(12, .semibold)).foregroundStyle(world.color)
                     .padding(.horizontal, 10).padding(.vertical, 3).background(Capsule().fill(.black.opacity(0.45)))
             }
             StreakBar(journey: model.journey).padding(.top, 2)          // the streak at the core (decision 134)
             Text(streakLine(model.journey, light: model.light))
-                .font(.system(size: 13, design: .serif)).foregroundStyle(.white.opacity(0.9))
+                .font(.ui(13)).foregroundStyle(.white.opacity(0.9))
                 .shadow(color: .black.opacity(0.5), radius: 4)
         }
         .padding(.top, 8)
@@ -253,7 +253,7 @@ struct HomeView: View {
             Button { withAnimation(.sheet) { satchelOpen = true } } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "bag.fill").foregroundStyle(Color(red: 1, green: 0.78, blue: 0.42))
-                    Text("Choose today's quests from your satchel").font(.system(size: 14, design: .serif))
+                    Text("Choose today's quests from your satchel").font(.ui(14))
                     Image(systemName: "chevron.up").font(.caption)
                 }
                 .padding(.horizontal, 14).padding(.vertical, 9)
@@ -266,7 +266,7 @@ struct HomeView: View {
             Button { withAnimation(.screen) { model.go(.map) } } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "sparkles").foregroundStyle(r.color)
-                    Text("Something new waits in \(r.name)").font(.system(size: 14, design: .serif))
+                    Text("Something new waits in \(r.name)").font(.ui(14))
                     Image(systemName: "chevron.right").font(.caption)
                 }
                 .padding(.horizontal, 14).padding(.vertical, 9)
@@ -313,7 +313,7 @@ struct HomeView: View {
                     }
                     if badge { Circle().fill(Color(red: 1, green: 0.55, blue: 0.2)).frame(width: 10, height: 10).offset(x: 6, y: -3) }
                 }
-                Text(label).font(.system(size: 12, design: .serif))
+                Text(label).font(.ui(12))
             }
             .frame(maxWidth: .infinity).foregroundStyle(Color(red: 1, green: 0.88, blue: 0.7))
         }
@@ -335,19 +335,19 @@ struct HomeView: View {
                 Image(systemName: call.symbol).font(.system(size: 24, weight: .semibold)).foregroundStyle(call.realm.color)
                     .frame(width: 54, height: 54).background(Circle().fill(Color(red: 0.2, green: 0.13, blue: 0.08)))
                     .shadow(color: call.realm.color.opacity(0.5), radius: 10)
-                Text(call.title).font(.system(size: 26, design: .serif)).foregroundStyle(ink)
-                Text(call.detail).font(.system(size: 15, design: .serif)).multilineTextAlignment(.center).foregroundStyle(ink.opacity(0.8))
+                Text(call.title).font(.story(26)).foregroundStyle(ink)
+                Text(call.detail).font(.ui(15)).multilineTextAlignment(.center).foregroundStyle(ink.opacity(0.8))
                 QuestMeta(call: call, streak: model.journey.questStreak(call.title), ink: ink)
                 let live = model.calls.first { $0.id == call.id } ?? call
                 if live.counted {
                     // Progress inside the quest (reps, pages, minutes): tap to count, it fills as you go.
                     VStack(spacing: 8) {
                         HStack {
-                            Text("\(live.progress) / \(live.target) \(live.unit)").font(.system(size: 22, weight: .bold, design: .rounded)).monospacedDigit()
+                            Text("\(live.progress) / \(live.target) \(live.unit)").font(.num(22, .bold)).monospacedDigit()
                                 .contentTransition(.numericText(value: Double(live.progress))).foregroundStyle(ink)
                             Spacer()
                             Button { withAnimation(.spring(response: 0.3)) { model.step(call.id, by: max(1, live.target / 10)) } } label: {
-                                Text(live.target >= 10 ? "+\(max(1, live.target / 10))" : "+1").font(.system(size: 17, weight: .bold, design: .rounded))
+                                Text(live.target >= 10 ? "+\(max(1, live.target / 10))" : "+1").font(.num(17, .bold))
                                     .frame(width: 64, height: 40).background(Capsule().fill(call.realm.color.opacity(0.3)))
                                     .overlay(Capsule().stroke(call.realm.color, lineWidth: 1.2)).foregroundStyle(ink)
                             }
@@ -361,13 +361,13 @@ struct HomeView: View {
                     .padding(.top, 4)
                 }
                 Button { finish(call, size: size) } label: {
-                    Text(live.counted && live.progress < live.target ? "Done, all of it" : "I did it").font(.system(size: 18, weight: .semibold, design: .serif)).frame(maxWidth: .infinity).padding(.vertical, 13)
+                    Text(live.counted && live.progress < live.target ? "Done, all of it" : "I did it").font(.story(18, .semibold)).frame(maxWidth: .infinity).padding(.vertical, 13)
                         .background(Capsule().fill(LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.42), Color(red: 0.93, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
                         .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
                 }
                 .padding(.top, 4)
                 Button { withAnimation(.sheet) { model.skip(call.id); open = nil } } label: {
-                    Text("Not today (skip, no penalty)").font(.system(size: 14, design: .serif)).foregroundStyle(ink.opacity(0.6))
+                    Text("Not today (skip, no penalty)").font(.ui(14)).foregroundStyle(ink.opacity(0.6))
                 }
             }
             .padding(20)
@@ -412,7 +412,7 @@ struct CallTag: View {
     var body: some View {
         HStack(spacing: 7) {
             Image(systemName: call.symbol).font(.system(size: 13)).foregroundStyle(call.realm.color)
-            Text(call.title).font(.system(size: 14, design: .serif)).foregroundStyle(.white)
+            Text(call.title).font(.ui(14)).foregroundStyle(.white)
         }
         .padding(.horizontal, 13).padding(.vertical, 8)
         .background(RoundedRectangle(cornerRadius: 10).fill(Color(red: 0.07, green: 0.09, blue: 0.06).opacity(0.82)))
@@ -438,7 +438,7 @@ struct QuestObject: View {
                     .frame(width: 50, height: 52)
                     .shadow(color: call.realm.color.opacity(0.8), radius: bob ? 10 : 5)
             }
-            Text(call.title).font(.system(size: 11, weight: .semibold, design: .serif)).foregroundStyle(.white)
+            Text(call.title).font(.ui(11, .bold)).foregroundStyle(.white)
                 .padding(.horizontal, 7).padding(.vertical, 2).background(Capsule().fill(.black.opacity(0.45)))
         }
         .offset(y: bob ? -3 : 2)
@@ -468,13 +468,13 @@ struct QuestJournal: View {
                 Capsule().fill(ink.opacity(0.3)).frame(width: 40, height: 5).padding(.top, 10)
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Day \(min(model.journey.dayNumber(), Progression.arcLength))").font(.system(size: 30, weight: .bold, design: .serif)).foregroundStyle(ink)
-                        + Text(" / \(Progression.arcLength)").font(.system(size: 18, design: .serif)).foregroundStyle(ink.opacity(0.5))
+                        Text("Day \(min(model.journey.dayNumber(), Progression.arcLength))").font(.story(30, .bold)).foregroundStyle(ink)
+                        + Text(" / \(Progression.arcLength)").font(.story(18)).foregroundStyle(ink.opacity(0.5))
                         Text("Choose what you'll do today. Each one waits for you in the world.")
-                            .font(.system(size: 13, design: .serif)).foregroundStyle(ink.opacity(0.7))
+                            .font(.ui(13)).foregroundStyle(ink.opacity(0.7))
                     }
                     Spacer()
-                    Text("\(model.chosenCount) of \(ShellModel.maxChosen)").font(.system(size: 13, weight: .semibold, design: .serif)).foregroundStyle(ink.opacity(0.7))
+                    Text("\(model.chosenCount) of \(ShellModel.maxChosen)").font(.ui(13, .bold)).foregroundStyle(ink.opacity(0.7))
                 }
                 .padding(.horizontal, 22).padding(.top, 8)
                 tabs.padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 8)
@@ -484,14 +484,14 @@ struct QuestJournal: View {
                         ForEach(tab == 0 ? todo.filter { $0.id != suggested?.id } : tab == 1 ? done : skipped) { call in QuestCardRow(model: model, call: call, ink: ink) }
                         if (tab == 1 && done.isEmpty) || (tab == 2 && skipped.isEmpty) {
                             Text(tab == 1 ? "Nothing done yet today. The first one lights your flame." : "Nothing skipped. Skipping is allowed: it never costs you anything.")
-                                .font(.system(size: 14, design: .serif)).foregroundStyle(ink.opacity(0.6)).multilineTextAlignment(.center).padding(.vertical, 30)
+                                .font(.ui(14)).foregroundStyle(ink.opacity(0.6)).multilineTextAlignment(.center).padding(.vertical, 30)
                         }
                     }
                     .padding(.horizontal, 16).padding(.bottom, 12)
                 }
                 .frame(maxHeight: 470)
                 Button { close() } label: {
-                    Text(model.chosenCount == 0 ? "Close" : "Into the world").font(.system(size: 17, weight: .semibold, design: .serif))
+                    Text(model.chosenCount == 0 ? "Close" : "Into the world").font(.ui(17, .bold))
                         .frame(maxWidth: .infinity).padding(.vertical, 13)
                         .background(Capsule().fill(LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.42), Color(red: 0.93, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
                         .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
@@ -513,7 +513,7 @@ struct QuestJournal: View {
         HStack(spacing: 8) {
             ForEach(Array(["To do \(todo.count)", "Done \(done.count)", "Skipped \(skipped.count)"].enumerated()), id: \.offset) { i, t in
                 Button { withAnimation(.snappy(duration: 0.25)) { tab = i } } label: {
-                    Text(t).font(.system(size: 14, weight: .semibold, design: .serif))
+                    Text(t).font(.ui(14, .bold))
                         .padding(.horizontal, 14).padding(.vertical, 7)
                         .background(RoundedRectangle(cornerRadius: 9).fill(tab == i ? ink : .clear))
                         .overlay(RoundedRectangle(cornerRadius: 9).stroke(ink.opacity(0.5), lineWidth: 1))
@@ -526,9 +526,9 @@ struct QuestJournal: View {
 
     private func suggestion(_ c: Call) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Suggested for you", systemImage: "sparkles").font(.system(size: 12, weight: .bold, design: .serif)).foregroundStyle(ink.opacity(0.7))
+            Label("Suggested for you", systemImage: "sparkles").font(.ui(12, .bold)).foregroundStyle(ink.opacity(0.7))
             QuestCardRow(model: model, call: c, ink: ink)
-            Text(c.reason).font(.system(size: 13, design: .serif)).foregroundStyle(ink.opacity(0.75)).padding(.horizontal, 4)
+            Text(c.reason).font(.ui(13)).foregroundStyle(ink.opacity(0.75)).padding(.horizontal, 4)
         }
         .padding(10)
         .background(RoundedRectangle(cornerRadius: 18).fill(Color(red: 1, green: 0.85, blue: 0.55).opacity(0.25)))
@@ -554,7 +554,7 @@ struct QuestMeta: View {
             Label(call.difficulty, systemImage: call.difficulty == "Hard" ? "cellularbars" : call.difficulty == "Medium" ? "chart.bar.fill" : "chart.bar")
             Text(call.counted ? "\(call.progress) / \(call.target) \(call.unit)" : "\(call.minutes) min")
         }
-        .font(.system(size: 11, weight: .semibold, design: .serif)).foregroundStyle(ink.opacity(0.65)).labelStyle(.titleAndIcon)
+        .font(.ui(11, .bold)).foregroundStyle(ink.opacity(0.65)).labelStyle(.titleAndIcon)
     }
 }
 
@@ -581,7 +581,7 @@ struct QuestCardRow: View {
             LinearGradient(colors: [.black.opacity(0.05), .black.opacity(0.75)], startPoint: .top, endPoint: .bottom)
             HStack(alignment: .bottom, spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(call.title).font(.system(size: 21, weight: .semibold, design: .serif)).foregroundStyle(.white)
+                    Text(call.title).font(.story(21, .semibold)).foregroundStyle(.white)
                     QuestMeta(call: call, streak: model.journey.questStreak(call.title), ink: .white)
                 }
                 Spacer()
@@ -598,7 +598,7 @@ struct QuestCardRow: View {
                         .disabled(full).opacity(full ? 0.45 : 1)
                         if !call.chosen {
                             Button { withAnimation(.snappy) { model.skip(call.id) } } label: {
-                                Text("Skip").font(.system(size: 12, design: .serif)).foregroundStyle(.white.opacity(0.75))
+                                Text("Skip").font(.ui(12)).foregroundStyle(.white.opacity(0.75))
                             }
                         }
                     }
@@ -614,7 +614,7 @@ struct QuestCardRow: View {
         .opacity(call.done ? 0.75 : 1)
     }
     private func pill(_ t: String, on: Bool) -> some View {
-        Text(t).font(.system(size: 14, weight: .semibold, design: .serif))
+        Text(t).font(.ui(14, .bold))
             .padding(.horizontal, 14).padding(.vertical, 7)
             .background(Capsule().fill(on ? Color(red: 1, green: 0.78, blue: 0.42) : .black.opacity(0.35)))
             .overlay(Capsule().stroke(Color(red: 1, green: 0.78, blue: 0.42), lineWidth: 1.2))

@@ -118,15 +118,15 @@ struct RealmView: View {
     private var header: some View {
         HStack(alignment: .top) {
             Button { back() } label: {
-                Label("Map", systemImage: "map.fill").font(.system(size: 15, design: .serif))
+                Label("Map", systemImage: "map.fill").font(.ui(15))
                     .padding(.horizontal, 14).padding(.vertical, 9).background(Capsule().fill(.black.opacity(0.55))).foregroundStyle(.white)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
-                Text(realm.name).font(.system(size: 20, design: .serif)).foregroundStyle(.white)
+                Text(realm.name).font(.story(20)).foregroundStyle(.white)
                 let level = Restoration.level(depth: scene.heartDepth)
                 Text("\(realm.pillar) · \(Restoration.names[level]) · \(scene.litCount) \(RealmContent.lights(realm)) lit")
-                    .font(.system(size: 12, design: .serif)).foregroundStyle(realm.color)
+                    .font(.ui(12)).foregroundStyle(realm.color)
             }
             .padding(.horizontal, 14).padding(.vertical, 8).background(RoundedRectangle(cornerRadius: 16).fill(.black.opacity(0.5)))
         }
@@ -136,7 +136,7 @@ struct RealmView: View {
     private var footer: some View {
         HStack(spacing: 10) {
             Text("Tap a glowing spot to explore")
-                .font(.system(size: 14, design: .serif)).foregroundStyle(.white.opacity(0.85))
+                .font(.ui(14)).foregroundStyle(.white.opacity(0.85))
                 .padding(.horizontal, 16).padding(.vertical, 9).background(Capsule().fill(.black.opacity(0.5)))
             // The Book, open on this world's chapter (decision 129).
             Button { withAnimation(.sheet) { bookOpen = true } } label: {
@@ -154,18 +154,18 @@ struct RealmView: View {
         VStack(spacing: 10) {
             HStack {
                 Image(systemName: s.symbol).foregroundStyle(realm.color)
-                Text(s.title).font(.system(size: 22, design: .serif))
+                Text(s.title).font(.story(22))
                 Spacer()
                 Button { unfocus() } label: { Image(systemName: "xmark.circle").font(.title2) }
             }
-            Text(s.line).font(.system(size: 15, design: .serif)).foregroundStyle(.white.opacity(0.85)).frame(maxWidth: .infinity, alignment: .leading)
+            Text(s.line).font(.ui(15)).foregroundStyle(.white.opacity(0.85)).frame(maxWidth: .infinity, alignment: .leading)
             if let a = s.action {
                 Button {
                     scene.act()
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     unfocus()
                 } label: {
-                    Text(a).font(.system(size: 16, design: .serif)).frame(maxWidth: .infinity).padding(.vertical, 11)
+                    Text(a).font(.ui(16)).frame(maxWidth: .infinity).padding(.vertical, 11)
                         .background(Capsule().fill(realm.color.opacity(0.35))).overlay(Capsule().stroke(realm.color, lineWidth: 1))
                 }
             }
@@ -209,7 +209,7 @@ struct SpotMarker: View {
                 Circle().fill(Color(red: 1, green: 0.85, blue: 0.55)).frame(width: 14).shadow(color: .orange, radius: 8)
             }
             .frame(width: 48, height: 48)
-            Text(spot.title).font(.system(size: 12, weight: .semibold, design: .serif))
+            Text(spot.title).font(.ui(12, .bold))
                 .padding(.horizontal, 8).padding(.vertical, 3).background(Capsule().fill(.black.opacity(0.55))).foregroundStyle(.white)
         }
         .animation(.easeInOut(duration: 1.3).repeatForever(autoreverses: true), value: pulse)

@@ -16,7 +16,7 @@ struct StreakBar: View {
             HStack(spacing: 4) {
                 Image(systemName: "flame.fill").font(.system(size: 14, weight: .bold))
                     .foregroundStyle(lit ? AnyShapeStyle(LinearGradient(colors: [Color(red: 1, green: 0.9, blue: 0.5), ember], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(Color.white.opacity(0.55)))
-                Text("\(s.current)").font(.system(size: 15, weight: .bold, design: .rounded)).monospacedDigit()
+                Text("\(s.current)").font(.num(15, .bold)).monospacedDigit()
                     .contentTransition(.numericText())
             }
             .padding(.horizontal, 10).padding(.vertical, 5)
@@ -30,7 +30,7 @@ struct StreakBar: View {
                 .padding(.horizontal, 8).padding(.vertical, 5).background(Capsule().fill(.black.opacity(0.45)))
             }
             Text("Day \(min(journey.dayNumber(), Progression.arcLength)) / \(Progression.arcLength)")
-                .font(.system(size: 13, weight: .semibold, design: .serif)).foregroundStyle(.white.opacity(0.9))
+                .font(.ui(13, .bold)).foregroundStyle(.white.opacity(0.9))
                 .padding(.horizontal, 10).padding(.vertical, 5).background(Capsule().fill(.black.opacity(0.45)))
         }
         .foregroundStyle(.white)
@@ -62,13 +62,13 @@ struct RewardBurst: View {
         ZStack {
             if stage == 0 {
                 VStack(spacing: 10) {
-                    Text("+\(outcome.xp) XP").font(.system(size: 34, weight: .heavy, design: .rounded)).foregroundStyle(gold)
+                    Text("+\(outcome.xp) XP").font(.num(34, .heavy)).foregroundStyle(gold)
                         .shadow(color: ember.opacity(0.8), radius: 12)
                         .offset(y: shown ? -30 : 20).opacity(shown ? 1 : 0)
                     HStack(spacing: 8) {
                         Image(systemName: outcome.pillar.realm.symbol).foregroundStyle(outcome.pillar.realm.color)
-                        Text(outcome.pillar.attribute).font(.system(size: 15, weight: .semibold, design: .serif))
-                        Text("\(counted)").font(.system(size: 22, weight: .bold, design: .rounded)).monospacedDigit()
+                        Text(outcome.pillar.attribute).font(.ui(15, .bold))
+                        Text("\(counted)").font(.num(22, .bold)).monospacedDigit()
                             .contentTransition(.numericText(value: Double(counted)))
                         Image(systemName: "arrowtriangle.up.fill").font(.system(size: 10)).foregroundStyle(Color(red: 0.5, green: 0.9, blue: 0.5))
                     }
@@ -79,7 +79,7 @@ struct RewardBurst: View {
                     if outcome.streakAfter > outcome.streakBefore {
                         HStack(spacing: 6) {
                             Image(systemName: "flame.fill").foregroundStyle(ember)
-                            Text(outcome.streakAfter == 1 ? "Your flame is lit" : "\(outcome.streakAfter) days in a row").font(.system(size: 14, weight: .semibold, design: .serif))
+                            Text(outcome.streakAfter == 1 ? "Your flame is lit" : "\(outcome.streakAfter) days in a row").font(.ui(14, .bold))
                         }
                         .foregroundStyle(.white).padding(.horizontal, 14).padding(.vertical, 7)
                         .background(Capsule().fill(.black.opacity(0.55)))
@@ -107,15 +107,15 @@ struct RewardBurst: View {
                     Image(systemName: outcome.milestone != nil ? "flame.fill" : "star.fill").font(.system(size: 64))
                         .foregroundStyle(LinearGradient(colors: [Color(red: 1, green: 0.92, blue: 0.55), ember], startPoint: .top, endPoint: .bottom))
                 }
-                Text(title).font(.system(size: 32, design: .serif)).foregroundStyle(.white)
-                Text(line).font(.system(size: 16, design: .serif)).foregroundStyle(.white.opacity(0.85))
+                Text(title).font(.story(32)).foregroundStyle(.white)
+                Text(line).font(.ui(16)).foregroundStyle(.white.opacity(0.85))
                 if outcome.shieldEarned {
                     Label("You earned a shield: one missed day won't break your flame", systemImage: "shield.fill")
-                        .font(.system(size: 13, design: .serif)).foregroundStyle(Color(red: 0.75, green: 0.88, blue: 1))
+                        .font(.ui(13)).foregroundStyle(Color(red: 0.75, green: 0.88, blue: 1))
                         .multilineTextAlignment(.center).padding(.horizontal, 30)
                 }
                 Button { finish() } label: {
-                    Text("Keep going").font(.system(size: 17, weight: .semibold, design: .serif)).padding(.horizontal, 34).padding(.vertical, 12)
+                    Text("Keep going").font(.ui(17, .bold)).padding(.horizontal, 34).padding(.vertical, 12)
                         .background(Capsule().fill(LinearGradient(colors: [gold, Color(red: 0.93, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
                         .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
                 }

@@ -70,7 +70,7 @@ struct IntroView: View {
         VStack(spacing: 40) {
             Spacer()
             Text("Every person carries a flame.\nMost never see it.")
-                .font(.system(size: 20, weight: .regular, design: .serif)).italic()
+                .font(.story(20)).italic()
                 .multilineTextAlignment(.center).foregroundStyle(.white.opacity(0.75))
             ZStack {
                 Circle().fill(RadialGradient(colors: [Color(red: 1, green: 0.8, blue: 0.4), Color(red: 1, green: 0.4, blue: 0.1).opacity(0.6), .clear],
@@ -86,7 +86,7 @@ struct IntroView: View {
                 .onChanged { _ in if !holding { startHold() } }
                 .onEnded { _ in stopHold() })
             Text(holding ? "Keep holding…" : "Touch and hold the ember")
-                .font(.system(size: 15, weight: .medium, design: .serif)).foregroundStyle(.white.opacity(0.6))
+                .font(.ui(15, .semibold)).foregroundStyle(.white.opacity(0.6))
             Spacer()
             Text("Private test · for adults 18+").font(.caption2).foregroundStyle(.white.opacity(0.3))
         }
@@ -179,7 +179,7 @@ struct IntroView: View {
                 .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color(red: 1, green: 0.65, blue: 0.3), lineWidth: 1.2))
             ForEach(interests, id: \.self) { i in
                 Button { choose(i) } label: {
-                    Text(i).font(.system(size: 15, weight: .medium, design: .serif))
+                    Text(i).font(.ui(15, .semibold))
                         .frame(maxWidth: .infinity).padding(.vertical, 10)
                         .background(Capsule().fill(.black.opacity(0.5)))
                         .overlay(Capsule().stroke(Color(red: 1, green: 0.7, blue: 0.35).opacity(0.6), lineWidth: 1))
@@ -187,7 +187,7 @@ struct IntroView: View {
                 }
             }
             Button { choose("Be closer to people I love") } label: {
-                Text("I'm not sure yet").font(.system(size: 14, design: .serif)).foregroundStyle(.white.opacity(0.7)).padding(6)
+                Text("I'm not sure yet").font(.ui(14)).foregroundStyle(.white.opacity(0.7)).padding(6)
             }
         }
         .padding(.horizontal, 22).padding(.bottom, 40)
@@ -210,10 +210,10 @@ struct EmberText: View {
     @State private var melted = false
     var body: some View {
         ZStack {
-            Text(scrambled).font(.system(size: 19, weight: .regular, design: .serif))
+            Text(scrambled).font(.story(19))
                 .foregroundStyle(Color(red: 1, green: 0.6, blue: 0.2))
                 .blur(radius: melted ? 6 : 0.5).opacity(melted ? 0 : 1)
-            Text(text).font(.system(size: 19, weight: .regular, design: .serif))
+            Text(text).font(.story(19))
                 .foregroundStyle(Color(red: 1, green: 0.93, blue: 0.8))
                 .blur(radius: melted ? 0 : 4).opacity(melted ? 1 : 0)
         }

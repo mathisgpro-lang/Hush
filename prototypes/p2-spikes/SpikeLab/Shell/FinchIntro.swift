@@ -183,7 +183,7 @@ struct FinchIntro: View {
         case .hello:
             VStack(spacing: 14) {
                 TextField("", text: $name, prompt: Text("Your name").foregroundColor(cream.opacity(0.45)))
-                    .font(.system(size: 22, design: .serif)).multilineTextAlignment(.center).foregroundStyle(cream)
+                    .font(.story(22)).multilineTextAlignment(.center).foregroundStyle(cream)
                     .padding(.vertical, 14).background(RoundedRectangle(cornerRadius: 18).fill(.white.opacity(0.10)))
                     .overlay(RoundedRectangle(cornerRadius: 18).stroke(gold.opacity(0.4), lineWidth: 1))
                     .focused($typing).submitLabel(.done).onSubmit { if !name.isEmpty { go(.whatAmI) } }
@@ -239,11 +239,11 @@ struct FinchIntro: View {
         case .firstLight:
             VStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Your first light").font(.system(size: 22, design: .serif)).foregroundStyle(Color(red: 0.35, green: 0.2, blue: 0.1))
+                    Text("Your first light").font(.story(22)).foregroundStyle(Color(red: 0.35, green: 0.2, blue: 0.1))
                     ForEach(firstThings, id: \.self) { t in
                         HStack(spacing: 10) {
                             Circle().fill(gold).frame(width: 9, height: 9).shadow(color: .orange, radius: 4)
-                            Text(t).font(.system(size: 16, design: .serif)).foregroundStyle(Color(red: 0.3, green: 0.2, blue: 0.12))
+                            Text(t).font(.ui(16)).foregroundStyle(Color(red: 0.3, green: 0.2, blue: 0.12))
                         }
                     }
                 }
@@ -263,11 +263,11 @@ struct FinchIntro: View {
             .shadow(color: .black.opacity(0.2), radius: 4)
     }
     private func body2(_ s: String) -> some View {
-        Text(s).font(.system(size: 16, design: .serif)).multilineTextAlignment(.center).foregroundStyle(cream.opacity(0.78))
+        Text(s).font(.ui(16)).multilineTextAlignment(.center).foregroundStyle(cream.opacity(0.78))
     }
     private func primary(_ s: String, disabled: Bool = false, action: @escaping () -> Void) -> some View {
         Button { FeelHaptics.shared.nudge(); action() } label: {
-            Text(s).font(.system(size: 18, weight: .semibold, design: .serif)).frame(maxWidth: .infinity).padding(.vertical, 16)
+            Text(s).font(.story(18, .semibold)).frame(maxWidth: .infinity).padding(.vertical, 16)
                 .background(Capsule().fill(LinearGradient(colors: [Color(red: 1, green: 0.8, blue: 0.45), Color(red: 0.95, green: 0.58, blue: 0.28)], startPoint: .top, endPoint: .bottom)))
                 .foregroundStyle(Color(red: 0.32, green: 0.16, blue: 0.06))
                 .shadow(color: Color(red: 1, green: 0.55, blue: 0.2).opacity(disabled ? 0 : 0.5), radius: 12, y: 4)
@@ -275,12 +275,12 @@ struct FinchIntro: View {
         .disabled(disabled).opacity(disabled ? 0.45 : 1)
     }
     private func secondary(_ s: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Text(s).font(.system(size: 16, design: .serif)).foregroundStyle(cream.opacity(0.75)).padding(10) }
+        Button(action: action) { Text(s).font(.ui(16)).foregroundStyle(cream.opacity(0.75)).padding(10) }
     }
     private func choice(_ s: String, selected: Bool = false, action: @escaping () -> Void) -> some View {
         Button { FeelHaptics.shared.nudge(); action() } label: {
             HStack {
-                Text(s).font(.system(size: 17, design: .serif)).multilineTextAlignment(.leading)
+                Text(s).font(.ui(17)).multilineTextAlignment(.leading)
                 Spacer()
                 if selected { Image(systemName: "checkmark.circle.fill").foregroundStyle(gold) }
             }
@@ -347,7 +347,7 @@ struct FinchIntro: View {
                     } label: {
                         VStack(spacing: 6) {
                             EmberOrb(color: e.color, size: ember == e ? 54 : 44, warmth: ember == e ? 0.6 : 0.25, cracks: 0)
-                            Text(e.word).font(.system(size: 13, weight: .semibold, design: .serif)).foregroundStyle(ember == e ? e.color : cream.opacity(0.7))
+                            Text(e.word).font(.ui(13, .bold)).foregroundStyle(ember == e ? e.color : cream.opacity(0.7))
                         }
                     }
                     .position(x: c.x + CGFloat(cos(a)) * r, y: c.y + CGFloat(sin(a)) * r)
@@ -362,8 +362,8 @@ struct FinchIntro: View {
                 VStack(spacing: 4) {
                     Image(uiImage: UIImage(named: "stage\(i).png") ?? UIImage()).resizable().scaledToFit()
                         .frame(width: i == 0 ? 66 : 56, height: i == 0 ? 66 : 56)
-                        .overlay { if i == 4 { Text("?").font(.system(size: 22, weight: .bold, design: .serif)).foregroundStyle(cream.opacity(0.8)) } }
-                    Text(["Spark", "Flame", "Blaze", "Kindled", "…"][i]).font(.system(size: 11, design: .serif)).foregroundStyle(cream.opacity(i == 0 ? 1 : 0.5))
+                        .overlay { if i == 4 { Text("?").font(.story(22, .bold)).foregroundStyle(cream.opacity(0.8)) } }
+                    Text(["Spark", "Flame", "Blaze", "Kindled", "…"][i]).font(.ui(11)).foregroundStyle(cream.opacity(i == 0 ? 1 : 0.5))
                 }
                 if i < 4 { Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(cream.opacity(0.35)) }
             }
@@ -408,7 +408,7 @@ struct FinchIntro: View {
             Spacer()
             HStack(spacing: 8) {
                 Image(systemName: "sparkle").foregroundStyle(gold)
-                Text("+1 light · your Flame's first light").font(.system(size: 15, weight: .semibold, design: .serif))
+                Text("+1 light · your Flame's first light").font(.ui(15, .bold))
             }
             .padding(.horizontal, 18).padding(.vertical, 12)
             .background(Capsule().fill(Color(red: 0.3, green: 0.18, blue: 0.1).opacity(0.9))).foregroundStyle(cream)

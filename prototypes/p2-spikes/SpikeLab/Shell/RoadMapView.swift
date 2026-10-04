@@ -55,7 +55,7 @@ struct RoadMapView: View {
 
                 header
                 if let toast {
-                    VStack { Spacer(); Text(toast).font(.system(size: 15, design: .serif)).padding(.horizontal, 16).padding(.vertical, 10)
+                    VStack { Spacer(); Text(toast).font(.ui(15)).padding(.horizontal, 16).padding(.vertical, 10)
                         .background(Capsule().fill(.black.opacity(0.7))).foregroundStyle(.white).padding(.bottom, 60) }
                     .transition(.opacity)
                 }
@@ -67,11 +67,11 @@ struct RoadMapView: View {
     private var header: some View {
         HStack {
             Button { withAnimation(.easeInOut(duration: 0.6)) { model.go(.home) } } label: {
-                Label("Home", systemImage: "house.fill").font(.system(size: 15, design: .serif))
+                Label("Home", systemImage: "house.fill").font(.ui(15))
                     .padding(.horizontal, 14).padding(.vertical, 9).background(Capsule().fill(.black.opacity(0.55))).foregroundStyle(.white)
             }
             Spacer()
-            Text("The Emberlands").font(.system(size: 20, design: .serif)).foregroundStyle(.white)
+            Text("The Emberlands").font(.story(20)).foregroundStyle(.white)
                 .padding(.horizontal, 14).padding(.vertical, 8).background(Capsule().fill(.black.opacity(0.45)))
         }
         .padding(.horizontal, 16).padding(.top, 4)
@@ -118,9 +118,9 @@ struct RoadMapView: View {
                 }
                 .scaleEffect(isNew && pulse ? 1.08 : 1)
                 .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: pulse)
-                Text(r.name).font(.system(size: 12, weight: .semibold, design: .serif))
+                Text(r.name).font(.ui(12, .bold))
                     .padding(.horizontal, 8).padding(.vertical, 3).background(Capsule().fill(.black.opacity(0.6))).foregroundStyle(.white)
-                if !isOpen { Text("Opens with \(r.opensWhen)").font(.system(size: 10, design: .serif)).foregroundStyle(.white.opacity(0.8)) }
+                if !isOpen { Text("Opens with \(r.opensWhen)").font(.ui(10)).foregroundStyle(.white.opacity(0.8)) }
             }
         }
         .buttonStyle(.plain)

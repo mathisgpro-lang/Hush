@@ -15,13 +15,13 @@ struct TourBubble: View {
             HStack(alignment: .top, spacing: 10) {
                 Image(uiImage: SparkTint.image("spark-keyed.png", ember: ember) ?? UIImage()).resizable().scaledToFit().frame(width: 34, height: 44)
                     .shadow(color: .orange.opacity(0.8), radius: 8)
-                Text(text).font(.system(size: 16, design: .serif)).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                Text(text).font(.ui(16)).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
             }
             HStack {
-                Button("Skip the tour", action: skip).font(.system(size: 13, design: .serif)).foregroundStyle(.white.opacity(0.6))
+                Button("Skip the tour", action: skip).font(.ui(13)).foregroundStyle(.white.opacity(0.6))
                 Spacer()
                 Button(action: next) {
-                    Text(button).font(.system(size: 15, weight: .semibold, design: .serif))
+                    Text(button).font(.ui(15, .bold))
                         .padding(.horizontal, 18).padding(.vertical, 9)
                         .background(Capsule().fill(LinearGradient(colors: [gold, Color(red: 0.93, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
                         .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))

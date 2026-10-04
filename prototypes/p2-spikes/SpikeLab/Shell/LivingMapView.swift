@@ -139,13 +139,13 @@ struct LivingMapView: View {
     private func marker(_ r: RealmID) -> some View {
         let isOpen = model.open.contains(r), isNew = model.newHere.contains(r), isSelected = selected == r
         return VStack(spacing: 3) {
-            Text(r.name).font(.system(size: isSelected ? 14 : 12, weight: .semibold, design: .serif))
+            Text(r.name).font(.ui(isSelected ? 14 : 12, .bold))
                 .padding(.horizontal, 9).padding(.vertical, 4)
                 .background(Capsule().fill(.black.opacity(isSelected ? 0.7 : 0.45)))
                 .overlay(Capsule().stroke((isOpen ? r.color : .white).opacity(isSelected ? 0.9 : 0.35), lineWidth: 1))
                 .foregroundStyle(.white.opacity(isOpen ? 1 : 0.75))
             if isNew {
-                Text("Something new").font(.system(size: 10, weight: .semibold, design: .serif))
+                Text("Something new").font(.ui(10, .bold))
                     .padding(.horizontal, 7).padding(.vertical, 2)
                     .background(Capsule().fill(Color(red: 1, green: 0.55, blue: 0.25).opacity(0.9))).foregroundStyle(.white)
             }
@@ -181,8 +181,8 @@ struct LivingMapView: View {
                     .foregroundStyle(isOpen ? r.color : .white.opacity(0.6))
                     .frame(width: 34, height: 34).background(Circle().fill(.white.opacity(0.08)))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(r.name).font(.system(size: 20, design: .serif)).foregroundStyle(.white)
-                    Text(r.pillar).font(.system(size: 12, weight: .medium, design: .serif)).foregroundStyle(r.color)
+                    Text(r.name).font(.story(20)).foregroundStyle(.white)
+                    Text(r.pillar).font(.ui(12, .semibold)).foregroundStyle(r.color)
                 }
                 Spacer()
                 Button { withAnimation(.sheet) { selected = nil } } label: {
@@ -190,17 +190,17 @@ struct LivingMapView: View {
                         .frame(width: 30, height: 30).background(Circle().fill(.white.opacity(0.08)))
                 }
             }
-            Text(r.lore).font(.system(size: 15, design: .serif)).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+            Text(r.lore).font(.ui(15)).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
             if isOpen {
                 Button { enter(r) } label: {
-                    Text(r == .sanctuary ? "Fly home" : "Fly there").font(.system(size: 17, weight: .semibold, design: .serif))
+                    Text(r == .sanctuary ? "Fly home" : "Fly there").font(.ui(17, .bold))
                         .frame(maxWidth: .infinity).padding(.vertical, 13)
                         .background(Capsule().fill(LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.42), Color(red: 0.95, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
                         .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
                 }
             } else {
                 Label("Still in the Hush. It wakes with \(r.opensWhen).", systemImage: "moon.zzz.fill")
-                    .font(.system(size: 14, design: .serif)).foregroundStyle(.white.opacity(0.75))
+                    .font(.ui(14)).foregroundStyle(.white.opacity(0.75))
             }
         }
         .padding(18)
@@ -212,11 +212,11 @@ struct LivingMapView: View {
     private var header: some View {
         HStack {
             Button { withAnimation(.screen) { model.go(.home) } } label: {
-                Label("Home", systemImage: "house.fill").font(.system(size: 15, design: .serif))
+                Label("Home", systemImage: "house.fill").font(.ui(15))
                     .padding(.horizontal, 14).padding(.vertical, 9).background(Capsule().fill(.black.opacity(0.55))).foregroundStyle(.white)
             }
             Spacer()
-            Text("The Emberlands").font(.system(size: 20, design: .serif)).foregroundStyle(.white)
+            Text("The Emberlands").font(.story(20)).foregroundStyle(.white)
                 .padding(.horizontal, 14).padding(.vertical, 8).background(Capsule().fill(.black.opacity(0.45)))
         }
         .padding(.top, 4)
