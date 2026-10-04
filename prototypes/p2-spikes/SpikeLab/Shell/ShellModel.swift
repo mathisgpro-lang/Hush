@@ -94,6 +94,16 @@ struct Call: Identifiable, Equatable {
     var chosen = false
     /// How long it takes, shown in the journal.
     var minutes: Int = 5
+    /// Life Reset-style detail (decision 134): how often, how hard, and a count to reach inside the quest.
+    var frequency = "Daily"
+    var difficulty = "Easy"
+    var target = 1
+    var unit = ""
+    var progress = 0
+    /// Why the Companion suggests it (shown on the suggested card).
+    var reason = ""
+    var skipped = false
+    var counted: Bool { target > 1 }
     /// The painted object it becomes in the world (Codex's props, iteration 2).
     var prop: String {
         if symbol == "sparkle" { return "prop-scroll" }
@@ -259,19 +269,20 @@ final class ShellModel {
 
     func makeCalls() {
         let first: Call = switch interest {
-        case "Read again": Call(id: "a", title: "Ten pages", detail: "Read ten pages of any book you like.", symbol: "book.fill", realm: .library)
-        case "Find calm": Call(id: "a", title: "Three slow breaths", detail: "Sit, close your eyes, breathe in for four, out for six.", symbol: "drop.fill", realm: .stillwater)
-        case "Move a little every day": Call(id: "a", title: "A moment outside", detail: "Walk for ten minutes, at an easy pace.", symbol: "figure.walk", realm: .highlands)
-        case "Make something / focus": Call(id: "a", title: "One focused block", detail: "Twenty minutes on one thing that matters to you.", symbol: "hammer.fill", realm: .forge)
-        case "Spend time in nature": Call(id: "a", title: "Notice something alive", detail: "Step outside and find one living thing to look at closely.", symbol: "leaf.fill", realm: .wilds)
-        default: Call(id: "a", title: "A lantern for someone", detail: "Tell someone you love one thing you admire about them.", symbol: "heart.fill", realm: .grove)
+        case "Read again": Call(id: "a", title: "Ten pages", detail: "Read ten pages of any book you like.", symbol: "book.fill", realm: .library, minutes: 15, difficulty: "Medium", target: 10, unit: "pages", reason: "You said you want to read again. Ten pages a day is about a book a month.")
+        case "Find calm": Call(id: "a", title: "Three slow breaths", detail: "Sit, close your eyes, breathe in for four, out for six.", symbol: "drop.fill", realm: .stillwater, minutes: 2, target: 3, unit: "breaths", reason: "Slow breathing (longer out than in) calms the body within a minute.")
+        case "Move a little every day": Call(id: "a", title: "A moment outside", detail: "Walk for ten minutes, at an easy pace.", symbol: "figure.walk", realm: .highlands, minutes: 10, target: 10, unit: "min", reason: "Ten easy minutes a day is where lasting movement habits start.")
+        case "Make something / focus": Call(id: "a", title: "One focused block", detail: "Twenty minutes on one thing that matters to you.", symbol: "hammer.fill", realm: .forge, minutes: 20, difficulty: "Medium", target: 20, unit: "min", reason: "One protected block a day beats long sessions you can't keep up.")
+        case "Spend time in nature": Call(id: "a", title: "Notice something alive", detail: "Step outside and find one living thing to look at closely.", symbol: "leaf.fill", realm: .wilds, minutes: 5, reason: "A few minutes outside, really looking, lifts the mood for hours.")
+        default: Call(id: "a", title: "A lantern for someone", detail: "Tell someone you love one thing you admire about them.", symbol: "heart.fill", realm: .grove, reason: "You chose to be closer to the people you love. One kind word today is a lantern relit.")
         }
         // The day's quests, offered in the satchel (iteration 2): you choose up to three; they wait in the world.
         calls = [first,
-                 Call(id: "b", title: "A small challenge", detail: "A little fox is curious about kindness: thank someone who rarely hears it.", symbol: "sparkle", realm: .grove, minutes: 3),
-                 Call(id: "c", title: "A quiet moment", detail: "Two minutes of silence by the hearth before bed.", symbol: "moon.fill", realm: .stillwater, minutes: 2),
-                 Call(id: "d", title: "Ten minutes outside", detail: "Step out and walk at an easy pace. Notice the sky.", symbol: "figure.walk", realm: .highlands, minutes: 10),
-                 Call(id: "e", title: "One page", detail: "Read a single page of something you've been meaning to read.", symbol: "book.fill", realm: .library, minutes: 5)]
+                 Call(id: "b", title: "A small challenge", detail: "A little fox is curious about kindness: thank someone who rarely hears it.", symbol: "sparkle", realm: .grove, minutes: 3, frequency: "Today's Spark", difficulty: "Medium"),
+                 Call(id: "c", title: "A quiet moment", detail: "Two minutes of silence by the hearth before bed.", symbol: "moon.fill", realm: .stillwater, minutes: 2, target: 2, unit: "min"),
+                 Call(id: "d", title: "Ten minutes outside", detail: "Step out and walk at an easy pace. Notice the sky.", symbol: "figure.walk", realm: .highlands, minutes: 10, target: 10, unit: "min"),
+                 Call(id: "e", title: "One page", detail: "Read a single page of something you've been meaning to read.", symbol: "book.fill", realm: .library, minutes: 5),
+                 Call(id: "f", title: "Twenty push-ups", detail: "In as many sets as you need. Rest between them.", symbol: "figure.strengthtraining.traditional", realm: .highlands, minutes: 6, difficulty: "Hard", target: 20, unit: "reps")]
     }
 
     static let maxChosen = 3
@@ -285,12 +296,26 @@ final class ShellModel {
         else if chosenCount < Self.maxChosen { calls[i].chosen = true }
     }
 
-    func complete(_ id: String) {
-        guard let i = calls.firstIndex(where: { $0.id == id }) else { return }
+    @discardableResult
+    func complete(_ id: String) -> DeedOutcome? {
+        guard let i = calls.firstIndex(where: { $0.id == id }) else { return nil }
         calls[i].done = true
+        calls[i].progress = calls[i].target
         light += 1
-        journey.did(calls[i].title, detail: calls[i].detail, realm: calls[i].realm)
+        return journey.did(calls[i].title, detail: calls[i].detail, realm: calls[i].realm, minutes: calls[i].minutes)
     }
+    /// Progress inside a quest (reps, pages, minutes): one step further.
+    func step(_ id: String, by n: Int = 1) {
+        guard let i = calls.firstIndex(where: { $0.id == id }), !calls[i].done else { return }
+        calls[i].progress = min(calls[i].target, calls[i].progress + n)
+    }
+    /// An honest skip: today it's not for you. Never punished; it goes back in the satchel, under "Skipped".
+    func skip(_ id: String) {
+        guard let i = calls.firstIndex(where: { $0.id == id }), !calls[i].done else { return }
+        calls[i].skipped = true; calls[i].chosen = false
+        journey.skip(calls[i].title)
+    }
+    func unskip(_ id: String) { if let i = calls.firstIndex(where: { $0.id == id }) { calls[i].skipped = false } }
 
     /// (-perf) When the last screen change was asked for, to log how long until the new world's first frame.
     @ObservationIgnored var tappedAt: CFTimeInterval = 0

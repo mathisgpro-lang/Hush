@@ -1,7 +1,8 @@
 // Your Flame (decision 128): where you are in your journey. Your Spark, large and alive in your ember's color; its
 // stage and the ones to come; this week's seven little flames (missed days are simply unlit, a fresh week every
 // Monday); the days you've lived (it only grows); your six lights; how bright you've been lately; what's next.
-// No streak, nothing that can break.
+// Decision 134: the streak at the core (protected: shields, repair, never touching what you've built), a level with
+// its XP bar, and six attributes whose numbers climb, compared with Day 1.
 import SwiftUI
 
 struct FlameSheet: View {
@@ -38,12 +39,14 @@ struct FlameSheet: View {
                         Text("Spark · day \(j.dayNumber())").font(.system(size: 14, design: .serif)).foregroundStyle(gold)
                     }
                     stageStrip
-                    card { week }
+                    card { levelCard }
                     HStack(spacing: 12) {
+                        card { streakCard }
                         card { stat("\(j.daysLived)", "days lived", "Every day you live counts, forever.") }
-                        card { stat("\(j.lastSeven)/7", "lately", vitalityLine) }
                     }
-                    card { sixLights }
+                    card { week }
+                    card { attributes }
+                    card { arcCard }
                     card {
                         HStack(spacing: 10) {
                             Image(systemName: "sparkles").foregroundStyle(gold)
@@ -73,6 +76,89 @@ struct FlameSheet: View {
                     Text(i == 4 ? "?" : Self.stageNames[i]).font(.system(size: 10, design: .serif)).foregroundStyle(cream.opacity(i == 0 ? 1 : 0.45))
                 }
             }
+        }
+    }
+
+    private var levelCard: some View {
+        let l = Progression.level(xp: j.totalXP)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .lastTextBaseline) {
+                VStack(spacing: 0) {
+                    Text("\(l.level)").font(.system(size: 34, weight: .heavy, design: .rounded)).foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
+                    Text("LEVEL").font(.system(size: 9, weight: .bold)).foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05).opacity(0.8))
+                }
+                .frame(width: 70, height: 64).background(RoundedRectangle(cornerRadius: 12).fill(LinearGradient(colors: [gold, Color(red: 0.93, green: 0.5, blue: 0.2)], startPoint: .top, endPoint: .bottom)))
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(j.totalXP.formatted()).font(.system(size: 28, weight: .bold, design: .rounded)).foregroundStyle(cream).monospacedDigit()
+                    Text("XP earned").font(.system(size: 11, design: .serif)).foregroundStyle(cream.opacity(0.6))
+                }
+            }
+            HStack(spacing: 3) {
+                ForEach(0..<24, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 2).fill(Double(i) < Double(24 * l.into) / Double(max(1, l.span)) ? Color.orange : cream.opacity(0.12)).frame(height: 9)
+                }
+            }
+            Text("\(l.span - l.into) XP to level \(l.level + 1)").font(.system(size: 12, design: .serif)).foregroundStyle(cream.opacity(0.6)).frame(maxWidth: .infinity)
+        }
+    }
+
+    private var streakCard: some View {
+        let s = j.streak()
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: "flame.fill").foregroundStyle(.orange)
+                Text("\(s.current)").font(.system(size: 30, design: .serif)).foregroundStyle(gold)
+            }
+            Text("days in a row").font(.system(size: 13, weight: .semibold, design: .serif)).foregroundStyle(cream)
+            HStack(spacing: 3) {
+                ForEach(0..<2, id: \.self) { i in Image(systemName: i < s.shields ? "shield.fill" : "shield").font(.system(size: 11)) }
+                Text("best \(s.best)").font(.system(size: 11, design: .serif)).padding(.leading, 4)
+            }
+            .foregroundStyle(Color(red: 0.7, green: 0.85, blue: 1))
+        }
+    }
+
+    /// Six attributes, big numbers that climb, compared with Day 1 (Life Reset's "Your Rating", in our pillars).
+    private var attributes: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Your rating").font(.system(size: 15, weight: .semibold, design: .serif)).foregroundStyle(cream)
+                Spacer()
+                Text("Day 1 → today").font(.system(size: 11, design: .serif)).foregroundStyle(cream.opacity(0.5))
+            }
+            ForEach(Pillar6.allCases, id: \.self) { p in
+                let v = j.attribute(p)
+                HStack(spacing: 10) {
+                    Image(systemName: p.realm.symbol).foregroundStyle(p.realm.color).frame(width: 22)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(p.attribute.uppercased()).font(.system(size: 12, weight: .semibold)).tracking(1.5).foregroundStyle(cream.opacity(0.85))
+                        Text("\(p.rawValue) · \(p.realm.name)").font(.system(size: 10, design: .serif)).foregroundStyle(cream.opacity(0.4))
+                    }
+                    Spacer()
+                    Text("0 →").font(.system(size: 12, design: .rounded)).foregroundStyle(cream.opacity(0.35))
+                    if v > 0 { Image(systemName: "arrowtriangle.up.fill").font(.system(size: 9)).foregroundStyle(Color(red: 0.5, green: 0.9, blue: 0.5)) }
+                    Text("\(v)").font(.system(size: 28, weight: .bold, design: .rounded)).monospacedDigit().foregroundStyle(v > 0 ? cream : cream.opacity(0.3))
+                }
+            }
+        }
+    }
+
+    private var arcCard: some View {
+        let d = min(j.dayNumber(), Progression.arcLength)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("The first arc").font(.system(size: 15, weight: .semibold, design: .serif)).foregroundStyle(cream)
+                Spacer()
+                Text("Day \(d) / \(Progression.arcLength)").font(.system(size: 13, weight: .semibold, design: .serif)).foregroundStyle(gold)
+            }
+            GeometryReader { g in
+                Capsule().fill(cream.opacity(0.12))
+                Capsule().fill(LinearGradient(colors: [gold, .orange], startPoint: .leading, endPoint: .trailing)).frame(width: g.size.width * CGFloat(d) / CGFloat(Progression.arcLength))
+            }
+            .frame(height: 8)
+            Text(d >= Progression.arcLength ? "You graduated. A new arc begins." : "At day 66, your Spark graduates: the habits you built become part of who you are.")
+                .font(.system(size: 12, design: .serif)).foregroundStyle(cream.opacity(0.6))
         }
     }
 
