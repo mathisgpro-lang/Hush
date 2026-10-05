@@ -133,7 +133,7 @@ final class SanctuaryScene {
                      b: nearest(steps.map { ($0, 0) }), t: nearest(steps.map { ($0, 1) }))
         let safe = EdgeSafety.limit(planeW: w, planeH: h, restDistance: Self.distance, edges: edges, fov: Self.fov,
                                     aspect: Float(screen.width / screen.height), margin: EdgeSafety.rubber + 0.03)
-        panLimit = [min(camW * 0.28, safe.x), safe.y]
+        panLimit = [min(camW * EdgeSafety.lookAround, safe.x), safe.y]
 
         // The painting, bent in depth. Each vertex keeps its rest screen position (scaled along the camera ray),
         // so from the rest camera the painting looks untouched; moving the camera reveals the depth.

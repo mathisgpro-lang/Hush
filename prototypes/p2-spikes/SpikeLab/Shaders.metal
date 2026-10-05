@@ -736,7 +736,13 @@ void sparkFire(realitykit::surface_parameters params)
         float I2 = (I * cs - Q * sn) * satK, Q2 = (I * sn + Q * cs) * satK;
         float3 tinted = float3(Y + 0.956 * I2 + 0.621 * Q2, Y - 0.272 * I2 - 0.647 * Q2, Y - 1.106 * I2 + 1.703 * Q2);
         float strength = params.material_constants().specular_scale();      // subtle: the painted fire shows through
-        rgb = mix(rgb, max(tinted, 0.0), k * strength * step(0.0001, abs(turn) + abs(satK - 1.0)));
+        // Only hints (Mathis): the heart of the fire keeps its painted color; the ember's color lives at the rim
+        // and in the flame's tips, fading in toward the outside.
+        float aWide = float(params.textures().base_color().sample(s, suv, bias(4.0)).a);
+        float rimW = saturate((1.0 - aWide) * 2.2);
+        float tips = smoothstep(0.55, 0.92, uv.y);
+        float hint = saturate(max(rimW, tips * 0.85)) * (1.0 - smoothstep(0.78, 0.97, Y));   // the bright heart stays
+        rgb = mix(rgb, max(tinted, 0.0), k * hint * strength * step(0.0001, abs(turn) + abs(satK - 1.0)));
     }
     // A warm pulse in its lower body, like a heartbeat.
     float core = 1.0 - smoothstep(0.0, 0.22, length((uv - float2(0.5, 0.24)) / float2(1.0, 0.8)));

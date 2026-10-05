@@ -139,7 +139,7 @@ final class RealmScene {
         // The view rests on the home painting (the circle), even when the world isn't centered on it (a panel
         // still missing): looking around stays inside the nearer edge.
         homeShift = (hx(0.5) - 0.5) * w
-        panLimit = [max(0, min(camW * 0.45, safe.x - abs(homeShift))), safe.y]          // no edge ever shows (EdgeSafety)
+        panLimit = [max(0, min(camW * EdgeSafety.lookAround, safe.x - abs(homeShift))), safe.y]   // as in the Sanctuary; no edge ever shows
         func point(_ u: Float, _ v: Float, nearer extra: Float = 0) -> SIMD3<Float> {
             let rest = SIMD3<Float>((u - 0.5) * w, (v - 0.5) * h, -Self.distance)
             let d = Self.distance - relief(depthAt(u, v)) - extra

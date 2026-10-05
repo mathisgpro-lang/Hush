@@ -9,8 +9,8 @@ struct FlameSheet: View {
     let model: ShellModel
     @Binding var isOpen: Bool
     @State private var bob = false
-    private let cream = Color(red: 1, green: 0.95, blue: 0.86)
-    private let gold = Color(red: 1, green: 0.78, blue: 0.42)
+    private let cream = Theme.ink              // on parchment, like the Satchel and the Book
+    private let gold = Theme.accent
     private static let stages = ["stage-spark", "stage-flame", "stage-blaze", "stage-kindled", "stage-beyond"]
     private static let stageNames = ["Spark", "Flame", "Blaze", "Kindled", "Beyond"]
     private static let lights: [(RealmID, String)] = [(.grove, "Heart"), (.library, "Mind"), (.highlands, "Body"),
@@ -71,8 +71,7 @@ struct FlameSheet: View {
             }
             }
             .frame(maxHeight: 680)
-            .background(RoundedRectangle(cornerRadius: 28).fill(Color(red: 0.1, green: 0.07, blue: 0.09).opacity(0.97))
-                .overlay(RoundedRectangle(cornerRadius: 28).stroke(gold.opacity(0.4), lineWidth: 1)))
+            .background(SheetPaper())
             .padding(.horizontal, 10).padding(.bottom, 8)
         }
         .onAppear { bob = true }
@@ -97,9 +96,9 @@ struct FlameSheet: View {
             HStack(alignment: .lastTextBaseline) {
                 VStack(spacing: 0) {
                     Text("\(l.level)").font(.num(34, .heavy)).foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
-                    Text("LEVEL").font(.system(size: 9, weight: .bold)).foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05).opacity(0.8))
+                    Text("LEVEL").font(.ui(9, .heavy)).foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05).opacity(0.8))
                 }
-                .frame(width: 70, height: 64).background(RoundedRectangle(cornerRadius: 12).fill(LinearGradient(colors: [gold, Color(red: 0.93, green: 0.5, blue: 0.2)], startPoint: .top, endPoint: .bottom)))
+                .frame(width: 70, height: 64).background(RoundedRectangle(cornerRadius: 12).fill(LinearGradient(colors: [Theme.gold, Color(red: 0.93, green: 0.5, blue: 0.2)], startPoint: .top, endPoint: .bottom)))
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(j.totalXP.formatted()).font(.num(28, .bold)).foregroundStyle(cream).monospacedDigit()
@@ -127,7 +126,7 @@ struct FlameSheet: View {
                 ForEach(0..<2, id: \.self) { i in Image(systemName: i < s.shields ? "shield.fill" : "shield").font(.system(size: 11)) }
                 Text("best \(s.best)").font(.ui(11)).padding(.leading, 4)
             }
-            .foregroundStyle(Color(red: 0.7, green: 0.85, blue: 1))
+            .foregroundStyle(Color(red: 0.25, green: 0.45, blue: 0.7))
         }
     }
 
@@ -144,12 +143,12 @@ struct FlameSheet: View {
                 HStack(spacing: 10) {
                     Image(systemName: p.realm.symbol).foregroundStyle(p.realm.color).frame(width: 22)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(p.attribute.uppercased()).font(.system(size: 12, weight: .semibold)).tracking(1.5).foregroundStyle(cream.opacity(0.85))
+                        Text(p.attribute.uppercased()).font(.ui(12, .bold)).tracking(1.5).foregroundStyle(cream.opacity(0.85))
                         Text("\(p.rawValue) · \(p.realm.name)").font(.ui(10)).foregroundStyle(cream.opacity(0.4))
                     }
                     Spacer()
                     Text("0 →").font(.num(12)).foregroundStyle(cream.opacity(0.35))
-                    if v > 0 { Image(systemName: "arrowtriangle.up.fill").font(.system(size: 9)).foregroundStyle(Color(red: 0.5, green: 0.9, blue: 0.5)) }
+                    if v > 0 { Image(systemName: "arrowtriangle.up.fill").font(.system(size: 9)).foregroundStyle(Color(red: 0.25, green: 0.6, blue: 0.3)) }
                     Text("\(v)").font(.num(28, .bold)).monospacedDigit().foregroundStyle(v > 0 ? cream : cream.opacity(0.3))
                 }
             }
@@ -166,7 +165,7 @@ struct FlameSheet: View {
             }
             GeometryReader { g in
                 Capsule().fill(cream.opacity(0.12))
-                Capsule().fill(LinearGradient(colors: [gold, .orange], startPoint: .leading, endPoint: .trailing)).frame(width: g.size.width * CGFloat(d) / CGFloat(Progression.arcLength))
+                Capsule().fill(LinearGradient(colors: [Theme.gold, .orange], startPoint: .leading, endPoint: .trailing)).frame(width: g.size.width * CGFloat(d) / CGFloat(Progression.arcLength))
             }
             .frame(height: 8)
             Text(d >= Progression.arcLength ? "You graduated. A new arc begins." : "At day 66, your Spark graduates: the habits you built become part of who you are.")
@@ -218,8 +217,7 @@ struct FlameSheet: View {
 
     private func card<C: View>(@ViewBuilder _ c: () -> C) -> some View {
         c().padding(14).frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 18).fill(.white.opacity(0.06)))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.08), lineWidth: 1))
+            .paperCard()
     }
 
     private func stat(_ big: String, _ label: String, _ line: String) -> some View {

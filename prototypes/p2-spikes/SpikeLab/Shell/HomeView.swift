@@ -21,6 +21,7 @@ struct HomeView: View {
     @State private var strand: (from: CGPoint, start: Date)?
     @State private var toast: String?
     @State private var dragStartPan: SIMD2<Float>?
+    @State private var barTaps: [String: Int] = [:]
     @State private var satchelOpen = false
     @State private var bookOpen = CommandLine.arguments.contains("-book")
     @State private var flameOpen = CommandLine.arguments.contains("-flamesheet")
@@ -315,43 +316,39 @@ struct HomeView: View {
 
     private var cockpitBar: some View {
         HStack(spacing: 0) {
-            barButton("map.fill", "World", badge: !model.newHere.isEmpty, image: UIImage(named: "icon-world.png") ?? UIImage(named: "icon-world-temp.png")) { withAnimation(.screen) { model.go(.map) } }
-            barButton("bag.fill", "Satchel", badge: chosen.isEmpty && model.calls.contains(where: { !$0.done })) {
+            barButton(.world, "World", badge: !model.newHere.isEmpty, image: UIImage(named: "icon-world.png")) { withAnimation(.screen) { model.go(.map) } }
+            barButton(.satchel, "Satchel", badge: chosen.isEmpty && model.calls.contains(where: { !$0.done }), image: UIImage(named: "satchel.png")) {
                 withAnimation(.sheet) { satchelOpen = true }
             }
-            barButton("book.closed.fill", "Book", badge: model.journey.newPages > 0, image: UIImage(named: "icon-book.png") ?? UIImage(named: "prop-scroll.png")) {
+            barButton(.book, "Book", badge: model.journey.newPages > 0, image: UIImage(named: "icon-book.png")) {
                 withAnimation(.sheet) { bookOpen = true }
             }
-            barButton("flame.fill", "Your Flame", badge: false, image: UIImage(named: "icon-flame.png") ?? SparkTint.image("spark-keyed.png", ember: model.emberID)) {
+            barButton(.flame, "Your Flame", badge: false, image: UIImage(named: "icon-flame.png")) {   // its gold frame stays gold
                 if PerfProbe.on { print("TAP flame button") }
                 director?.tapped()
                 withAnimation(.sheet) { flameOpen = true }
             }
         }
         .padding(.vertical, 10)
-        .background(RoundedRectangle(cornerRadius: 24).fill(Color(red: 0.08, green: 0.06, blue: 0.05).opacity(0.78)))
-        .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color(red: 1, green: 0.7, blue: 0.35).opacity(0.35), lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: 24).fill(Theme.night.opacity(0.8)))
+        .overlay(RoundedRectangle(cornerRadius: 24).stroke(Theme.gold.opacity(0.35), lineWidth: 1))
         .padding(.bottom, 4)
     }
 
-    private func barButton(_ symbol: String, _ label: String, badge: Bool, image: UIImage? = nil, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    /// One of the bar's four: a live painted icon (LiveIcon) that hops when tapped, its name below.
+    private func barButton(_ kind: LiveIcon.Kind, _ label: String, badge: Bool, image: UIImage?, action: @escaping () -> Void) -> some View {
+        Button {
+            barTaps[label, default: 0] += 1
+            action()
+        } label: {
             VStack(spacing: 4) {
                 ZStack(alignment: .topTrailing) {
-                    if let image {                                       // painted icons (stand-ins until Codex's)
-                        Image(uiImage: image).resizable().scaledToFit().frame(width: 32, height: 28)
-                            .shadow(color: .orange.opacity(badge ? 0.8 : 0.3), radius: badge ? 8 : 3)
-                    } else if symbol == "bag.fill", let img = UIImage(named: "satchel.png") {
-                        Image(uiImage: img).resizable().scaledToFit().frame(width: 34, height: 26)     // Codex's satchel
-                            .shadow(color: .orange.opacity(badge ? 0.8 : 0.3), radius: badge ? 8 : 3)
-                    } else {
-                        Image(systemName: symbol).font(.system(size: 22))
-                    }
-                    if badge { Circle().fill(Color(red: 1, green: 0.55, blue: 0.2)).frame(width: 10, height: 10).offset(x: 6, y: -3) }
+                    LiveIcon(kind: kind, image: image, calling: badge, taps: barTaps[label, default: 0])
+                    if badge { Circle().fill(Theme.ember).frame(width: 9, height: 9).offset(x: 4, y: -2) }
                 }
-                Text(label).font(.ui(12))
+                Text(label).font(.ui(12, .semibold))
             }
-            .frame(maxWidth: .infinity).foregroundStyle(Color(red: 1, green: 0.88, blue: 0.7))
+            .frame(maxWidth: .infinity).foregroundStyle(Theme.cream)
         }
     }
 
@@ -408,11 +405,7 @@ struct HomeView: View {
             }
             .padding(20)
             .background(
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(LinearGradient(colors: [Color(red: 0.98, green: 0.93, blue: 0.82), Color(red: 0.93, green: 0.85, blue: 0.7)], startPoint: .top, endPoint: .bottom))
-                    .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.7), lineWidth: 1.5))
-                    .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.3), lineWidth: 1).padding(6))
-                    
+                SheetPaper()
             )
             .padding(.horizontal, 14).padding(.bottom, 24)
             .transition(.move(edge: .bottom))
@@ -544,11 +537,7 @@ struct QuestJournal: View {
                 .padding(.horizontal, 18).padding(.bottom, 18)
             }
             .background(
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(LinearGradient(colors: [Color(red: 0.98, green: 0.93, blue: 0.82), Color(red: 0.93, green: 0.85, blue: 0.7)], startPoint: .top, endPoint: .bottom))
-                    .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.7), lineWidth: 1.5))
-                    .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.3), lineWidth: 1).padding(6))
-                    
+                SheetPaper()
             )
             .padding(.horizontal, 10).padding(.bottom, 8)
         }

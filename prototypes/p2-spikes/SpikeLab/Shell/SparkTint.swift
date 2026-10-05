@@ -11,12 +11,12 @@ enum SparkTint {
         // strength = how much of the color shows (subtle, Mathis). Blues sit opposite the painted orange, so a half
         // mix would cancel to grey: they get a little more color so they still read as a soft blue.
         switch ember {
-        case "heart": (-0.62, 0.95, 0.45)       // a warm flame with rose tips
-        case "mind": (3.1, 1.2, 0.66)           // soft sky blue
-        case "body": (-0.14, 1.3, 0.5)          // deeper, hotter ember red
-        case "spirit": (3.45, 0.7, 0.6)         // pale moonlit blue-lavender
-        case "craft": (0.12, 1.0, 0.5)          // gold
-        case "world": (1.45, 0.95, 0.4)         // golden green
+        case "heart": (-0.62, 0.95, 0.4)       // a warm flame with rose tips
+        case "mind": (3.1, 1.25, 0.8)           // soft sky blue
+        case "body": (-0.14, 1.25, 0.4)          // deeper, hotter ember red
+        case "spirit": (3.45, 0.8, 0.72)         // pale moonlit blue-lavender
+        case "craft": (0.12, 1.0, 0.4)          // gold
+        case "world": (1.45, 0.95, 0.36)         // golden green
         default: (0, 1, 0)
         }
     }
@@ -47,8 +47,16 @@ enum SparkTint {
         guard s.strength > 0 else { return src }
         let hue = CIFilter.hueAdjust(); hue.inputImage = ci; hue.angle = s.angle
         let sat = CIFilter.colorControls(); sat.inputImage = hue.outputImage; sat.saturation = s.saturation
-        let mixF = CIFilter.dissolveTransition(); mixF.inputImage = ci; mixF.targetImage = sat.outputImage; mixF.time = s.strength
-        guard let out = mixF.outputImage, let cg = context.createCGImage(out, from: ci.extent) else { return src }
+        let mixF = CIFilter.dissolveTransition(); mixF.inputImage = ci; mixF.targetImage = sat.outputImage; mixF.time = s.strength * 0.75
+        // Only hints at the edges: the heart of the fire keeps its painted color (as in the live Spark's shader).
+        let e = ci.extent, r = Float(min(e.width, e.height))
+        let grad = CIFilter.radialGradient()
+        grad.center = CGPoint(x: e.midX, y: e.minY + e.height * 0.42)
+        grad.radius0 = r * 0.24; grad.radius1 = r * 0.58
+        grad.color0 = CIColor(red: 0, green: 0, blue: 0); grad.color1 = CIColor(red: 1, green: 1, blue: 1)
+        let blend = CIFilter.blendWithMask(); blend.inputImage = mixF.outputImage; blend.backgroundImage = ci
+        blend.maskImage = grad.outputImage?.cropped(to: e)
+        guard let out = blend.outputImage, let cg = context.createCGImage(out, from: ci.extent) else { return src }
         let img = UIImage(cgImage: cg, scale: src.scale, orientation: src.imageOrientation)
         lock.lock(); cache[key] = img; lock.unlock()
         return img

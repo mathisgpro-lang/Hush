@@ -21,6 +21,31 @@ enum Theme {
     static let cream = Color(red: 1, green: 0.95, blue: 0.86)
     static let ink = Color(red: 0.27, green: 0.17, blue: 0.1)
     static let night = Color(red: 0.09, green: 0.065, blue: 0.08)
+    /// The accent on parchment (a deep ember brown-orange): big numbers, highlights.
+    static let accent = Color(red: 0.72, green: 0.36, blue: 0.1)
+    static let paperTop = Color(red: 0.98, green: 0.93, blue: 0.82)
+    static let paperBottom = Color(red: 0.93, green: 0.85, blue: 0.7)
+    static let paperEdge = Color(red: 0.75, green: 0.58, blue: 0.3)
+}
+
+/// The one material every sheet is made of (Satchel, Book, Your Flame, a quest's card): warm parchment with a
+/// thin gold double rule, so the whole app reads as one object.
+struct SheetPaper: View {
+    var corner: CGFloat = 28
+    var body: some View {
+        RoundedRectangle(cornerRadius: corner)
+            .fill(LinearGradient(colors: [Theme.paperTop, Theme.paperBottom], startPoint: .top, endPoint: .bottom))
+            .overlay(RoundedRectangle(cornerRadius: corner).stroke(Theme.paperEdge.opacity(0.7), lineWidth: 1.5))
+            .overlay(RoundedRectangle(cornerRadius: corner - 6).stroke(Theme.paperEdge.opacity(0.3), lineWidth: 1).padding(6))
+    }
+}
+
+extension View {
+    /// A card set into the parchment (a slightly deeper page with a faint rule).
+    func paperCard(_ corner: CGFloat = 18) -> some View {
+        background(RoundedRectangle(cornerRadius: corner).fill(Theme.paperEdge.opacity(0.12)))
+            .overlay(RoundedRectangle(cornerRadius: corner).stroke(Theme.paperEdge.opacity(0.35), lineWidth: 1))
+    }
 }
 
 extension Font {

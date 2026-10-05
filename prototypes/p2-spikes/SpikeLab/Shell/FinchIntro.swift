@@ -102,7 +102,13 @@ struct FinchIntro: View {
                         }
                         if let m = morph {
                             let h = f.height * Self.stageHeights[m] / Self.stageHeights[0] * 0.95
-                            Image(uiImage: SparkTint.image("\(Self.stages[m]).png", ember: model.emberID) ?? UIImage()).resizable().scaledToFit()
+                            // In shadow: only the outline of what it will become, edged with a faint warm light
+                            // (the future stays a mystery until it's lived).
+                            Image(uiImage: UIImage(named: "\(Self.stages[m]).png") ?? UIImage()).resizable()
+                                .renderingMode(.template).scaledToFit()
+                                .foregroundStyle(LinearGradient(colors: [Color(red: 0.16, green: 0.1, blue: 0.2), Color(red: 0.07, green: 0.05, blue: 0.12)], startPoint: .top, endPoint: .bottom))
+                                .shadow(color: Color(red: 1, green: 0.7, blue: 0.4).opacity(0.85), radius: 2)
+                                .shadow(color: Color(red: 1, green: 0.55, blue: 0.25).opacity(0.5), radius: 18)
                                 .frame(height: h)
                                 .position(x: f.feet.x, y: f.feet.y - h * 0.5 + f.height * 0.08)
                                 .id(m).transition(.scale(scale: 0.8).combined(with: .opacity))

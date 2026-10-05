@@ -65,11 +65,7 @@ struct BookView: View {
                 }
             }
             .background(
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(LinearGradient(colors: [Color(red: 0.98, green: 0.93, blue: 0.82), Color(red: 0.93, green: 0.85, blue: 0.7)], startPoint: .top, endPoint: .bottom))
-                    .overlay(RoundedRectangle(cornerRadius: 28).stroke(gold.opacity(0.7), lineWidth: 1.5))
-                    .overlay(RoundedRectangle(cornerRadius: 22).stroke(gold.opacity(0.3), lineWidth: 1).padding(6))
-                    
+                SheetPaper()
             )
             .padding(.horizontal, 10).padding(.bottom, 8)
         }

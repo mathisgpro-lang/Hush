@@ -7,6 +7,8 @@ import Foundation
 enum EdgeSafety {
     /// The rubber band may pull this far past the limit (meters); the spring never goes further.
     static let rubber: Float = 0.03
+    /// How far sideways you may look around, in screen widths: the same in every world (the Sanctuary's feel).
+    static let lookAround: Float = 0.28
 
     /// Safe sideways and vertical slide (meters) for a camera looking straight at a painting plane.
     /// - planeW/planeH: the painting's size at `restDistance` (its rest plane).
