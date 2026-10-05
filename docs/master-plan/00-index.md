@@ -78,7 +78,17 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-03 evening, decisions 121–133)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-05, decisions 134–139)
+
+**Current work: Mathis's corrections list** (`docs/plan-2.0/p26-corrections.md`): items 1–11 ✅ done (2026-10-05). Only the *later* items remain (12 Finch retention/payment study, 13 the shop), not to start before Mathis says so.
+- **Mathis to try on the iPhone** (installed 2026-10-05): the new intro (`-freshjourney`), Your Flame (friends), the map, time of day (`-hour 7 / 13 / 19 / 23`), **and whether new realms render** (black in the simulator only, pre-existing).
+- **Waiting on Codex** (usage limit, resets 21:49; run `scripts/resume-codex.sh`): `scripts/p26-tod.sh` (dusk and night paintings, then it refits `tod-lut.png` itself → rebuild and install), `scripts/p26-art.sh` (button, Keepers Nimro/Quill/Mossbeard/Orrin, the Spark's body and face parts).
+- **Next when they land:** use `ui-pillars.png` for the pillar icons (Flame sheet, rewards, friends), the badges for streak/shield, place the Keepers in their realms (P2.6 step 6), the Spark's animation parts (P2.6 step 5). Forge: add to `tools/realms.sh` and build.
+- Test flags (new): `-friend`, `-nobeta` (worlds locked, Embers buy them), `-hour N` uses the light hour (sunrise 6:15, sunset 18:45).
+
+---
+
+## (older) Where we left off: RESUME HERE (updated 2026-10-03 evening, decisions 121–133)
 
 **Current work: the next worlds** (decisions 132–133). SpikeLab, `prototypes/p2-spikes`.
 - ✅ One interface in every world (`HomeView(world:)`, `Shell/LivingWorld.swift`); one realm engine (`RealmScene` in `S3View.swift`, content in `Shell/RealmContent.swift`); no floating markers (tap the painted places); realms alive (hour, clouds, waterfalls, gusts, motes).

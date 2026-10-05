@@ -18,3 +18,5 @@ gen $D/tod-dawn.png "$TOD early dawn: a soft pink-peach sky low on the horizon f
 gen $D/tod-day.png "$TOD a clear bright midday: crisp warm sunlight, saturated but soft colours, blue sky with a few white clouds, sparkling turquoise sea, short shadows. Painterly, beautiful." $PAINT
 gen $D/tod-dusk.png "$TOD golden-hour dusk: deep amber and coral sky with a violet top, warm orange rim light on every edge, long shadows, sea reflecting gold, the first lanterns and windows lit warm. Painterly, beautiful." $PAINT
 gen $D/tod-night.png "$TOD a magical moonlit night: deep blue-teal sky full of soft stars, a gentle silver moonlight on the edges, the land still readable (never pitch black), every lantern, window and flame glowing warm orange with soft halos, a dark glassy sea with moon glints. Painterly, cozy, beautiful, Studio-Ghibli-like night." $PAINT
+# Refit the looks of the hour from whatever paintings exist (tools/build_tod_luts.py).
+(cd prototypes/p2-spikes && python3 tools/build_tod_luts.py | tail -1)

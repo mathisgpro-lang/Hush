@@ -5,7 +5,11 @@
 import SwiftUI
 import RealityKit
 
-enum IntroStep: Int, CaseIterable { case welcome, chooseEmber, warm, born, hello, whatAmI, growing, world, mornings, q1, q2, q3, preparing, firstLight }
+// The order (corrections list #11, after studying Finch, Duolingo and Headspace): the hatching within the first
+// minute, a few questions as big cards with the Spark answering, where you're starting (your first quests already
+// picked, never a blank day), then one tiny quest done together right now (the first win: light, XP, Day 1 lit),
+// and only then the question about mornings (asked once the value is felt).
+enum IntroStep: Int, CaseIterable { case welcome, chooseEmber, warm, born, hello, whatAmI, growing, world, q1, q2, q3, preparing, firstLight, firstDeed, mornings }
 
 struct EmberChoice: Identifiable, Hashable {
     let id: String, word: String, pillar: String, color: Color, realm: RealmID, interest: String
@@ -75,6 +79,7 @@ struct FinchIntro: View {
     @State private var morph: Int?
     @State private var morphFlash: Double = 0
     @State private var glimpseDone = false
+    @State private var firstOutcome: DeedOutcome?
     private static let stages = ["stage-spark", "stage-flame", "stage-blaze", "stage-kindled", "stage-beyond"]
     private static let stageHeights: [CGFloat] = [282, 464, 602, 681, 716]
 
@@ -139,6 +144,9 @@ struct FinchIntro: View {
             .padding(.horizontal, 26).padding(.bottom, 28)
             if let bubble { speech(bubble) }
             if lightToast { toast }
+            if let o = firstOutcome, step == .firstDeed {
+                RewardBurst(outcome: o) { go(.mornings) }
+            }
         }
         .animation(.smooth(duration: 0.38), value: step)
         .onAppear {
@@ -213,12 +221,13 @@ struct FinchIntro: View {
             VStack(spacing: 16) {
                 worldWindow.frame(width: 250, height: 250)
                 body2("Every real thing you do wakes a piece of it.")
-                primary("Next") { go(.mornings) }
+                primary("Next") { go(.q1) }
             }
         case .mornings:
             VStack(spacing: 12) {
-                primary("Turn on mornings") { go(.q1) }
-                secondary("Maybe later") { go(.q1) }
+                body2("A gentle note with your day, once each morning. Nothing else, ever.")
+                primary("Turn on mornings") { finish() }
+                secondary("Maybe later") { finish() }
             }
         case .q1:
             question("What would make this year feel alive?", sub: "Pick as many as you like", options: emberChoices.map(\.interest), multi: true, key: 1, next: .q2)
@@ -247,22 +256,53 @@ struct FinchIntro: View {
             }
         case .firstLight:
             VStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Your first light").font(.story(22)).foregroundStyle(Color(red: 0.35, green: 0.2, blue: 0.1))
-                    ForEach(firstThings, id: \.self) { t in
+                VStack(alignment: .leading, spacing: 9) {
+                    Text("Where you're starting").font(.story(22)).foregroundStyle(Theme.ink)
+                    startLine("sparkles", "You want more of", answers[1, default: []].map(shortLabel).sorted().joined(separator: ", ").ifEmpty("a calmer, fuller day"))
+                    startLine("clock.fill", "Your time", (answers[2]?.first ?? "About 15 minutes").lowercased() + " a day")
+                    startLine("flag.fill", "From", (answers[3]?.first ?? "Just starting out").lowercased())
+                    Divider().overlay(Theme.paperEdge.opacity(0.5)).padding(.vertical, 2)
+                    Text("Your first quests, picked for you").font(.ui(13, .bold)).foregroundStyle(Theme.accent)
+                    ForEach(model.calls.filter(\.chosen)) { c in
                         HStack(spacing: 10) {
-                            Circle().fill(gold).frame(width: 9, height: 9).shadow(color: .orange, radius: 4)
-                            Text(t).font(.ui(16)).foregroundStyle(Color(red: 0.3, green: 0.2, blue: 0.12))
+                            Image(systemName: c.symbol).font(.system(size: 13, weight: .semibold)).foregroundStyle(c.realm.color)
+                                .frame(width: 26, height: 26).background(Circle().fill(Theme.night.opacity(0.85)))
+                            Text(c.title).font(.ui(15, .semibold)).foregroundStyle(Theme.ink)
+                            Spacer()
+                            Text("\(c.minutes) min").font(.ui(12)).foregroundStyle(Theme.ink.opacity(0.55))
                         }
                     }
+                    Text("You can swap any of them in your satchel.").font(.ui(11)).foregroundStyle(Theme.ink.opacity(0.5))
                 }
                 .padding(20).frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 18).fill(Color(red: 0.98, green: 0.93, blue: 0.82)))
-                .shadow(color: .black.opacity(0.25), radius: 12, y: 6)
-                body2("In a few days, I'll want a name.")
-                primary("Let's begin") { finish() }
+                .background(SheetPaper(corner: 22))
+                primary("Light the first one with me") { go(.firstDeed) }
+            }
+        case .firstDeed:
+            VStack(spacing: 16) {
+                BreathCircle(breaths: 3, color: gold) { firstDeedDone() }
+                    .frame(width: 210, height: 210)
+                if firstOutcome == nil { secondary("I did it") { firstDeedDone() } }
             }
         }
+    }
+
+    private func startLine(_ icon: String, _ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: icon).font(.system(size: 12)).foregroundStyle(Theme.accent).frame(width: 16)
+            Text(label).font(.ui(13)).foregroundStyle(Theme.ink.opacity(0.6))
+            Text(value).font(.ui(14, .bold)).foregroundStyle(Theme.ink)
+        }
+    }
+
+    /// The first win, inside the introduction: three slow breaths, really done; the light flies, XP and Day 1.
+    private func firstDeedDone() {
+        guard firstOutcome == nil else { return }
+        let o = model.journey.did("Three slow breaths", detail: "Your very first light.", realm: .stillwater, minutes: 2)
+        FeelHaptics.shared.ignite(); FeelSound.shared.catchLight()
+        scene.hero.react(.cheer)
+        say("You did it. That's my first light!")
+        withAnimation(.spring(duration: 0.4)) { firstOutcome = o }
     }
 
     // MARK: Pieces
@@ -321,6 +361,7 @@ struct FinchIntro: View {
                     if multi { if set.contains(o) { set.remove(o) } else { set.insert(o) } } else { set = [o] }
                     answers[key] = set
                     scene.hero.react(.giggle)
+                    if let line = Self.replies[o] { say(line) }
                     if !multi { Task { try? await Task.sleep(for: .milliseconds(350)); go(next) } }
                 }
             }
@@ -328,6 +369,14 @@ struct FinchIntro: View {
             if multi { primary("Next", disabled: answers[key, default: []].isEmpty) { go(next) }.padding(.top, 6) }
         }
     }
+
+    /// The Spark answers what you pick (a few words, warm, never judging).
+    private static let replies: [String: String] = [
+        "About 5 minutes": "Five good minutes is plenty.", "About 15 minutes": "Fifteen minutes. We can do a lot with that.",
+        "Half an hour": "Half an hour! Lovely.", "More than that": "Then we'll go far, gently.",
+        "Just starting out": "Starting is the bravest part.", "I have a few good habits": "Good. We'll build on them.",
+        "I'm already quite active": "Then I'll keep up with you.",
+    ]
 
     private func shortLabel(_ o: String) -> String {
         ["Be closer to people I love": "People I love", "Read again": "Reading", "Find calm": "Calm",
@@ -443,10 +492,16 @@ struct FinchIntro: View {
             scene.focus = scene.flameFocus - SIMD3(0, 0.085, 0)   // aim lower: the Flame watches from above the questions
         case .q2, .q3: scene.hero.perform(.glanceUp)
         case .preparing: say("Give me a moment…"); scene.focus = scene.flameFocus
-        case .firstLight: say("Here's where we begin.")
+        case .firstLight:
+            // You exist from here: your ember, your first quests picked (never a blank day), the Book's first page.
+            if let e = ember { model.chose(e.interest); model.setEmber(e.id) }
+            for id in ["a", "c", "d"] where model.chosenCount < ShellModel.maxChosen { model.toggleChosen(id) }
+            if model.journey.pages.isEmpty { model.journey.born(name: name.trimmingCharacters(in: .whitespaces), ember: ember?.word ?? "light") }
+            say("Here's where we begin.")
+        case .firstDeed: say("Let's do one together. Breathe with me.")
         default: break
         }
-        if s.rawValue >= IntroStep.q2.rawValue && s != .preparing && s != .firstLight { withAnimation { bubble = nil } }
+        if s.rawValue >= IntroStep.q2.rawValue && s.rawValue <= IntroStep.q3.rawValue { withAnimation { bubble = nil } }
     }
 
     private func setUpWorld() {
@@ -557,8 +612,6 @@ struct FinchIntro: View {
     }
 
     private func finish() {
-        if let e = ember { model.chose(e.interest); model.setEmber(e.id) }
-        model.journey.born(name: name.trimmingCharacters(in: .whitespaces), ember: ember?.word ?? "light")   // the Book's first page
         FeelHaptics.shared.rise(); FeelSound.shared.rise()
         withAnimation { bubble = nil }
         scene.focus = nil                            // the camera pulls back: the whole Sanctuary
@@ -576,10 +629,10 @@ struct FinchIntro: View {
             await w(2); go(.chooseEmber); await w(1.5); ember = emberChoices[0]; await w(1.5); go(.warm)
             await w(1); startWarming(); await w(3)
             await w(3); go(.hello); await w(2); name = "Mathis"; await w(1); go(.whatAmI); await w(2.5); gotLight()
-            await w(12); go(.world); await w(3.5); go(.mornings); await w(2); go(.q1)
+            await w(12); go(.world); await w(3.5); go(.q1)
             await w(2); answers[1] = ["Be closer to people I love", "Read again"]; await w(1); go(.q2)
             await w(1.5); answers[2] = ["About 15 minutes"]; go(.q3); await w(1.5); answers[3] = ["Just starting out"]; go(.preparing)
-            await w(4.5); finish()
+            await w(4.5); await w(3); go(.firstDeed); await w(3); firstDeedDone(); await w(4); go(.mornings); await w(2); finish()
         }
     }
 }
@@ -705,4 +758,46 @@ struct BirthBloom: View {
         }
         .ignoresSafeArea()
     }
+}
+
+/// Breathe with the Spark: a soft light grows as you breathe in (4 s) and settles as you breathe out (5 s), three
+/// times, then the quest is done. (The longer out-breath is what calms; the counting keeps the mind on it.)
+struct BreathCircle: View {
+    let breaths: Int
+    let color: Color
+    let done: () -> Void
+    @State private var grow = false
+    @State private var count = 0
+    @State private var inhaling = true
+    var body: some View {
+        ZStack {
+            Circle().fill(Theme.night.opacity(0.55))                    // reads on the bright stone circle
+            Circle().fill(RadialGradient(colors: [color.opacity(0.75), color.opacity(0.15), .clear], center: .center, startRadius: 4, endRadius: 105))
+                .scaleEffect(grow ? 1 : 0.45)
+            Circle().stroke(Theme.cream.opacity(0.85), lineWidth: 2.5).scaleEffect(grow ? 0.95 : 0.42)
+            VStack(spacing: 4) {
+                Text(count >= breaths ? "Done" : (inhaling ? "Breathe in" : "Breathe out")).font(.story(22)).foregroundStyle(Theme.cream)
+                Text("\(min(count + 1, breaths)) of \(breaths)").font(.ui(13, .semibold)).foregroundStyle(Theme.cream.opacity(0.7))
+            }
+            .contentTransition(.opacity)
+        }
+        .task {
+            for i in 0..<breaths {
+                count = i
+                withAnimation(.easeInOut(duration: 0.3)) { inhaling = true }
+                FeelHaptics.shared.nudge()
+                withAnimation(.easeInOut(duration: 4)) { grow = true }
+                try? await Task.sleep(for: .seconds(4))
+                withAnimation(.easeInOut(duration: 0.3)) { inhaling = false }
+                withAnimation(.easeInOut(duration: 5)) { grow = false }
+                try? await Task.sleep(for: .seconds(5))
+            }
+            count = breaths
+            done()
+        }
+    }
+}
+
+extension String {
+    func ifEmpty(_ fallback: String) -> String { isEmpty ? fallback : self }
 }
