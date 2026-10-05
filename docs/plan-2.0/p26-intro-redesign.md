@@ -1,6 +1,6 @@
 # The introduction, redesigned (plan, 2026-10-05)
 
-*Source: Mathis: "extensive research on how the best apps build onboarding… tailored for this app. Keep the Flame hatching and becoming alive, a few questions to set up the account and understand where the user stands, the evolutions in shadow." Status: **draft, waiting for approval.***
+*Source: Mathis: "extensive research on how the best apps build onboarding… tailored for this app. Keep the Flame hatching and becoming alive, a few questions to set up the account and understand where the user stands, the evolutions in shadow." Status: **approved and built (decision 140, 2026-10-05).** Test any beat with `-freshjourney -introstep <beat>`.*
 
 ## What the research says (and what it means for Hush)
 

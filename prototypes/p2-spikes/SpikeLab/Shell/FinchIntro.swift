@@ -1,15 +1,13 @@
-// The introduction, Finch-style (decision 114, docs/plan-2.0/intro-finch-spec.md): one thing per screen on a soft
-// dusk gradient, your Flame centered and reacting; choose your ember → hold to warm it → it cracks → light rays →
-// the Spark is born → it asks your name → "what am I?" (+1 light) → foreshadowing (stages, the world) → mornings →
-// three quick questions → preparing → your first-light list → the world reveal.
+// The introduction (decision 140, docs/plan-2.0/p26-intro-redesign.md, after studying Finch, Duolingo, Headspace,
+// Calm, Life Reset and Fabulous): the Hush → choose your ember → warm it, it hatches → the Spark comes alive and
+// asks your name → the glimpse of what it will become, in shadow → why you're here → where you stand (your Day 1
+// rating) → your daily moment → preparing your path → your starting light (first quests picked) → the first light,
+// done together → a small promise → your mornings → home. No account, no paywall, data only after the bond.
 import SwiftUI
 import RealityKit
+import UserNotifications
 
-// The order (corrections list #11, after studying Finch, Duolingo and Headspace): the hatching within the first
-// minute, a few questions as big cards with the Spark answering, where you're starting (your first quests already
-// picked, never a blank day), then one tiny quest done together right now (the first win: light, XP, Day 1 lit),
-// and only then the question about mornings (asked once the value is felt).
-enum IntroStep: Int, CaseIterable { case welcome, chooseEmber, warm, born, hello, whatAmI, growing, world, q1, q2, q3, preparing, firstLight, firstDeed, mornings }
+enum IntroStep: Int, CaseIterable { case welcome, chooseEmber, warm, born, hello, growing, why, stand, moment, preparing, startingLight, firstDeed, promise, mornings }
 
 struct EmberChoice: Identifiable, Hashable {
     let id: String, word: String, pillar: String, color: Color, realm: RealmID, interest: String
@@ -80,6 +78,11 @@ struct FinchIntro: View {
     @State private var morphFlash: Double = 0
     @State private var glimpseDone = false
     @State private var firstOutcome: DeedOutcome?
+    @State private var rating: [Pillar6: Int] = [:]      // where you stand (0 low, 1 okay, 2 good): the Day 1 rating
+    @State private var meetWhen: String?
+    @State private var meetFor: String?
+    @State private var prepDone = 0
+    @State private var reps = 0
     private static let stages = ["stage-spark", "stage-flame", "stage-blaze", "stage-kindled", "stage-beyond"]
     private static let stageHeights: [CGFloat] = [282, 464, 602, 681, 716]
 
@@ -133,7 +136,7 @@ struct FinchIntro: View {
             LinearGradient(colors: [.black.opacity(0.45), .clear, .clear, .black.opacity(0.62)], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea().allowsHitTesting(false)
             VStack(spacing: 0) {
-                if step.rawValue >= IntroStep.q1.rawValue && step.rawValue <= IntroStep.q3.rawValue { progressBar.padding(.top, 8) }
+                if step.rawValue >= IntroStep.why.rawValue && step.rawValue <= IntroStep.moment.rawValue { progressBar.padding(.top, 8) }
                 Spacer(minLength: 0)
                 content
                     .id(step)
@@ -145,7 +148,7 @@ struct FinchIntro: View {
             if let bubble { speech(bubble) }
             if lightToast { toast }
             if let o = firstOutcome, step == .firstDeed {
-                RewardBurst(outcome: o) { go(.mornings) }
+                RewardBurst(outcome: o) { go(.promise) }
             }
         }
         .animation(.smooth(duration: 0.38), value: step)
@@ -155,6 +158,12 @@ struct FinchIntro: View {
             scene.setVitality(worldVitality)
             setUpWorld()
             if CommandLine.arguments.contains("-autointro") { autoplay() }
+            let a = CommandLine.arguments                        // (test: -introstep <beat> opens the intro on that beat)
+            if let i = a.firstIndex(of: "-introstep"), i + 1 < a.count, let st = IntroStep.allCases.first(where: { "\($0)" == a[i + 1] }) {
+                ember = emberChoices[0]; name = "Mathis"; scene.flameTarget = 1; scene.setVitality(0.5)
+                if st.rawValue > IntroStep.stand.rawValue { for p in Pillar6.allCases { rating[p] = 1 } ; rating[.body] = 0 }
+                go(st)
+            }
         }
         .onChange(of: model.sanctuaryBuilt) { _, _ in scene.setVitality(worldVitality); setUpWorld() }
         .onDisappear { meter.stop(); director?.stop() }     // home's own director takes over the same Spark
@@ -165,20 +174,18 @@ struct FinchIntro: View {
     @ViewBuilder private var content: some View {
         switch step {
         case .welcome:
-            VStack(spacing: 18) {
+            VStack(spacing: 14) {
                 Spacer()
-                EmberOrb(color: gold, size: 90, warmth: 0.2, cracks: 0)
-                Spacer()
-                title("Every person carries a flame.")
-                body2("Most never see it. Yours is waiting.")
-                Spacer().frame(height: 30)
-                primary("Light your ember") { go(.chooseEmber) }
+                Text("Hush").font(.story(54, .semibold)).foregroundStyle(cream).shadow(color: .black.opacity(0.4), radius: 10)
+                body2("The world went quiet. One ember still waits.")
+                Spacer().frame(height: 26)
+                primary("Wake it") { go(.chooseEmber) }
                 Text("Private test · for adults 18+").font(.caption2).foregroundStyle(cream.opacity(0.4)).padding(.top, 6)
             }
         case .chooseEmber:
             VStack(spacing: 14) {
-                title("Which light are you drawn to?")
-                body2("Your ember carries it. You can grow every light later.")
+                title("Which light calls you?")
+                body2("Your Flame will carry its colour. Every light can grow later.")
                 emberRing.frame(height: 380)
                 primary("Warm this ember", disabled: ember == nil) { go(.warm) }
             }
@@ -189,101 +196,204 @@ struct FinchIntro: View {
                 Spacer().frame(height: 20)
             }
         case .born:
-            VStack(spacing: 14) {
-                title("Your Flame is born.")
-                body2("Small, curious, and entirely yours.")
-                primary("Say hello") { go(.hello) }
-            }
+            Spacer().frame(height: 80)
         case .hello:
             VStack(spacing: 14) {
                 TextField("", text: $name, prompt: Text("Your name").foregroundColor(cream.opacity(0.45)))
                     .font(.story(22)).multilineTextAlignment(.center).foregroundStyle(cream)
                     .padding(.vertical, 14).background(RoundedRectangle(cornerRadius: 18).fill(.white.opacity(0.10)))
                     .overlay(RoundedRectangle(cornerRadius: 18).stroke(gold.opacity(0.4), lineWidth: 1))
-                    .focused($typing).submitLabel(.done).onSubmit { if !name.isEmpty { go(.whatAmI) } }
-                primary("Next", disabled: name.trimmingCharacters(in: .whitespaces).isEmpty) { go(.whatAmI) }
-            }
-        case .whatAmI:
-            VStack(spacing: 12) {
-                choice("The part of me that's alive") { gotLight() }
-                choice("A little fire that grows when I do") { gotLight() }
+                    .focused($typing).submitLabel(.done).onSubmit { if !name.isEmpty { go(.growing) } }
+                primary("That's me", disabled: name.trimmingCharacters(in: .whitespaces).isEmpty) { go(.growing) }
             }
         case .growing:
             VStack(spacing: 16) {
-                if glimpseDone {
-                    body2("It takes real days. That's the point.")
-                    primary("Next") { go(.world) }
-                } else {
-                    Spacer().frame(height: 60)
-                }
+                if glimpseDone { primary("Next") { go(.why) } } else { Spacer().frame(height: 60) }
             }
-        case .world:
+        case .why:
+            question("What brings you here?", sub: "Pick as many as you like", options: emberChoices.map(\.interest), multi: true, key: 1, next: .stand)
+        case .stand:
+            standCard
+        case .moment:
+            momentCard
+        case .preparing:
+            VStack(alignment: .leading, spacing: 12) {
+                title("Preparing your path…")
+                ForEach(Array(["Reading your answers", "Choosing your first quests", "Waking your Sanctuary"].enumerated()), id: \.offset) { i, t in
+                    HStack(spacing: 10) {
+                        ZStack {
+                            Circle().stroke(gold.opacity(0.4), lineWidth: 2).frame(width: 22, height: 22)
+                            if prepDone > i { Image(systemName: "checkmark").font(.system(size: 11, weight: .heavy)).foregroundStyle(gold).transition(.scale) }
+                        }
+                        Text(t).font(.ui(16, .semibold)).foregroundStyle(cream.opacity(prepDone >= i ? 1 : 0.4))
+                    }
+                }
+                Spacer().frame(height: 30)
+            }
+            .task {
+                async let ready: Void = model.preloadCore()          // the worlds really get ready here
+                for i in 1...3 {
+                    try? await Task.sleep(for: .milliseconds(i == 3 ? 500 : 800))
+                    if i == 3 { await ready }
+                    withAnimation(.spring(duration: 0.35)) { prepDone = i }
+                    FeelHaptics.shared.nudge()
+                }
+                scene.hero.react(.cheer); FeelSound.shared.chime(4)
+                try? await Task.sleep(for: .milliseconds(500)); go(.startingLight)
+            }
+        case .startingLight:
+            startingCard
+        case .firstDeed:
             VStack(spacing: 16) {
-                worldWindow.frame(width: 250, height: 250)
-                body2("Every real thing you do wakes a piece of it.")
-                primary("Next") { go(.q1) }
+                if weakest == .body {
+                    RepCounter(count: $reps, target: 5, word: "squats", color: gold) { firstDeedDone() }.frame(width: 210, height: 210)
+                } else {
+                    BreathCircle(breaths: 3, color: gold) { firstDeedDone() }.frame(width: 210, height: 210)
+                }
+                if firstOutcome == nil { secondary("I did it") { firstDeedDone() } }
+            }
+        case .promise:
+            VStack(spacing: 12) {
+                title("Keep your flame alive for 7 days?")
+                body2("At day 7 you earn a shield: one missed day won't put your flame out.")
+                primary("I'm in") { journeyPromise(7); go(.mornings) }
+                secondary("Let's just begin") { go(.mornings) }
             }
         case .mornings:
             VStack(spacing: 12) {
-                body2("A gentle note with your day, once each morning. Nothing else, ever.")
-                primary("Turn on mornings") { finish() }
-                secondary("Maybe later") { finish() }
+                title("Shall I bring you your day?")
+                body2("A gentle note each \(meetWord) at \(meetTimeText). Nothing else, ever.")
+                primary("Yes, please") { askReminders() }
+                secondary("Not now") { finish() }
             }
-        case .q1:
-            question("What would make this year feel alive?", sub: "Pick as many as you like", options: emberChoices.map(\.interest), multi: true, key: 1, next: .q2)
-        case .q2:
-            question("On a normal day, how much time is truly yours?", sub: nil, options: ["About 5 minutes", "About 15 minutes", "Half an hour", "More than that"], multi: false, key: 2, next: .q3)
-        case .q3:
-            question("Where are you starting from?", sub: nil, options: ["Just starting out", "I have a few good habits", "I'm already quite active"], multi: false, key: 3, next: .preparing)
-        case .preparing:
-            VStack(spacing: 14) {
-                ZStack {
-                    Circle().stroke(.white.opacity(0.12), lineWidth: 6)
-                    Circle().trim(from: 0, to: ring).stroke(gold, style: .init(lineWidth: 6, lineCap: .round)).rotationEffect(.degrees(-90))
-                }
-                .frame(width: 120, height: 120)
-                title("Preparing your first days…")
-                Spacer().frame(height: 40)
-            }
-            .task {
-                withAnimation(.easeInOut(duration: 2.2)) { ring = 1 }           // one smooth fill (no steps)
-                // The natural loading moment: the map and the Grove get ready now, never later while you play.
-                async let ready: Void = model.preloadCore()
-                try? await Task.sleep(for: .milliseconds(2200))
-                await ready
-                scene.hero.react(.cheer); FeelSound.shared.chime(4)
-                try? await Task.sleep(for: .milliseconds(500)); go(.firstLight)
-            }
-        case .firstLight:
-            VStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 9) {
-                    Text("Where you're starting").font(.story(22)).foregroundStyle(Theme.ink)
-                    startLine("sparkles", "You want more of", answers[1, default: []].map(shortLabel).sorted().joined(separator: ", ").ifEmpty("a calmer, fuller day"))
-                    startLine("clock.fill", "Your time", (answers[2]?.first ?? "About 15 minutes").lowercased() + " a day")
-                    startLine("flag.fill", "From", (answers[3]?.first ?? "Just starting out").lowercased())
-                    Divider().overlay(Theme.paperEdge.opacity(0.5)).padding(.vertical, 2)
-                    Text("Your first quests, picked for you").font(.ui(13, .bold)).foregroundStyle(Theme.accent)
-                    ForEach(model.calls.filter(\.chosen)) { c in
-                        HStack(spacing: 10) {
-                            Image(systemName: c.symbol).font(.system(size: 13, weight: .semibold)).foregroundStyle(c.realm.color)
-                                .frame(width: 26, height: 26).background(Circle().fill(Theme.night.opacity(0.85)))
-                            Text(c.title).font(.ui(15, .semibold)).foregroundStyle(Theme.ink)
-                            Spacer()
-                            Text("\(c.minutes) min").font(.ui(12)).foregroundStyle(Theme.ink.opacity(0.55))
+        }
+    }
+
+    // MARK: The question cards (where you stand, your moment, your starting light)
+
+    private var standCard: some View {
+        VStack(spacing: 10) {
+            Text("How is each part of your life lately?").font(.story(22)).multilineTextAlignment(.center).foregroundStyle(cream)
+            body2("Only you see this. It stays on your phone.")
+            ForEach(Pillar6.allCases, id: \.self) { p in
+                HStack(spacing: 8) {
+                    Image(systemName: p.realm.symbol).font(.system(size: 13, weight: .semibold)).foregroundStyle(p.realm.color).frame(width: 22)
+                    Text(p.rawValue).font(.ui(15, .semibold)).foregroundStyle(cream).frame(width: 58, alignment: .leading)
+                    ForEach(0..<3, id: \.self) { v in
+                        Button {
+                            FeelHaptics.shared.nudge()
+                            withAnimation(.spring(duration: 0.25)) { rating[p] = v }
+                            scene.hero.react(v == 0 ? .giggle : .cheer)
+                        } label: {
+                            Text(["Low", "Okay", "Good"][v]).font(.ui(13, .bold))
+                                .frame(maxWidth: .infinity).padding(.vertical, 8)
+                                .background(Capsule().fill(rating[p] == v ? Color(red: 0.42, green: 0.24, blue: 0.10) : Color(red: 0.20, green: 0.13, blue: 0.11)))
+                                .overlay(Capsule().stroke(rating[p] == v ? gold : gold.opacity(0.2), lineWidth: rating[p] == v ? 1.5 : 1))
+                                .foregroundStyle(cream)
                         }
+                        .buttonStyle(PressableStyle())
                     }
-                    Text("You can swap any of them in your satchel.").font(.ui(11)).foregroundStyle(Theme.ink.opacity(0.5))
                 }
-                .padding(20).frame(maxWidth: .infinity, alignment: .leading)
-                .background(SheetPaper(corner: 22))
-                primary("Light the first one with me") { go(.firstDeed) }
             }
-        case .firstDeed:
-            VStack(spacing: 16) {
-                BreathCircle(breaths: 3, color: gold) { firstDeedDone() }
-                    .frame(width: 210, height: 210)
-                if firstOutcome == nil { secondary("I did it") { firstDeedDone() } }
+            primary("Next", disabled: rating.count < 6) { go(.moment) }.padding(.top, 4)
+        }
+        .padding(18)
+        .background(RoundedRectangle(cornerRadius: 26).fill(Color(red: 0.11, green: 0.07, blue: 0.07).opacity(0.92)))
+        .overlay(RoundedRectangle(cornerRadius: 26).stroke(gold.opacity(0.35), lineWidth: 1))
+    }
+
+    private var momentCard: some View {
+        VStack(spacing: 12) {
+            Text("When can we meet each day?").font(.story(22)).multilineTextAlignment(.center).foregroundStyle(cream)
+            chips(["Morning", "Midday", "Evening"], selected: meetWhen) { meetWhen = $0 }
+            Text("And for how long?").font(.ui(15, .semibold)).foregroundStyle(cream.opacity(0.85)).padding(.top, 4)
+            chips(["5 min", "15 min", "30 min"], selected: meetFor) { meetFor = $0 }
+            primary("Next", disabled: meetWhen == nil || meetFor == nil) { go(.preparing) }.padding(.top, 4)
+        }
+        .padding(18)
+        .background(RoundedRectangle(cornerRadius: 26).fill(Color(red: 0.11, green: 0.07, blue: 0.07).opacity(0.92)))
+        .overlay(RoundedRectangle(cornerRadius: 26).stroke(gold.opacity(0.35), lineWidth: 1))
+    }
+
+    private func chips(_ options: [String], selected: String?, pick: @escaping (String) -> Void) -> some View {
+        HStack(spacing: 8) {
+            ForEach(options, id: \.self) { o in
+                Button {
+                    FeelHaptics.shared.nudge(); withAnimation(.spring(duration: 0.25)) { pick(o) }
+                    if let line = Self.replies[o] { say(line) } else { scene.hero.react(.giggle) }
+                } label: {
+                    Text(o).font(.ui(15, .bold)).frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(selected == o ? Color(red: 0.42, green: 0.24, blue: 0.10) : Color(red: 0.20, green: 0.13, blue: 0.11)))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(selected == o ? gold : gold.opacity(0.22), lineWidth: selected == o ? 2 : 1))
+                        .foregroundStyle(cream)
+                }
+                .buttonStyle(PressableStyle())
             }
+        }
+    }
+
+    private var startingCard: some View {
+        VStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 9) {
+                Text("Your starting light").font(.story(22)).foregroundStyle(Theme.ink)
+                HStack(alignment: .bottom, spacing: 0) {                 // your six lights, as big as they are today
+                    ForEach(Pillar6.allCases, id: \.self) { p in
+                        VStack(spacing: 3) {
+                            Image(systemName: "flame.fill").font(.system(size: 14 + CGFloat(rating[p] ?? 1) * 9))
+                                .foregroundStyle(LinearGradient(colors: [p.realm.color.opacity(0.9), Theme.accent], startPoint: .top, endPoint: .bottom))
+                            Text(p.rawValue).font(.ui(10, .semibold)).foregroundStyle(Theme.ink.opacity(0.7))
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .frame(height: 54)
+                startLine("sun.max.fill", "Your strongest", strongest.rawValue)
+                startLine("arrow.up.forward", "Where we start", weakest.rawValue)
+                Divider().overlay(Theme.paperEdge.opacity(0.5)).padding(.vertical, 2)
+                Text("Your first quests, picked for you").font(.ui(13, .bold)).foregroundStyle(Theme.accent)
+                ForEach(model.calls.filter(\.chosen)) { c in
+                    HStack(spacing: 10) {
+                        Image(systemName: c.symbol).font(.system(size: 13, weight: .semibold)).foregroundStyle(c.realm.color)
+                            .frame(width: 26, height: 26).background(Circle().fill(Theme.night.opacity(0.85)))
+                        Text(c.title).font(.ui(15, .semibold)).foregroundStyle(Theme.ink)
+                        Spacer()
+                        Text("\(c.minutes) min").font(.ui(12)).foregroundStyle(Theme.ink.opacity(0.55))
+                    }
+                }
+                Text("Day 1 of 66 · swap any quest in your satchel").font(.ui(11)).foregroundStyle(Theme.ink.opacity(0.5))
+            }
+            .padding(20).frame(maxWidth: .infinity, alignment: .leading)
+            .background(SheetPaper(corner: 22))
+            primary("Light the first one with me") { go(.firstDeed) }
+        }
+    }
+
+    /// Where you stand: the pillar you feel best in, and the one we'll start with (the lowest; ties go to your
+    /// ember's pillar, then the order of the pillars).
+    private var strongest: Pillar6 { Pillar6.allCases.max { (rating[$0] ?? 1) < (rating[$1] ?? 1) } ?? .heart }
+    private var weakest: Pillar6 {
+        let low = Pillar6.allCases.map { rating[$0] ?? 1 }.min() ?? 1
+        let ties = Pillar6.allCases.filter { (rating[$0] ?? 1) == low }
+        if let e = ember, let mine = ties.first(where: { $0.rawValue == e.pillar }) { return mine }
+        return ties.first ?? .spirit
+    }
+    private var meetWord: String { (meetWhen ?? "Morning").lowercased() }
+    private var meetHour: Int { ["Morning": 8, "Midday": 12, "Evening": 19][meetWhen ?? "Morning"] ?? 8 }
+    private var meetTimeText: String { meetHour == 12 ? "12:30" : "\(meetHour):00" }
+    private func journeyPromise(_ days: Int) { model.journey.setUp(dayOne: [:], meetHour: nil, promise: days) }
+
+    /// The reminder, asked last (once the value is felt), at the moment you chose. A local note: no server.
+    private func askReminders() {
+        let hour = meetHour
+        Task { @MainActor in
+            let c = UNUserNotificationCenter.current()
+            if (try? await c.requestAuthorization(options: [.alert, .sound])) == true {
+                let content = UNMutableNotificationContent()
+                content.title = "Your day is ready"; content.body = "Your Flame has your quests. One small thing keeps it burning."
+                var when = DateComponents(); when.hour = hour; when.minute = hour == 12 ? 30 : 0
+                try? await c.add(UNNotificationRequest(identifier: "daily", content: content, trigger: UNCalendarNotificationTrigger(dateMatching: when, repeats: true)))
+            }
+            finish()
         }
     }
 
@@ -298,11 +408,14 @@ struct FinchIntro: View {
     /// The first win, inside the introduction: three slow breaths, really done; the light flies, XP and Day 1.
     private func firstDeedDone() {
         guard firstOutcome == nil else { return }
-        let o = model.journey.did("Three slow breaths", detail: "Your very first light.", realm: .stillwater, minutes: 2)
+        let o = weakest == .body
+            ? model.journey.did("Five squats", detail: "Your very first light.", realm: .highlands, minutes: 1)
+            : model.journey.did("Three slow breaths", detail: "Your very first light.", realm: .stillwater, minutes: 1)
         FeelHaptics.shared.ignite(); FeelSound.shared.catchLight()
         scene.hero.react(.cheer)
         say("You did it. That's my first light!")
         withAnimation(.spring(duration: 0.4)) { firstOutcome = o }
+        scene.fadeVitality(to: 1, over: 2.4)               // and the Sanctuary wakes, all its colour back
     }
 
     // MARK: Pieces
@@ -376,6 +489,11 @@ struct FinchIntro: View {
         "Half an hour": "Half an hour! Lovely.", "More than that": "Then we'll go far, gently.",
         "Just starting out": "Starting is the bravest part.", "I have a few good habits": "Good. We'll build on them.",
         "I'm already quite active": "Then I'll keep up with you.",
+        "Morning": "Mornings! I'll be up early.", "Midday": "A pause in the middle of the day. Nice.", "Evening": "Evenings, when it's quiet.",
+        "5 min": "Five good minutes is plenty.", "15 min": "Fifteen minutes. We can do a lot.", "30 min": "Half an hour! Lovely.",
+        "Be closer to people I love": "People. The warmest light.", "Read again": "Books! I love stories.",
+        "Move a little every day": "Let's get moving.", "Find calm": "Calm. Yes, please.",
+        "Make something / focus": "Making things. Good.", "Spend time in nature": "Out there it's waiting.",
     ]
 
     private func shortLabel(_ o: String) -> String {
@@ -384,7 +502,7 @@ struct FinchIntro: View {
     }
 
     private var progressBar: some View {
-        let k = CGFloat(step.rawValue - IntroStep.q1.rawValue + 1) / 3
+        let k = CGFloat(step.rawValue - IntroStep.why.rawValue + 1) / 3
         return Capsule().fill(.white.opacity(0.15)).frame(height: 6)
             .overlay(alignment: .leading) { GeometryReader { g in Capsule().fill(gold).frame(width: g.size.width * k) } }
             .animation(.spring(duration: 0.5), value: k)
@@ -482,26 +600,37 @@ struct FinchIntro: View {
         withAnimation(.smooth(duration: 0.38)) { step = s }
         switch s {
         case .warm: scene.focus = scene.flameFocus          // the camera leans in to the circle, where the ember waits
-        case .born: bubble = nil
-        case .hello: say("…Oh! There you are. I'm your Flame. What's your name?")
-        case .whatAmI: say("Nice to meet you, \(name.trimmingCharacters(in: .whitespaces)). Do you know what I am?")
-        case .growing: say("I'm tiny now. But one day…"); glimpse()
-        case .world: say("Out there, the world went quiet."); scene.hero.look(at: [0.5, -0.5])
-        case .mornings: say("Can I bring you your day each morning?"); scene.hero.look(at: nil)
-        case .q1: say("Let's learn a little about you.")
+        case .born:
+            bubble = nil
+            Task { try? await Task.sleep(for: .seconds(2.4)); if step == .born { go(.hello) } }   // it wakes, then speaks
+        case .hello: say("…Oh! Hi. You woke me. What should I call you?")
+        case .growing: say("I'm small now. If we live well together, one day I'll become…"); glimpse()
+        case .why: say("So, \(name.trimmingCharacters(in: .whitespaces)). What brings you here?")
             scene.focus = scene.flameFocus - SIMD3(0, 0.085, 0)   // aim lower: the Flame watches from above the questions
-        case .q2, .q3: scene.hero.perform(.glanceUp)
+        case .stand: say("And how are you, really?"); scene.hero.perform(.glanceUp)
+        case .moment: say("When shall we meet?"); scene.hero.perform(.glanceUp)
         case .preparing: say("Give me a moment…"); scene.focus = scene.flameFocus
-        case .firstLight:
-            // You exist from here: your ember, your first quests picked (never a blank day), the Book's first page.
+        case .startingLight:
+            // You exist from here: your ember, your Day 1 rating, your moment, your first quests (never a blank day).
             if let e = ember { model.chose(e.interest); model.setEmber(e.id) }
-            for id in ["a", "c", "d"] where model.chosenCount < ShellModel.maxChosen { model.toggleChosen(id) }
+            pickFirstQuests()
             if model.journey.pages.isEmpty { model.journey.born(name: name.trimmingCharacters(in: .whitespaces), ember: ember?.word ?? "light") }
+            model.journey.setUp(dayOne: Dictionary(uniqueKeysWithValues: rating.map { ($0.key.rawValue, $0.value) }), meetHour: meetHour, promise: nil)
             say("Here's where we begin.")
-        case .firstDeed: say("Let's do one together. Breathe with me.")
+        case .firstDeed: say(weakest == .body ? "Let's do one together. Five squats, with me." : "Let's do one together. Breathe with me.")
+        case .promise: say("That's how the world wakes. One real thing at a time.")
+        case .mornings: say("One last thing…")
         default: break
         }
-        if s.rawValue >= IntroStep.q2.rawValue && s.rawValue <= IntroStep.q3.rawValue { withAnimation { bubble = nil } }
+        if s == .stand || s == .moment { withAnimation { bubble = nil } }
+    }
+
+    /// Your first three quests: the one for why you came, one for the pillar we start with, then a gentle one.
+    private func pickFirstQuests() {
+        guard model.chosenCount == 0 else { return }
+        model.toggleChosen("a")
+        if let c = model.calls.first(where: { !$0.chosen && !$0.done && Pillar6.of($0.realm) == weakest }) { model.toggleChosen(c.id) }
+        for id in ["c", "d", "e", "b"] where model.chosenCount < ShellModel.maxChosen { model.toggleChosen(id) }
     }
 
     private func setUpWorld() {
@@ -547,7 +676,7 @@ struct FinchIntro: View {
         scene.flameTarget = 1
         scene.hero.react(.cheer)
         Task { @MainActor in
-            scene.fadeVitality(to: 1, over: 1.8)                              // color floods back, frame by frame
+            scene.fadeVitality(to: 0.5, over: 1.8)        // some colour comes back; the rest waits for your first light
             try? await Task.sleep(for: .milliseconds(2400))
         }
         Task { try? await Task.sleep(for: .seconds(2.2)); withAnimation(.easeOut(duration: 1.2)) { rays = false } }
@@ -578,37 +707,9 @@ struct FinchIntro: View {
             withAnimation(.easeOut(duration: 0.9)) { morphFlash = 0 }
             scene.hero.react(.giggle)
             await wait(0.6)
-            say("…but I'll grow as you grow.")
+            say("…only real days can tell.")
             withAnimation(.spring(duration: 0.5)) { glimpseDone = true }
         }
-    }
-
-    private func gotLight() {
-        FeelHaptics.shared.ignite(); FeelSound.shared.catchLight()
-        scene.hero.react(.cheer)
-        say("Yes. And every real thing you do gives me light.")
-        withAnimation(.spring(duration: 0.4)) { lightToast = true }
-        Task {
-            try? await Task.sleep(for: .seconds(2.2))
-            withAnimation { lightToast = false }
-            go(.growing)
-        }
-    }
-
-    private var firstThings: [String] {
-        let picks = answers[1, default: []]
-        let pool: [(String, String)] = [
-            ("Be closer to people I love", "Tell someone why you admire them"),
-            ("Read again", "Read ten pages of anything you like"),
-            ("Find calm", "Three slow breaths, right now"),
-            ("Move a little every day", "A ten-minute walk at an easy pace"),
-            ("Make something / focus", "Twenty focused minutes on one thing"),
-            ("Spend time in nature", "Step outside and notice one living thing"),
-        ]
-        var out = pool.filter { picks.contains($0.0) }.map(\.1)
-        if let e = ember, let first = pool.first(where: { $0.0 == e.interest }), !out.contains(first.1) { out.insert(first.1, at: 0) }
-        if out.isEmpty { out = ["Three slow breaths, right now"] }
-        return Array(out.prefix(3))
     }
 
     private func finish() {
@@ -627,12 +728,13 @@ struct FinchIntro: View {
         Task { @MainActor in
             func w(_ s: Double) async { try? await Task.sleep(for: .seconds(s)) }
             await w(2); go(.chooseEmber); await w(1.5); ember = emberChoices[0]; await w(1.5); go(.warm)
-            await w(1); startWarming(); await w(3)
-            await w(3); go(.hello); await w(2); name = "Mathis"; await w(1); go(.whatAmI); await w(2.5); gotLight()
-            await w(12); go(.world); await w(3.5); go(.q1)
-            await w(2); answers[1] = ["Be closer to people I love", "Read again"]; await w(1); go(.q2)
-            await w(1.5); answers[2] = ["About 15 minutes"]; go(.q3); await w(1.5); answers[3] = ["Just starting out"]; go(.preparing)
-            await w(4.5); await w(3); go(.firstDeed); await w(3); firstDeedDone(); await w(4); go(.mornings); await w(2); finish()
+            await w(1); startWarming(); await w(6)
+            await w(3); name = "Mathis"; await w(1); go(.growing)
+            await w(12); go(.why)
+            await w(2); answers[1] = ["Be closer to people I love", "Read again"]; await w(1); go(.stand)
+            await w(1.5); for (i, p) in Pillar6.allCases.enumerated() { rating[p] = [1, 2, 0, 1, 1, 2][i] }; await w(1.5); go(.moment)
+            await w(1.5); meetWhen = "Morning"; meetFor = "15 min"; await w(1); go(.preparing)
+            await w(3.5); await w(3); go(.firstDeed); await w(3); firstDeedDone(); await w(4); go(.mornings); await w(2); finish()
         }
     }
 }
@@ -800,4 +902,32 @@ struct BreathCircle: View {
 
 extension String {
     func ifEmpty(_ fallback: String) -> String { isEmpty ? fallback : self }
+}
+
+/// Five squats with the Spark: tap after each one; the ring fills and the count climbs.
+struct RepCounter: View {
+    @Binding var count: Int
+    let target: Int
+    let word: String
+    let color: Color
+    let done: () -> Void
+    var body: some View {
+        Button {
+            guard count < target else { return }
+            FeelHaptics.shared.nudge()
+            withAnimation(.spring(duration: 0.3)) { count += 1 }
+            if count >= target { done() }
+        } label: {
+            ZStack {
+                Circle().fill(Theme.night.opacity(0.55))
+                Circle().stroke(Theme.cream.opacity(0.2), lineWidth: 8)
+                Circle().trim(from: 0, to: CGFloat(count) / CGFloat(target)).stroke(color, style: .init(lineWidth: 8, lineCap: .round)).rotationEffect(.degrees(-90))
+                VStack(spacing: 2) {
+                    Text("\(count)").font(.num(54, .heavy)).foregroundStyle(Theme.cream).contentTransition(.numericText())
+                    Text(count >= target ? "Done!" : "tap after each of \(target) \(word)").font(.ui(13, .semibold)).foregroundStyle(Theme.cream.opacity(0.75))
+                }
+            }
+        }
+        .buttonStyle(PressableStyle())
+    }
 }

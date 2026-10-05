@@ -40,20 +40,31 @@ final class Journey {
 
     private(set) var checkIns: [Date] = []            // days you opened the app (the daily check-in)
     private(set) var bought: Set<String> = []         // worlds bought with Embers (decision 136)
+    /// From the introduction (decision 140): where you stood on Day 1 in each pillar (0 low, 1 okay, 2 good), when
+    /// you meet your Spark each day (hour), and the streak you promised (days).
+    private(set) var dayOne: [String: Int] = [:]
+    private(set) var meetHour: Int?
+    private(set) var promise: Int?
+    func setUp(dayOne: [String: Int], meetHour: Int?, promise: Int?) {
+        if !dayOne.isEmpty { self.dayOne = dayOne }
+        if let meetHour { self.meetHour = meetHour }
+        if let promise { self.promise = promise }
+        save()
+    }
     private let key = "journey.v1"
-    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil }
+    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil; var dayOne: [String: Int]? = nil; var meetHour: Int? = nil; var promise: Int? = nil }
 
     init() {
         if CommandLine.arguments.contains("-freshjourney") { UserDefaults.standard.removeObject(forKey: key) }
         if let d = UserDefaults.standard.data(forKey: key), let s = try? JSONDecoder().decode(Saved.self, from: d) {
             bornOn = s.bornOn; name = s.name; ember = s.ember; pages = s.pages; deeds = s.deeds
-            checkIns = s.checkIns ?? []; bought = Set(s.bought ?? [])
+            checkIns = s.checkIns ?? []; bought = Set(s.bought ?? []); dayOne = s.dayOne ?? [:]; meetHour = s.meetHour; promise = s.promise
         }
         if CommandLine.arguments.contains("-seedjourney") { seedForTesting() }
     }
 
     private func save() {
-        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought))
+        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought), dayOne: dayOne, meetHour: meetHour, promise: promise)
         if let d = try? JSONEncoder().encode(s) { UserDefaults.standard.set(d, forKey: key) }
     }
 

@@ -153,7 +153,11 @@ struct FlameSheet: View {
                         Text("\(p.rawValue) · \(p.realm.name)").font(.ui(10)).foregroundStyle(cream.opacity(0.4))
                     }
                     Spacer()
-                    Text("0 →").font(.num(12)).foregroundStyle(cream.opacity(0.35))
+                    if let d = j.dayOne[p.rawValue] {                 // where you stood on Day 1 (the introduction)
+                        Text("Day 1: \(["low", "okay", "good"][max(0, min(2, d))])").font(.ui(11)).foregroundStyle(cream.opacity(0.45))
+                    } else {
+                        Text("0 →").font(.num(12)).foregroundStyle(cream.opacity(0.35))
+                    }
                     if v > 0 { Image(systemName: "arrowtriangle.up.fill").font(.system(size: 9)).foregroundStyle(Color(red: 0.25, green: 0.6, blue: 0.3)) }
                     Text("\(v)").font(.num(28, .bold)).monospacedDigit().foregroundStyle(v > 0 ? cream : cream.opacity(0.3))
                 }
