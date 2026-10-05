@@ -23,6 +23,8 @@ struct BookView: View {
     private static var thumbs: [String: UIImage] = [:]
     static func thumb(_ name: String) -> UIImage {
         if let t = thumbs[name] { return t }
+        let world = name == "world-map.png" ? "emberlands" : name == "home-paint.png" ? "sanctuary" : name.replacingOccurrences(of: "-world-paint.png", with: "")
+        if let pre = UIImage(named: "thumb-\(world).jpg") { thumbs[name] = pre; return pre }      // pre-made, instant
         guard let src = UIImage(named: name) else { return UIImage() }
         let w: CGFloat = 700, h = w * src.size.height / src.size.width
         let t = UIGraphicsImageRenderer(size: CGSize(width: w, height: h)).image { _ in src.draw(in: CGRect(x: 0, y: 0, width: w, height: h)) }
@@ -33,6 +35,7 @@ struct BookView: View {
     private var pages: [BookPage] { model.journey.pages.filter { $0.world == chapter }.sorted { $0.date < $1.date } }
 
     var body: some View {
+        let _ = PerfProbe.body("Book")
         ZStack(alignment: .bottom) {
             Color.black.opacity(0.4).ignoresSafeArea().onTapGesture { close() }
             VStack(spacing: 0) {
@@ -66,7 +69,7 @@ struct BookView: View {
                     .fill(LinearGradient(colors: [Color(red: 0.98, green: 0.93, blue: 0.82), Color(red: 0.93, green: 0.85, blue: 0.7)], startPoint: .top, endPoint: .bottom))
                     .overlay(RoundedRectangle(cornerRadius: 28).stroke(gold.opacity(0.7), lineWidth: 1.5))
                     .overlay(RoundedRectangle(cornerRadius: 22).stroke(gold.opacity(0.3), lineWidth: 1).padding(6))
-                    .shadow(color: .black.opacity(0.45), radius: 20, y: 6)
+                    
             )
             .padding(.horizontal, 10).padding(.bottom, 8)
         }

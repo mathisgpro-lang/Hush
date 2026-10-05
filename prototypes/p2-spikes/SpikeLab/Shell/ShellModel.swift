@@ -157,6 +157,17 @@ final class ShellModel {
     /// A sheet (satchel, Book, Your Flame, a quest card) covers the world: its per-frame work pauses so scrolling
     /// gets the whole phone (the water, fire and sky keep moving: they run on the graphics chip).
     var overlayOpen = false
+    /// A full sheet covers the world: the 3D stops rendering (a soft blurred picture of the world shows behind the
+    /// sheet instead), so the sheet gets the whole graphics chip: measured 40 → 60 fps while scrolling (2026-10-05).
+    var worldPaused = false {
+        didSet {
+            // Nothing is switched off (re-preparing a world cost 1–2 s at 20 fps): the camera looks into empty space.
+            if worldPaused, let c = activeCamera { c.look(at: [0, 5000, -1], from: [0, 5000, 0], relativeTo: c.parent) }
+        }
+    }
+    private var activeCamera: Entity? {
+        switch activeWorld { case .sanctuary: sanctuary.camera; case .map: mapScene.camera; case .realm(let r): realmScenes[r]?.camera }
+    }
     var sanctuaryBuilt = false
     var mapBuilt = false
     var realmsBuilt: Set<RealmID> = []
@@ -175,17 +186,19 @@ final class ShellModel {
     func ensure(_ w: World) async {
         if let t = builds[w] { await t.value; return }
         let t = Task { @MainActor in
+            let t0 = CACurrentMediaTime()
+            defer { if PerfProbe.on { print(String(format: "BUILD %@ %.0f ms (main thread)", "\(w)", (CACurrentMediaTime() - t0) * 1000)) } }
             switch w {
             case .sanctuary where !sanctuaryBuilt:
-                if (try? await sanctuary.build()) != nil { sanctuary.root.isEnabled = false; worldRoot.addChild(sanctuary.root); sanctuaryBuilt = true }
+                if (try? await sanctuary.build()) != nil { place(sanctuary.root, sanctuary.camera, slot: 0); sanctuaryBuilt = true }
             case .map where !mapBuilt:
                 let lastOpen = roadIndex(roadOrder.last { open.contains($0) } ?? .sanctuary)
                 if (try? await mapScene.build(open: open, flameAt: flameAt, lastOpenRoadIndex: lastOpen, ember: emberID)) != nil {
-                    mapScene.root.isEnabled = false; worldRoot.addChild(mapScene.root); mapBuilt = true
+                    place(mapScene.root, mapScene.camera, slot: 1); mapBuilt = true
                 }
             case .realm(let r) where !realmsBuilt.contains(r):
                 let sc = realmScene(r)
-                if (try? await sc.build()) != nil { sc.root.isEnabled = false; worldRoot.addChild(sc.root); realmsBuilt.insert(r) }
+                if (try? await sc.build()) != nil { place(sc.root, sc.camera, slot: 2 + (RealmID.allCases.firstIndex(of: r) ?? 0)); realmsBuilt.insert(r) }
             default: break
             }
         }
@@ -194,11 +207,19 @@ final class ShellModel {
     }
 
     /// Shows the world of the current screen (instant: the others are only hidden).
-    func showActive() {
+    func showActive() { PerfProbe.measure("showActive") { showActiveNow() } }
+    /// Each world lives in its own place in space, always switched on (so it never has to be re-prepared);
+    /// only the camera of the world on screen is on, and the others are simply out of sight.
+    private func place(_ root: Entity, _ cam: Entity, slot: Int) {
+        root.position = [Float(slot) * 500, 0, 0]
+        cam.isEnabled = false
+        worldRoot.addChild(root)
+    }
+    private func showActiveNow() {
         let a = activeWorld
-        sanctuary.root.isEnabled = a == .sanctuary && sanctuaryBuilt
-        mapScene.root.isEnabled = a == .map && mapBuilt
-        for (r, sc) in realmScenes { sc.root.isEnabled = a == .realm(r) && realmsBuilt.contains(r) }
+        sanctuary.camera.isEnabled = a == .sanctuary && sanctuaryBuilt
+        mapScene.camera.isEnabled = a == .map && mapBuilt
+        for (r, sc) in realmScenes { sc.camera.isEnabled = a == .realm(r) && realmsBuilt.contains(r) }
         if !isBuilt(a) { Task { @MainActor in await ensure(a); showActive() } }
     }
     func isBuilt(_ w: World) -> Bool {
@@ -238,18 +259,19 @@ final class ShellModel {
         }
     }
 
-    /// Once home has settled, quietly build the map and the Grove, one after the other, so opening them is instant.
-    func preloadLater() {
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(2))
-            await ensure(.map)
-            try? await Task.sleep(for: .seconds(1))
-            await ensure(.realm(.grove))
-        }
+    /// The core worlds (home, the map, the Grove) are all ready: nothing loads while you're using the app.
+    var coreReady = false
+    /// Prepares the map and the Grove (at launch behind the dusk veil, or during the intro's "preparing" moment), so
+    /// building never competes with what you see (measured: 30 fps for seconds when it happened during home).
+    func preloadCore() async {
+        await ensure(.map)
+        await ensure(.realm(.grove))
+        coreReady = true
     }
+    func preloadLater() {}
     /// The ember you chose in the introduction: your Spark burns in its color (Mathis, 2026-10-03).
     var emberID: String = UserDefaults.standard.string(forKey: "ember.id") ?? "craft"
-    func setEmber(_ id: String) { emberID = id; UserDefaults.standard.set(id, forKey: "ember.id") }
+    func setEmber(_ id: String) { emberID = id; UserDefaults.standard.set(id, forKey: "ember.id"); SparkTint.warmUp(ember: id) }
     /// Set when a realm is entered by the map's dive: the realm then opens out of the dive's light.
     var arrivingByDive = false
     /// The guided tour right after the introduction: the Sanctuary's options, the world map, the Grove.
@@ -257,6 +279,7 @@ final class ShellModel {
     var tour: TourStep?
 
     init() {
+        SparkTint.warmUp(ember: UserDefaults.standard.string(forKey: "ember.id") ?? "craft")
         if let i = CommandLine.arguments.firstIndex(of: "-ember"), i + 1 < CommandLine.arguments.count { setEmber(CommandLine.arguments[i + 1]) }   // (test)
         makeCalls()
         if CommandLine.arguments.contains("-quests") { for id in ["a", "c", "d"] { toggleChosen(id) } }   // (test: three taken)

@@ -6,6 +6,7 @@ struct AppShellView: View {
     @State private var model = ShellModel()
 
     var body: some View {
+        let _ = PerfProbe.body("Shell")
         ZStack {
             Color.black.ignoresSafeArea()
             WorldLayer(model: model)
@@ -22,6 +23,7 @@ struct AppShellView: View {
                 HomeView(model: model, world: r).id(r).overlay(DiveArrival(model: model)).transition(.opacity)   // the same interface in every world
             }
         }
+        .overlay { LaunchVeil(visible: model.screen != .intro && !model.coreReady) }
         .buttonStyle(PressableStyle())          // every button reacts the instant it's touched
         .task {                                  // (-realm X) test: travel to a realm the way a user does, through home
             guard let i = CommandLine.arguments.firstIndex(of: "-realm"), i + 1 < CommandLine.arguments.count,
@@ -30,6 +32,7 @@ struct AppShellView: View {
             try? await Task.sleep(for: .milliseconds(600))
             model.go(.realm(r))
         }
+        .task { if CommandLine.arguments.contains("-uitest") { await runUITest(model) } }
         .task {                                  // (-reacttest) home → map → Grove → map → home, timing each change
             guard CommandLine.arguments.contains("-reacttest") else { return }
             for s in [Screen.map, .realm(.grove), .map, .home, .map, .home] {
@@ -66,12 +69,14 @@ struct DiveArrival: View {
 struct WorldLayer: View {
     let model: ShellModel
     var body: some View {
+        if CommandLine.arguments.contains("-no3d") { Color(red: 0.2, green: 0.15, blue: 0.2).ignoresSafeArea() } else {
         RealityView { content in
             content.camera = .virtual
             content.add(model.worldRoot)
             try? await Task.sleep(for: .milliseconds(200))     // let the first screen appear before the world loads
             let t0 = CACurrentMediaTime()
             await model.ensure(.sanctuary)
+            if model.screen != .intro { await model.preloadCore() }        // behind the dusk veil
             if CommandLine.arguments.contains("-perf") {
                 print(String(format: "LAUNCH world ready %.0f ms after the 3D view (build %.0f ms)", (CACurrentMediaTime() - AppTimer.start) * 1000, (CACurrentMediaTime() - t0) * 1000))
             }
@@ -79,8 +84,71 @@ struct WorldLayer: View {
             model.updates = content.subscribe(to: SceneEvents.Update.self) { e in model.tick(Float(e.deltaTime)) }
         }
         .ignoresSafeArea()
+        .modifier(RenderScale(scale: WorldLayer.renderScale))
         .allowsHitTesting(false)
+        }
+    }
+
+    /// The painted world is drawn at 75% of the screen's resolution, then scaled up: painted art stays sharp, and
+    /// the graphics chip gets its headroom back (the 3D's fixed cost scales with pixels: 4.4 → 1.2 ms at 60%).
+    /// The interface itself (text, buttons, sheets) is always drawn at full resolution. (-rs N to test others.)
+    static let renderScale: CGFloat = {
+        let a = CommandLine.arguments
+        if let i = a.firstIndex(of: "-rs"), i + 1 < a.count, let v = Double(a[i + 1]) { return CGFloat(v) }
+        return 0.75
+    }()
+}
+
+/// Draws its content into a smaller frame (fewer pixels to shade) and scales it back up to fill the screen.
+struct RenderScale: ViewModifier {
+    let scale: CGFloat
+    func body(content: Content) -> some View {
+        if scale >= 0.999 { content } else {
+            GeometryReader { g in
+                content
+                    .frame(width: g.size.width * scale, height: g.size.height * scale)
+                    .scaleEffect(1 / scale, anchor: .topLeading)
+            }
+            .ignoresSafeArea()
+        }
     }
 }
 
 enum AppTimer { static let start = CACurrentMediaTime() }
+
+/// The short loading moment at launch: dusk, a breathing ember, then the world fades in fully prepared.
+struct LaunchVeil: View {
+    let visible: Bool
+    @State private var gone = false
+    @State private var breathe = false
+    var body: some View {
+        // Once faded, the veil leaves the screen entirely (its breathing animation must not keep running unseen:
+        // it was redrawing the whole screen every frame and halving home to 30 fps).
+        if !removed { veil }
+    }
+    @State private var removed = false
+    private var veil: some View {
+        ZStack {
+            LinearGradient(colors: [Color(red: 0.24, green: 0.18, blue: 0.36), Color(red: 0.55, green: 0.36, blue: 0.5), Color(red: 0.93, green: 0.6, blue: 0.48)],
+                           startPoint: .top, endPoint: .bottom)
+            VStack(spacing: 18) {
+                Circle().fill(RadialGradient(colors: [.white, Color(red: 1, green: 0.8, blue: 0.45), .clear], center: .center, startRadius: 2, endRadius: 40))
+                    .frame(width: 80, height: 80).scaleEffect(breathe ? 1.08 : 0.92).opacity(breathe ? 1 : 0.8)
+                Text("Waking the Emberlands").font(.story(17)).foregroundStyle(.white.opacity(0.85))
+            }
+        }
+        .ignoresSafeArea()
+        .opacity(gone ? 0 : 1)
+        .allowsHitTesting(!gone)
+        .onAppear {
+            if !visible { removed = true; return }
+            withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) { breathe = true }
+        }
+        .onChange(of: visible) { _, v in
+            if !v {
+                withAnimation(.easeOut(duration: 0.45)) { gone = true }
+                Task { @MainActor in try? await Task.sleep(for: .milliseconds(500)); removed = true }
+            }
+        }
+    }
+}

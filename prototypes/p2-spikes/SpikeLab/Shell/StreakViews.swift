@@ -10,6 +10,7 @@ private let ember = Color(red: 1, green: 0.55, blue: 0.22)
 struct StreakBar: View {
     let journey: Journey
     var body: some View {
+        let _ = PerfProbe.body("StreakBar")
         let s = journey.streak()
         let lit = s.state == .livedToday
         HStack(spacing: 8) {

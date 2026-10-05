@@ -3,7 +3,7 @@ import SwiftUI
 
 @main
 struct SpikeLabApp: App {
-    init() { _ = AppTimer.start; Theme.registerFonts() }      // launch timing starts here; the app's fonts
+    init() { _ = AppTimer.start; Theme.registerFonts(); PerfProbe.shared.start() }      // launch timing starts here; the app's fonts
     var body: some Scene {
         WindowGroup {
             if !CommandLine.arguments.contains("-lab") { AppShellView() } else {

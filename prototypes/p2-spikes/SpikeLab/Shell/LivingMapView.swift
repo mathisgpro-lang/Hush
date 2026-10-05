@@ -31,6 +31,7 @@ struct LivingMapView: View {
     @State private var ready = false
 
     var body: some View {
+        let _ = PerfProbe.body("Map")
         // The map fills the whole screen (one coordinate space for the map, its labels and taps); the header and the
         // realm's card sit on top of it, inside the safe area.
         GeometryReader { geo in
@@ -49,7 +50,7 @@ struct LivingMapView: View {
                                    enter(.grove)
                                }, skip: { withAnimation { model.tour = nil } })
                     .padding(.bottom, 24)
-                } else if let r = selected, !diving { card(r).transition(.move(edge: .bottom).combined(with: .opacity)) }
+                } else if let r = selected, !diving { card(r).transition(.move(edge: .bottom)) }
             }
             .padding(.horizontal, 16)
         }
@@ -169,6 +170,7 @@ struct LivingMapView: View {
         let r = best.0
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         withAnimation(.sheet) { selected = r }
+        if model.open.contains(r) && r != .sanctuary { Task { await model.ensure(.realm(r)) } }   // ready before you fly
         // Glide so the realm sits above its card.
         scene.panTarget = scene.centerPan(on: CGPoint(x: r.mapPoint.x, y: r.mapPoint.y + 160), zoom: scene.zoom)
     }
@@ -226,6 +228,10 @@ struct LivingMapView: View {
     /// screen, and the realm opens around you.
     private func enter(_ r: RealmID) {
         guard !diving else { return }
+        if r != .sanctuary && !model.realmsBuilt.contains(r) {         // still preparing: fly the moment it's ready
+            Task { @MainActor in await model.ensure(.realm(r)); enter(r) }
+            return
+        }
         withAnimation(.easeOut(duration: 0.2)) { diving = true }
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         scene.startDive(to: r.mapPoint)

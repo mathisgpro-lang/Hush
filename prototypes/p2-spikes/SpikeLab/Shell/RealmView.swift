@@ -69,7 +69,7 @@ struct RealmView: View {
                 }
                 .padding(.horizontal, 16)
             }
-            .overlay { if bookOpen { BookView(model: model, isOpen: $bookOpen, openOn: realm.rawValue).transition(.move(edge: .bottom).combined(with: .opacity)) } }
+            .overlay { if bookOpen { BookView(model: model, isOpen: $bookOpen, openOn: realm.rawValue).transition(.move(edge: .bottom)) } }
             .simultaneousGesture(lookAround(geo.size), including: bookOpen ? .subviews : .all)     // the whole screen: drags anywhere look around
         }
         .onAppear { meter.start(); setUpWorld() }
@@ -174,7 +174,7 @@ struct RealmView: View {
         .background(RoundedRectangle(cornerRadius: 24).fill(Color(red: 0.07, green: 0.06, blue: 0.08).opacity(0.9)))
         .overlay(RoundedRectangle(cornerRadius: 24).stroke(realm.color.opacity(0.5), lineWidth: 1))
         .padding(.bottom, 24)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .transition(.move(edge: .bottom))
     }
 
     private func focus(_ s: Spot) {

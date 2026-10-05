@@ -64,7 +64,7 @@ final class MapScene {
     /// Where a map pixel shows on screen (points), for the tappable realms floating over the map.
     func screenPoint(_ p: CGPoint, in size: CGSize) -> CGPoint {
         let w = spot(uv(p).x, uv(p).y)
-        let cam = camera.position(relativeTo: nil)
+        let cam = camera.position(relativeTo: root)
         let dz = max(0.01, cam.z - w.z)
         let t = tan(Self.fov / 2 * .pi / 180)
         let aspect = Float(size.width / size.height)
@@ -294,7 +294,7 @@ final class MapScene {
         }
         let breathe = SIMD3<Float>(sin(time * 0.21) * 0.004, sin(time * 0.17) * 0.003, 0)
         let pos = SIMD3<Float>(camXY.x, camXY.y, -camZ) + breathe        // closer = toward the map (−z)
-        camera.look(at: pos + SIMD3(0, 0, -1), from: pos, relativeTo: nil)
+        camera.look(at: pos + SIMD3(0, 0, -1), from: pos, relativeTo: root)
 
         // The light of the hour on the whole map.
         if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {

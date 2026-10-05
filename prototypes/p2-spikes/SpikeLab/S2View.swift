@@ -301,6 +301,15 @@ final class SanctuaryScene {
         if CommandLine.arguments.contains("-onlyland") {        // (test flag: only the land painting)
             for e in root.children where e !== painting && e !== camera { e.isEnabled = false }
         }
+        // (GPU test flags: switch single parts off)
+        let a = CommandLine.arguments
+        if a.contains("-nosky") { sky?.isEnabled = false }
+        if a.contains("-nosea") { sea?.isEnabled = false }
+        if a.contains("-noland") { painting?.isEnabled = false }
+        if a.contains("-empty") { for e in root.children where e !== camera { e.isEnabled = false } }
+        if a.contains("-nohero") { hero.leanPivot.isEnabled = false }
+        if a.contains("-nomist") { mists.forEach { $0.isEnabled = false } }
+        if a.contains("-nomotes") { motes.isEnabled = false; petals.isEnabled = false; flies.isEnabled = false }
     }
 
     /// How much nearer than the base plane each row of the painting sits: the water is near, the steps a bit
@@ -323,7 +332,7 @@ final class SanctuaryScene {
     /// breathing): quest objects and labels stay attached to the world.
     func screenPoint(homeUV p: SIMD2<Float>, in size: CGSize) -> CGPoint {
         let w = spot(hx(p.x), p.y)
-        let m = camera.transformMatrix(relativeTo: nil)
+        let m = camera.transformMatrix(relativeTo: root)
         let rel = m.inverse * SIMD4<Float>(w.x, w.y, w.z, 1)
         let dz = max(0.01, -rel.z)
         let t = tan(Self.fov / 2 * .pi / 180), aspect = Float(size.width / size.height)
@@ -335,7 +344,7 @@ final class SanctuaryScene {
     /// (the ember warmed on the circle, the glimpse of later stages).
     func flameScreen(in size: CGSize) -> (feet: CGPoint, height: CGFloat) {
         func project(_ w: SIMD3<Float>) -> CGPoint {
-            let rel = camera.transformMatrix(relativeTo: nil).inverse * SIMD4<Float>(w.x, w.y, w.z, 1)
+            let rel = camera.transformMatrix(relativeTo: root).inverse * SIMD4<Float>(w.x, w.y, w.z, 1)
             let dz = max(0.01, -rel.z), t = tan(Self.fov / 2 * .pi / 180), aspect = Float(size.width / size.height)
             return CGPoint(x: CGFloat(0.5 + rel.x / dz / (t * aspect) * 0.5) * size.width, y: CGFloat(0.5 - rel.y / dz / t * 0.5) * size.height)
         }
@@ -369,6 +378,8 @@ final class SanctuaryScene {
     private var layersAt: Float = 0
     private var lastLandKey = SIMD4<Float>(-1, -1, -1, -1), clockReadAt: Float = 0, clockHour: Float = 18
     private static let hourCycle = CommandLine.arguments.contains("-hourcycle")
+    private static let noHero = CommandLine.arguments.contains("-nohero")
+    private static let emptyTest = CommandLine.arguments.contains("-empty")
     private static let hourArg: Float? = {
         let a = CommandLine.arguments
         guard let i = a.firstIndex(of: "-hour"), i + 1 < a.count else { return nil }
@@ -393,7 +404,7 @@ final class SanctuaryScene {
         // The Flame's birth: it springs into being (with a little overshoot) when flameTarget becomes 1.
         appear.step(toward: flameTarget, dt: dt)
         hero.leanPivot.scale = .init(repeating: heroWorldScale * max(0, appear.value))
-        hero.leanPivot.isEnabled = appear.value > 0.01 || flameTarget > 0
+        hero.leanPivot.isEnabled = (appear.value > 0.01 || flameTarget > 0) && !Self.noHero && !Self.emptyTest
         // Life and wind first, so the Flame can react to them this frame.
         let chest = heroFeet + SIMD3(hero.standingX * heroWorldScale, 0.10 * heroWorldScale, 0.005)
         let watch = life.update(dt: dt, flameAt: chest)
@@ -473,7 +484,7 @@ final class SanctuaryScene {
         camPos += camVel * dt
         lookVel += (wc * wc * (wantLook - camLook) - 2 * wc * lookVel) * dt
         camLook += lookVel * dt
-        camera.look(at: camLook + panV, from: camPos + panV, relativeTo: nil)
+        camera.look(at: camLook + panV, from: camPos + panV, relativeTo: root)
     }
 }
 

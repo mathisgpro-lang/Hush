@@ -249,7 +249,7 @@ final class RealmScene {
     /// Where a spot of the Grove painting shows on screen (points), following the camera.
     func screenPoint(_ u: Float, _ v: Float, in size: CGSize) -> CGPoint {
         let w = spot(u, v)
-        let rel = camera.transformMatrix(relativeTo: nil).inverse * SIMD4<Float>(w.x, w.y, w.z, 1)
+        let rel = camera.transformMatrix(relativeTo: root).inverse * SIMD4<Float>(w.x, w.y, w.z, 1)
         let dz = max(0.01, -rel.z), t = tan(Self.fov / 2 * .pi / 180), aspect = Float(size.width / size.height)
         return CGPoint(x: CGFloat(0.5 + rel.x / dz / (t * aspect) * 0.5) * size.width, y: CGFloat(0.5 - rel.y / dz / t * 0.5) * size.height)
     }
@@ -333,7 +333,7 @@ final class RealmScene {
             pan += panVel * dt
         }
         let pv = SIMD3<Float>(pan.x + homeShift, pan.y, 0)
-        camera.look(at: camLook + pv, from: camPos + pv, relativeTo: nil)
+        camera.look(at: camLook + pv, from: camPos + pv, relativeTo: root)
     }
 
     private func setStrand(opacity: Float, emitting: Bool) {

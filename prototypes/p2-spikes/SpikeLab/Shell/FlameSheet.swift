@@ -18,10 +18,13 @@ struct FlameSheet: View {
     private var j: Journey { model.journey }
 
     var body: some View {
+        let _ = PerfProbe.body("FlameSheet")
         ZStack(alignment: .bottom) {
             Color.black.opacity(0.4).ignoresSafeArea().onTapGesture { close() }
+            ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 18) {
+                    Color.clear.frame(height: 0).id("top")
                     Capsule().fill(cream.opacity(0.3)).frame(width: 40, height: 5).padding(.top, 10)
                     // Your Spark, alive.
                     // A painted glow behind it (no live shadow: shadows redraw on every frame and slow scrolling).
@@ -38,6 +41,9 @@ struct FlameSheet: View {
                         Text(j.name.isEmpty ? "Your Spark" : "\(j.name)'s Spark").font(.story(26)).foregroundStyle(cream)
                         Text("Spark · day \(j.dayNumber())").font(.ui(14)).foregroundStyle(gold)
                     }
+                    // Everything below is static while you scroll: drawn once into a single layer (it was being
+                    // redrawn every frame with the Spark's breathing above it: 30–39 fps while scrolling).
+                    VStack(spacing: 18) {
                     stageStrip
                     card { levelCard }
                     HStack(spacing: 12) {
@@ -54,9 +60,15 @@ struct FlameSheet: View {
                             Spacer()
                         }
                     }
-                    Spacer().frame(height: 10)
+                    }
+                    .drawingGroup()
+                    Spacer().frame(height: 10).id("bottom")
                 }
                 .padding(.horizontal, 18)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .perfScroll)) { n in
+                withAnimation(.easeInOut(duration: 1.2)) { proxy.scrollTo(n.object as? String ?? "top") }
+            }
             }
             .frame(maxHeight: 680)
             .background(RoundedRectangle(cornerRadius: 28).fill(Color(red: 0.1, green: 0.07, blue: 0.09).opacity(0.97))

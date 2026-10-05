@@ -7,7 +7,7 @@ import CoreImage.CIFilterBuiltins
 
 enum SparkTint {
     /// Hue rotation (radians) from the painted orange, and how much of the color to keep (calm is softer).
-    static func shift(_ ember: String) -> (angle: Float, saturation: Float, strength: Float) {
+    nonisolated static func shift(_ ember: String) -> (angle: Float, saturation: Float, strength: Float) {
         // strength = how much of the color shows (subtle, Mathis). Blues sit opposite the painted orange, so a half
         // mix would cancel to grey: they get a little more color so they still read as a soft blue.
         switch ember {
@@ -21,12 +21,27 @@ enum SparkTint {
         }
     }
 
-    private static let context = CIContext()
-    private static var cache: [String: UIImage] = [:]
+    nonisolated(unsafe) private static let context = CIContext()
+    nonisolated(unsafe) private static var cache: [String: UIImage] = [:]
+    nonisolated private static let lock = NSLock()
     /// A picture of the Spark (or of its stages) in your ember's color.
     static func image(_ name: String, ember: String) -> UIImage? {
         let key = name + "|" + ember
-        if let c = cache[key] { return c }
+        lock.lock(); let c = cache[key]; lock.unlock()
+        if let c { return c }
+        return PerfProbe.measure("tint \(name)") { tinted(name, ember: ember, key: key) }
+    }
+    /// Prepares every picture of your Spark in your ember's color in the background, at launch, so no screen ever
+    /// waits for it (the first tint took ~45 ms on the main thread).
+    nonisolated static func warmUp(ember: String) {
+        let names = ["spark-keyed.png", "stage-spark.png", "stage-flame.png", "stage-blaze.png", "stage-kindled.png", "stage-beyond.png"]
+        DispatchQueue.global(qos: .utility).async {
+            for n in names { _ = tinted(n, ember: ember, key: n + "|" + ember) }
+        }
+    }
+    nonisolated private static func tinted(_ name: String, ember: String, key: String) -> UIImage? {
+        lock.lock(); let c = cache[key]; lock.unlock()
+        if let c { return c }
         guard let src = UIImage(named: name), let ci = CIImage(image: src) else { return nil }
         let s = shift(ember)
         guard s.strength > 0 else { return src }
@@ -35,7 +50,7 @@ enum SparkTint {
         let mixF = CIFilter.dissolveTransition(); mixF.inputImage = ci; mixF.targetImage = sat.outputImage; mixF.time = s.strength
         guard let out = mixF.outputImage, let cg = context.createCGImage(out, from: ci.extent) else { return src }
         let img = UIImage(cgImage: cg, scale: src.scale, orientation: src.imageOrientation)
-        cache[key] = img
+        lock.lock(); cache[key] = img; lock.unlock()
         return img
     }
 }

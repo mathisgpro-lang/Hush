@@ -13,6 +13,8 @@ struct HomeView: View {
     private var built: Bool { world == .sanctuary ? model.sanctuaryBuilt : model.realmsBuilt.contains(world) }
     @State private var focused: Spot?
     @State private var reward: DeedOutcome?
+    @State private var backdrop: Double = 0           // the blurred world behind full sheets (0 = live world)
+    private var covered: Bool { satchelOpen || bookOpen || flameOpen }
     @State private var meter = FrameMeter()
     @State private var director: AliveDirector?
     @State private var open: Call?
@@ -33,6 +35,7 @@ struct HomeView: View {
     }
 
     var body: some View {
+        let _ = PerfProbe.body("Home")
         GeometryReader { geo in
             ZStack {
                 // The Sanctuary itself is drawn by the app's one 3D view, underneath (WorldLayer): this layer only
@@ -90,16 +93,47 @@ struct HomeView: View {
                 if let call = open { card(call, size: geo.size) }
                 if let r = reward { RewardBurst(outcome: r) { withAnimation { reward = nil } }.id(r.xp ^ r.streakAfter << 8 ^ r.attributeAfter << 16) }
                 tourLayer
-                if satchelOpen { QuestJournal(model: model, isOpen: $satchelOpen).transition(.move(edge: .bottom).combined(with: .opacity)) }
-                if bookOpen { BookView(model: model, isOpen: $bookOpen, openOn: world.rawValue).transition(.move(edge: .bottom).combined(with: .opacity)) }
-                if flameOpen { FlameSheet(model: model, isOpen: $flameOpen).transition(.move(edge: .bottom).combined(with: .opacity)) }
+                // Behind full sheets: a soft, dimmed picture of this world; the live 3D pauses until they close.
+                if backdrop > 0 {
+                    Image(uiImage: UIImage(named: "backdrop-\(world.rawValue).jpg") ?? UIImage(named: "backdrop-sanctuary.jpg") ?? UIImage())
+                        .resizable().scaledToFill().frame(width: geo.size.width + geo.safeAreaInsets.leading + geo.safeAreaInsets.trailing,
+                                                          height: geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom)
+                        .clipped().ignoresSafeArea().opacity(backdrop).allowsHitTesting(false)
+                }
+                if satchelOpen { QuestJournal(model: model, isOpen: $satchelOpen).transition(.move(edge: .bottom)) }
+                if bookOpen { BookView(model: model, isOpen: $bookOpen, openOn: world.rawValue).transition(.move(edge: .bottom)) }
+                if flameOpen { FlameSheet(model: model, isOpen: $flameOpen).transition(.move(edge: .bottom)) }
             }
             .simultaneousGesture(lookAround(geo.size), including: satchelOpen || bookOpen || flameOpen || open != nil ? .subviews : .all)
         }
         .onAppear { meter.start(); setUpWorld() }
+        .onReceive(NotificationCenter.default.publisher(for: .perfCommand)) { n in       // (-uitest)
+            switch n.object as? String {
+            case "satchel": withAnimation(.sheet) { satchelOpen = true }
+            case "flame": withAnimation(.sheet) { flameOpen = true }
+            case "book": withAnimation(.sheet) { bookOpen = true }
+            case "close": withAnimation(.sheet) { satchelOpen = false; flameOpen = false; bookOpen = false }
+            case "panL": scene.panTarget = [-scene.panLimit.x, 0]
+            case "panR": scene.panTarget = [scene.panLimit.x, 0]
+            case "pan0": scene.panTarget = .zero
+            default: break
+            }
+        }
         .onChange(of: satchelOpen || bookOpen || flameOpen || open != nil) { _, covered in model.overlayOpen = covered }
+        .onChange(of: covered) { _, isCovered in
+            if isCovered {
+                withAnimation(.easeOut(duration: 0.25)) { backdrop = 1 }
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(260))
+                    if covered { model.worldPaused = true }
+                }
+            } else {
+                model.worldPaused = false                   // the world is back at once, under the fading picture
+                withAnimation(.easeIn(duration: 0.22)) { backdrop = 0 }
+            }
+        }
         .onChange(of: built) { _, _ in setUpWorld() }
-        .onDisappear { meter.stop(); director?.stop(); model.overlayOpen = false }
+        .onDisappear { meter.stop(); director?.stop(); model.overlayOpen = false; model.worldPaused = false }
     }
 
     /// Your Spark in your color, the world bright, its little life director; then the other worlds preload.
@@ -122,6 +156,7 @@ struct HomeView: View {
 
     /// A tap on the world: the nearest of the realm's places (within reach) tells its story; otherwise your Spark reacts.
     private func tappedWorld(at p: CGPoint, in size: CGSize) {
+        if PerfProbe.on { print("TAP world at", p) }
         if focused != nil { unfocus(); return }
         let near = RealmContent.spots(world).map { s -> (Spot, CGFloat) in
             let c = scene.screenPoint(world: s.uv, in: size); return (s, hypot(p.x - c.x, p.y - c.y))
@@ -166,7 +201,7 @@ struct HomeView: View {
         .background(RoundedRectangle(cornerRadius: 24).fill(Color(red: 0.07, green: 0.06, blue: 0.08).opacity(0.92)))
         .overlay(RoundedRectangle(cornerRadius: 24).stroke(world.color.opacity(0.5), lineWidth: 1))
         .padding(.bottom, 110)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .transition(.move(edge: .bottom))
     }
 
     private func ppm(_ size: CGSize) -> CGFloat { size.height * CGFloat(scene.pointsPerMeterScale) }
@@ -288,6 +323,7 @@ struct HomeView: View {
                 withAnimation(.sheet) { bookOpen = true }
             }
             barButton("flame.fill", "Your Flame", badge: false, image: UIImage(named: "icon-flame.png") ?? SparkTint.image("spark-keyed.png", ember: model.emberID)) {
+                if PerfProbe.on { print("TAP flame button") }
                 director?.tapped()
                 withAnimation(.sheet) { flameOpen = true }
             }
@@ -376,10 +412,10 @@ struct HomeView: View {
                     .fill(LinearGradient(colors: [Color(red: 0.98, green: 0.93, blue: 0.82), Color(red: 0.93, green: 0.85, blue: 0.7)], startPoint: .top, endPoint: .bottom))
                     .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.7), lineWidth: 1.5))
                     .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.3), lineWidth: 1).padding(6))
-                    .shadow(color: .black.opacity(0.4), radius: 20, y: 6)
+                    
             )
             .padding(.horizontal, 14).padding(.bottom, 24)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .transition(.move(edge: .bottom))
         }
     }
 
@@ -430,6 +466,7 @@ struct QuestObject: View {
     let call: Call
     @State private var bob = false
     var body: some View {
+        let _ = PerfProbe.body("QuestObject")
         VStack(spacing: 2) {
             ZStack {
                 Ellipse().fill(RadialGradient(colors: [call.realm.color.opacity(0.7), call.realm.color.opacity(0)], center: .center, startRadius: 2, endRadius: 40))
@@ -462,6 +499,7 @@ struct QuestJournal: View {
     private var suggested: Call? { todo.first { !$0.chosen && !$0.reason.isEmpty } }
 
     var body: some View {
+        let _ = PerfProbe.body("Satchel")
         ZStack(alignment: .bottom) {
             Color.black.opacity(0.35).ignoresSafeArea().onTapGesture { close() }
             VStack(spacing: 0) {
@@ -478,16 +516,23 @@ struct QuestJournal: View {
                 }
                 .padding(.horizontal, 22).padding(.top, 8)
                 tabs.padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 8)
+                ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 10) {
+                        Color.clear.frame(height: 0).id("top")
                         if tab == 0, let s = suggested { suggestion(s) }
                         ForEach(tab == 0 ? todo.filter { $0.id != suggested?.id } : tab == 1 ? done : skipped) { call in QuestCardRow(model: model, call: call, ink: ink) }
                         if (tab == 1 && done.isEmpty) || (tab == 2 && skipped.isEmpty) {
                             Text(tab == 1 ? "Nothing done yet today. The first one lights your flame." : "Nothing skipped. Skipping is allowed: it never costs you anything.")
                                 .font(.ui(14)).foregroundStyle(ink.opacity(0.6)).multilineTextAlignment(.center).padding(.vertical, 30)
                         }
+                        Color.clear.frame(height: 0).id("bottom")
                     }
                     .padding(.horizontal, 16).padding(.bottom, 12)
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .perfScroll)) { n in
+                    withAnimation(.easeInOut(duration: 1.2)) { proxy.scrollTo(n.object as? String ?? "top") }
+                }
                 }
                 .frame(maxHeight: 470)
                 Button { close() } label: {
@@ -503,7 +548,7 @@ struct QuestJournal: View {
                     .fill(LinearGradient(colors: [Color(red: 0.98, green: 0.93, blue: 0.82), Color(red: 0.93, green: 0.85, blue: 0.7)], startPoint: .top, endPoint: .bottom))
                     .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.7), lineWidth: 1.5))
                     .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color(red: 0.75, green: 0.58, blue: 0.3).opacity(0.3), lineWidth: 1).padding(6))
-                    .shadow(color: .black.opacity(0.4), radius: 20, y: 6)
+                    
             )
             .padding(.horizontal, 10).padding(.bottom, 8)
         }
@@ -565,14 +610,19 @@ struct QuestCardRow: View {
     let ink: Color
     private static var thumbs: [String: UIImage] = [:]
     private static func thumb(_ r: RealmID) -> UIImage? {
+        // Pre-made small thumbnails (tools: thumb-<world>.jpg): no shrinking big paintings when the satchel opens.
+        if let t = UIImage(named: "thumb-\(r.rawValue).jpg") { return t }
         let name = r == .sanctuary ? "home-paint.png" : (UIImage(named: "\(r.rawValue)-world-paint.png") != nil ? "\(r.rawValue)-world-paint.png" : "home-paint.png")
         if let t = thumbs[name] { return t }
-        guard let src = UIImage(named: name) else { return nil }
-        let w: CGFloat = 520, h = w * src.size.height / src.size.width
-        let t = UIGraphicsImageRenderer(size: CGSize(width: w, height: h)).image { _ in src.draw(in: CGRect(x: 0, y: 0, width: w, height: h)) }
-        thumbs[name] = t; return t
+        return PerfProbe.measure("quest thumb \(name)") {
+            guard let src = UIImage(named: name) else { return nil }
+            let w: CGFloat = 520, h = w * src.size.height / src.size.width
+            let t = UIGraphicsImageRenderer(size: CGSize(width: w, height: h)).image { _ in src.draw(in: CGRect(x: 0, y: 0, width: w, height: h)) }
+            thumbs[name] = t; return t
+        }
     }
     var body: some View {
+        let _ = PerfProbe.body("QuestCard")
         let full = model.chosenCount >= ShellModel.maxChosen && !call.chosen
         ZStack(alignment: .bottomLeading) {
             if let t = Self.thumb(call.realm) {

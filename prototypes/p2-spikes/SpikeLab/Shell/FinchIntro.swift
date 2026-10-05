@@ -232,7 +232,10 @@ struct FinchIntro: View {
             }
             .task {
                 withAnimation(.easeInOut(duration: 2.2)) { ring = 1 }           // one smooth fill (no steps)
+                // The natural loading moment: the map and the Grove get ready now, never later while you play.
+                async let ready: Void = model.preloadCore()
                 try? await Task.sleep(for: .milliseconds(2200))
+                await ready
                 scene.hero.react(.cheer); FeelSound.shared.chime(4)
                 try? await Task.sleep(for: .milliseconds(500)); go(.firstLight)
             }
