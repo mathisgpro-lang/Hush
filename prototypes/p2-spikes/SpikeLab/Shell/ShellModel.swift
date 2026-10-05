@@ -8,6 +8,18 @@ enum Screen: Equatable { case intro, home, map, realm(RealmID) }
 enum RealmID: String, CaseIterable, Identifiable {
     case sanctuary, grove, stillwater, highlands, library, wilds, forge, veil
     var id: String { rawValue }
+    /// Embers to open this world (decision 136): about a week of living for the first, more for each after.
+    var price: Int {
+        switch self {
+        case .sanctuary, .grove: 0
+        case .stillwater: 150
+        case .highlands: 250
+        case .library: 350
+        case .wilds: 450
+        case .forge: 550
+        case .veil: 1000
+        }
+    }
 
     var name: String {
         switch self {
@@ -127,8 +139,9 @@ final class ShellModel {
     /// Open realms: home, the Grove (Act I), and every realm whose pillar you've lit with a real action (and whose world
     /// is painted). Beyond the Veil never opens in the prototype. (-allopen: everything painted, for testing.)
     var open: Set<RealmID> {
+        // Decision 136: worlds are bought with Embers earned by living. The beta opens every world.
         var s: Set<RealmID> = [.sanctuary, .grove]
-        for r in Self.builtRealms where CommandLine.arguments.contains("-allopen") || journey.light(for: r) > 0 { s.insert(r) }
+        for r in Self.builtRealms where Self.beta || CommandLine.arguments.contains("-allopen") || journey.bought.contains(r.rawValue) { s.insert(r) }
         return s
     }
     var newHere: Set<RealmID> = [.grove]              // the glow + badge: "something new waits here"
@@ -148,6 +161,8 @@ final class ShellModel {
     }
     var grove: RealmScene { realmScene(.grove) }
     /// Realms that have their painted world in the app (the others only exist on the map for now).
+    /// The beta build: every world is open (Mathis, 2026-10-05). Off after the beta: Embers buy them.
+    static let beta = !CommandLine.arguments.contains("-nobeta")
     static let builtRealms: Set<RealmID> = {
         let all: [RealmID] = [.grove, .stillwater, .highlands, .library, .wilds, .forge]
         var s: Set<RealmID> = [.grove]
@@ -280,8 +295,10 @@ final class ShellModel {
 
     init() {
         SparkTint.warmUp(ember: UserDefaults.standard.string(forKey: "ember.id") ?? "craft")
+        for e in Set(Friend.samples.map(\.ember)) { SparkTint.warmUp(ember: e) }      // friends' Sparks, ready too
         if let i = CommandLine.arguments.firstIndex(of: "-ember"), i + 1 < CommandLine.arguments.count { setEmber(CommandLine.arguments[i + 1]) }   // (test)
         makeCalls()
+        journey.checkIn()                                 // the daily check-in (Embers, decision 136)
         if CommandLine.arguments.contains("-quests") { for id in ["a", "c", "d"] { toggleChosen(id) } }   // (test: three taken)
     }
 

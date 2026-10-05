@@ -7,9 +7,12 @@ from PIL import Image, ImageFilter
 from scipy import ndimage as nd
 
 A = "SpikeLab/Assets"
-src = Image.open(f"{A}/world-map.png").convert("RGB")
+import sys
+WIDE = "--wide" in sys.argv          # the map with Codex's side panels (tools/stitch_map.py)
+src = Image.open(f"{A}/world-map-wide.png" if WIDE else f"{A}/world-map.png").convert("RGB")
 W, H = src.size
-big = src.resize((W * 2, H * 2), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=1.6, percent=70, threshold=2))
+K = 1.6 if WIDE else 2               # (the wide map at 1.6x keeps its texture within memory)
+big = src.resize((int(W * K), int(H * K)), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=1.6, percent=70, threshold=2))
 big.save(f"{A}/map-paint.png")
 
 px = np.asarray(src).astype(float) / 255

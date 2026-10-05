@@ -38,19 +38,22 @@ final class Journey {
     private(set) var deeds: [Deed] = []
     private(set) var newPages = 0                     // written since you last opened the Book (its clasp glows)
 
+    private(set) var checkIns: [Date] = []            // days you opened the app (the daily check-in)
+    private(set) var bought: Set<String> = []         // worlds bought with Embers (decision 136)
     private let key = "journey.v1"
-    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed] }
+    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil }
 
     init() {
         if CommandLine.arguments.contains("-freshjourney") { UserDefaults.standard.removeObject(forKey: key) }
         if let d = UserDefaults.standard.data(forKey: key), let s = try? JSONDecoder().decode(Saved.self, from: d) {
             bornOn = s.bornOn; name = s.name; ember = s.ember; pages = s.pages; deeds = s.deeds
+            checkIns = s.checkIns ?? []; bought = Set(s.bought ?? [])
         }
         if CommandLine.arguments.contains("-seedjourney") { seedForTesting() }
     }
 
     private func save() {
-        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds)
+        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought))
         if let d = try? JSONEncoder().encode(s) { UserDefaults.standard.set(d, forKey: key) }
     }
 
@@ -127,6 +130,26 @@ final class Journey {
     }
 
     // MARK: The streak and the numbers (decision 134), always calculated from the deeds
+
+    // MARK: Embers (decision 136): earned only by living, they buy the next worlds. Calculated from the record.
+
+    /// The daily check-in: the first open of a day counts once.
+    func checkIn(on date: Date = Date()) {
+        guard !checkIns.contains(where: { Calendar.current.isDate($0, inSameDayAs: date) }) else { return }
+        checkIns.append(date); save()
+    }
+    /// Quests 10 each, every day lived 5 (keeping your streak), each streak milestone reached 25, each check-in 2.
+    var embersEarned: Int {
+        let days = Set(deeds.map { Calendar.current.startOfDay(for: $0.date) }).count
+        let best = streak().best
+        let milestones = StreakStatus.milestones.filter { $0 <= best }.count
+        return deeds.count * 10 + days * 5 + milestones * 25 + checkIns.count * 2
+    }
+    var embers: Int { embersEarned - bought.compactMap { RealmID(rawValue: $0)?.price }.reduce(0, +) }
+    func buy(_ r: RealmID) -> Bool {
+        guard !bought.contains(r.rawValue), embers >= r.price else { return false }
+        bought.insert(r.rawValue); save(); return true
+    }
 
     func streak(at date: Date = Date()) -> StreakStatus { Progression.streak(deeds: deeds, now: date) }
     var totalXP: Int { deeds.reduce(0) { $0 + ($1.xp ?? 20) } }

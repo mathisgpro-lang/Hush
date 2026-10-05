@@ -17,6 +17,7 @@ struct FlameSheet: View {
                                                        (.stillwater, "Spirit"), (.forge, "Craft"), (.wilds, "World")]
     private var j: Journey { model.journey }
 
+    @State private var friend: Friend?
     var body: some View {
         let _ = PerfProbe.body("FlameSheet")
         ZStack(alignment: .bottom) {
@@ -46,6 +47,7 @@ struct FlameSheet: View {
                     VStack(spacing: 18) {
                     stageStrip
                     card { levelCard }
+                    card { FriendsStrip(friends: Friend.samples) { f in withAnimation(.sheet) { friend = f } } }
                     HStack(spacing: 12) {
                         card { streakCard }
                         card { stat("\(j.daysLived)", "days lived", "Every day you live counts, forever.") }
@@ -73,8 +75,12 @@ struct FlameSheet: View {
             .frame(maxHeight: 680)
             .background(SheetPaper())
             .padding(.horizontal, 10).padding(.bottom, 8)
+            if let f = friend { FriendProfile(friend: f) { withAnimation(.sheet) { friend = nil } }.transition(.move(edge: .bottom)) }
         }
-        .onAppear { bob = true }
+        .onAppear {
+            bob = true
+            if CommandLine.arguments.contains("-friend") { friend = Friend.samples[0] }     // (test)
+        }
     }
 
     private var stageStrip: some View {

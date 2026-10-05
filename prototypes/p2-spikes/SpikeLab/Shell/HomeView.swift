@@ -129,8 +129,16 @@ struct HomeView: View {
                     if covered { model.worldPaused = true }
                 }
             } else {
-                model.worldPaused = false                   // the world is back at once, under the fading picture
-                withAnimation(.easeIn(duration: 0.22)) { backdrop = 0 }
+                // The sheet slides away over the still picture first (cheap), then the world wakes under it and the
+                // picture fades: waking the 3D during the slide is what dropped closing to ~39 fps.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(240))
+                    guard !covered else { return }
+                    model.worldPaused = false
+                    try? await Task.sleep(for: .milliseconds(50))         // its first frame lands under the picture
+                    guard !covered else { return }
+                    withAnimation(.easeOut(duration: 0.25)) { backdrop = 0 }
+                }
             }
         }
         .onChange(of: built) { _, _ in setUpWorld() }

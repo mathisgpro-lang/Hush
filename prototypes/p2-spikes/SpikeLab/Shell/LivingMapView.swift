@@ -77,7 +77,8 @@ struct LivingMapView: View {
                 TimelineView(.animation) { _ in
                     ZStack {
                         ForEach(roadOrder) { r in
-                            marker(r).position(scene.screenPoint(r.mapPoint, in: full))
+                            let p = scene.screenPoint(r.mapPoint, in: full)
+                            marker(r).position(inside(p, full)).opacity(p.y < 170 ? max(0, Double(p.y - 120) / 50) : 1)   // fades under the header
                         }
                     }
                     .frame(width: full.width, height: full.height)
@@ -136,6 +137,12 @@ struct LivingMapView: View {
 
     // MARK: Realms
 
+    /// A label near the screen's side slides in to stay whole (never cut off); far off screen it leaves with its realm.
+    private func inside(_ p: CGPoint, _ size: CGSize) -> CGPoint {
+        guard p.x > -30, p.x < size.width + 30 else { return p }
+        return CGPoint(x: min(max(p.x, 92), size.width - 92), y: p.y)
+    }
+
     /// A realm's label, floating over it (visual only: taps on the map pick the nearest realm).
     private func marker(_ r: RealmID) -> some View {
         let isOpen = model.open.contains(r), isNew = model.newHere.contains(r), isSelected = selected == r
@@ -176,39 +183,53 @@ struct LivingMapView: View {
     }
 
     private func card(_ r: RealmID) -> some View {
-        let isOpen = model.open.contains(r)
+        let isOpen = model.open.contains(r), ink = Theme.ink
+        let canBuy = ShellModel.builtRealms.contains(r) && r != .veil
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 Image(systemName: isOpen ? r.symbol : "lock.fill").font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(isOpen ? r.color : .white.opacity(0.6))
-                    .frame(width: 34, height: 34).background(Circle().fill(.white.opacity(0.08)))
+                    .foregroundStyle(isOpen ? r.color : ink.opacity(0.5))
+                    .frame(width: 38, height: 38).background(Circle().fill(Theme.night.opacity(0.85)))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(r.name).font(.story(20)).foregroundStyle(.white)
-                    Text(r.pillar).font(.ui(12, .semibold)).foregroundStyle(r.color)
+                    Text(r.name).font(.story(21)).foregroundStyle(ink)
+                    Text(r.pillar).font(.ui(12, .bold)).foregroundStyle(Theme.accent)
                 }
                 Spacer()
                 Button { withAnimation(.sheet) { selected = nil } } label: {
-                    Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(.white.opacity(0.7))
-                        .frame(width: 30, height: 30).background(Circle().fill(.white.opacity(0.08)))
+                    Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(ink.opacity(0.6))
+                        .frame(width: 30, height: 30).background(Circle().fill(ink.opacity(0.08)))
                 }
             }
-            Text(r.lore).font(.ui(15)).foregroundStyle(.white.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
+            Text(r.lore).font(.ui(15)).foregroundStyle(ink.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
             if isOpen {
-                Button { enter(r) } label: {
-                    Text(r == .sanctuary ? "Fly home" : "Fly there").font(.ui(17, .bold))
-                        .frame(maxWidth: .infinity).padding(.vertical, 13)
-                        .background(Capsule().fill(LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.42), Color(red: 0.95, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
-                        .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
-                }
+                Button { enter(r) } label: { goldLabel(r == .sanctuary ? "Fly home" : "Fly there") }
+            } else if canBuy {
+                // Decision 136: Embers earned by living open the next world (never bought with money).
+                let have = model.journey.embers
+                Button {
+                    if model.journey.buy(r) {
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        model.newHere.insert(r); model.mapScene.refresh(open: model.open)      // the realm wakes on the map
+                    }
+                } label: { goldLabel("Open it · \(r.price) Embers").opacity(have >= r.price ? 1 : 0.45) }
+                .disabled(have < r.price)
+                Text(have >= r.price ? "You have \(have) Embers, all earned by living." : "You have \(have) of \(r.price) Embers. Every quest, every day kept adds more.")
+                    .font(.ui(12)).foregroundStyle(ink.opacity(0.6))
             } else {
                 Label("Still in the Hush. It wakes with \(r.opensWhen).", systemImage: "moon.zzz.fill")
-                    .font(.ui(14)).foregroundStyle(.white.opacity(0.75))
+                    .font(.ui(14)).foregroundStyle(ink.opacity(0.7))
             }
         }
-        .padding(18)
-        .background(RoundedRectangle(cornerRadius: 22).fill(Color(red: 0.09, green: 0.07, blue: 0.1).opacity(0.92)))
-        .overlay(RoundedRectangle(cornerRadius: 22).stroke(r.color.opacity(0.45), lineWidth: 1))
+        .padding(20)
+        .background(SheetPaper(corner: 24))
         .padding(.bottom, 24)
+    }
+
+    private func goldLabel(_ t: String) -> some View {
+        Text(t).font(.ui(17, .bold))
+            .frame(maxWidth: .infinity).padding(.vertical, 13)
+            .background(Capsule().fill(LinearGradient(colors: [Theme.gold, Color(red: 0.95, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
+            .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
     }
 
     private var header: some View {
@@ -220,6 +241,13 @@ struct LivingMapView: View {
             Spacer()
             Text("The Emberlands").font(.story(20)).foregroundStyle(.white)
                 .padding(.horizontal, 14).padding(.vertical, 8).background(Capsule().fill(.black.opacity(0.45)))
+            Spacer()
+            // Your Embers (decision 136): what living has earned you.
+            HStack(spacing: 5) {
+                Image(systemName: "sparkle").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.gold)
+                Text("\(model.journey.embers)").font(.num(15, .bold))
+            }
+            .foregroundStyle(.white).padding(.horizontal, 12).padding(.vertical, 8).background(Capsule().fill(.black.opacity(0.55)))
         }
         .padding(.top, 4)
     }

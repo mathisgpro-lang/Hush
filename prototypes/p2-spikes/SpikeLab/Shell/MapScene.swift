@@ -13,7 +13,15 @@ final class MapScene {
     let camera = PerspectiveCamera()
     static let distance: Float = 1.2
     static let fov: Float = 40
-    static let mapPixels = SIMD2<Float>(803, 1958)
+    /// The painting's size: the wide map (Codex's side panels stitched on, tools/stitch_map.py), and where the
+    /// original 803-wide map (whose pixels place the realms) starts inside it.
+    static let wide: (x0: Float, w: Float, h: Float) = {
+        if let u = Bundle.main.url(forResource: "map-wide", withExtension: "json"), let d = try? Data(contentsOf: u),
+           let j = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+           let x0 = j["x0"] as? Double, let w = j["width"] as? Double, let h = j["height"] as? Double { return (Float(x0), Float(w), Float(h)) }
+        return (0, 803, 1958)
+    }()
+    static let mapPixels = SIMD2<Float>(wide.w, wide.h)
 
     private var painting: ModelEntity?
     private(set) var planeW: Float = 1, planeH: Float = 1
@@ -23,6 +31,8 @@ final class MapScene {
     private var hushMists: [(e: Entity, phase: Float, base: SIMD3<Float>)] = []
     private var borderClouds: [(e: Entity, phase: Float, base: SIMD3<Float>)] = []
     private var pathLights: [(e: Entity, phase: Float)] = []
+    private var shadows: [(e: Entity, speed: Float, span: Float)] = []
+    private var birds: [(e: Entity, phase: Float, base: SIMD3<Float>, vel: SIMD2<Float>, span: SIMD2<Float>)] = []
     private var beacons: [(e: Entity, phase: Float)] = []
     private var mistRealm: [RealmID] = [], beaconRealm: [RealmID] = []
     /// A realm opened since the map was built: its mist lifts and its beacon lights.
@@ -48,7 +58,7 @@ final class MapScene {
     // MARK: Map coordinates
 
     /// Map pixel (y down) → uv (v up).
-    func uv(_ p: CGPoint) -> SIMD2<Float> { [Float(p.x) / Self.mapPixels.x, 1 - Float(p.y) / Self.mapPixels.y] }
+    func uv(_ p: CGPoint) -> SIMD2<Float> { [(Float(p.x) + Self.wide.x0) / Self.mapPixels.x, 1 - Float(p.y) / Self.mapPixels.y] }
     private func depthAt(_ u: Float, _ v: Float) -> Float {
         guard let d = depth else { return 0.3 }
         let x = max(0, min(d.w - 1, Int(u * Float(d.w - 1)))), y = max(0, min(d.h - 1, Int((1 - v) * Float(d.h - 1))))
@@ -97,7 +107,7 @@ final class MapScene {
         let screen = UIScreen.main.bounds.size
         screenAspect = Float(screen.width / screen.height)
         let visibleH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180)
-        planeW = visibleH * screenAspect * 1.3                       // a little wider than the screen: room to peek sideways
+        planeW = visibleH * screenAspect * 1.05 * Self.mapPixels.x / 803   // the realms fit across the screen; the land goes on past them
         planeH = planeW * Self.mapPixels.y / Self.mapPixels.x
 
         func nearest(_ pts: [(Float, Float)]) -> Float { pts.map { Self.distance - relief(depthAt($0.0, $0.1)) }.min() ?? Self.distance }
@@ -135,7 +145,7 @@ final class MapScene {
         if let bTex = try? await TextureResource(named: "map-backdrop.png") {
             var u = UnlitMaterial(); u.color = .init(tint: UIColor(white: 0.92, alpha: 1), texture: .init(bTex))
             let back: Float = 0.06, k = (Self.distance + back) / Self.distance
-            let bw = planeW * (1765.0 / 803.0) * k, bh = planeH * (2544.0 / 1958.0) * k
+            let bw = planeW * 1.3 * k, bh = planeH * 1.3 * k
             let b = ModelEntity(mesh: .generatePlane(width: bw, height: bh), materials: [u])
             b.position = [0, 0, -(Self.distance + back)]
             root.addChild(b)
@@ -152,9 +162,9 @@ final class MapScene {
         // Clouds at different heights between you and the land: they drift, and slide past at different speeds
         // when you move (parallax), and the dive rushes through them.
         var rng = SeededRandom(seed: 41)
-        for k in 0..<10 {
+        for k in 0..<16 {
             let z = -Float.random(in: 0.55...1.05, using: &rng)
-            let k01 = Float(k) / 9
+            let k01 = Float(k) / 15
             let y = (k01 - 0.5) * planeH * 0.95 * (-z / Self.distance)
             let size = Float.random(in: 0.25...0.42, using: &rng) * (-z / Self.distance)
             let e = card(cloudTex, [size, size * 0.42], tint: UIColor(red: 1, green: 0.95, blue: 0.92, alpha: CGFloat(Float.random(in: 0.12...0.24, using: &rng))))   // light wisps, never a fog
@@ -178,6 +188,34 @@ final class MapScene {
                 let e = card(cloudTex, [size, size * 0.62], tint: tint)
                 e.position = [x, y, z]
                 root.addChild(e); borderClouds.append((e, Float(k) * 1.7 + side, [x, y, z]))
+            }
+        }
+
+        // Depth you can feel: soft cloud shadows sliding over the land (drawn on top of the relief, below the
+        // clouds), and small flocks of birds gliding over the realms between you and the ground.
+        for _ in 0..<7 {
+            let size = Float.random(in: 0.3...0.55, using: &rng)
+            var u = UnlitMaterial(); u.color = .init(tint: UIColor(red: 0.12, green: 0.08, blue: 0.2, alpha: 0.16), texture: .init(cloudTex))
+            u.blending = .transparent(opacity: .init(floatLiteral: 1.0)); u.writesDepth = false; u.readsDepth = false
+            let e = ModelEntity(mesh: .generatePlane(width: size, height: size * 0.5), materials: [u])
+            let span = planeW * 0.55
+            e.position = [Float.random(in: -span...span, using: &rng), Float.random(in: -0.45...0.45, using: &rng) * planeH, -Self.distance + 0.02]
+            root.addChild(e); shadows.append((e, Float.random(in: 0.006...0.012, using: &rng), span))
+        }
+        if let birdTex = try? await TextureResource(named: "bird.png") {
+            for f in 0..<3 {
+                let z = -Self.distance * Float.random(in: 0.7...0.82, using: &rng), kz = -z / Self.distance
+                let span = SIMD2(planeW * 0.6, planeH * 0.5) * kz
+                let start = SIMD3<Float>(Float.random(in: -span.x...span.x, using: &rng), Float.random(in: -span.y...span.y, using: &rng), z)
+                let dir: Float = f % 2 == 0 ? 1 : -1
+                let vel = SIMD2<Float>(dir * Float.random(in: 0.018...0.03, using: &rng), Float.random(in: 0.004...0.01, using: &rng))
+                for b in 0..<4 {
+                    let e = card(birdTex, [0.022, 0.014], tint: UIColor(red: 0.2, green: 0.13, blue: 0.16, alpha: 0.85))
+                    if dir < 0 { e.scale = [-1, 1, 1] }
+                    let off = SIMD3<Float>(-dir * Float(b) * 0.018 + Float.random(in: -0.006...0.006, using: &rng), Float(b % 2) * 0.012 - 0.006, 0)
+                    e.position = start + off
+                    root.addChild(e); birds.append((e, Float(b) * 1.3 + Float(f), start + off, vel, span))
+                }
             }
         }
 
@@ -309,6 +347,23 @@ final class MapScene {
             p.x += clouds[i].speed * dt
             if p.x > clouds[i].span { p.x = -clouds[i].span }
             clouds[i].e.position = p
+        }
+        for i in shadows.indices {
+            var p = shadows[i].e.position
+            p.x += shadows[i].speed * dt
+            if p.x > shadows[i].span { p.x = -shadows[i].span }
+            shadows[i].e.position = p
+        }
+        for i in birds.indices {       // glide (a gentle wave), flap now and then, and come round again
+            var b = birds[i].base
+            b.x += birds[i].vel.x * dt; b.y += birds[i].vel.y * dt
+            if b.x > birds[i].span.x { b.x = -birds[i].span.x } else if b.x < -birds[i].span.x { b.x = birds[i].span.x }
+            if b.y > birds[i].span.y { b.y = -birds[i].span.y }
+            birds[i].base = b
+            let ph = birds[i].phase
+            birds[i].e.position = b + SIMD3(0, 0.004 * sin(time * 0.8 + ph), 0)
+            let flap = 0.55 + 0.45 * abs(sin(time * 7 + ph)) * (0.5 + 0.5 * max(0, sin(time * 0.6 + ph)))
+            birds[i].e.scale = [birds[i].vel.x < 0 ? -1 : 1, flap, 1]
         }
         for c in borderClouds {        // the border breathes: clouds roll slowly in and out
             c.e.position = c.base + SIMD3(sin(time * 0.12 + c.phase) * 0.02, sin(time * 0.09 + c.phase * 1.3) * 0.01, 0)
