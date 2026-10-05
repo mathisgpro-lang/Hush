@@ -6,6 +6,7 @@
 import SwiftUI
 import RealityKit
 import Metal
+import CoreMotion
 
 @MainActor
 final class MapScene {
@@ -32,6 +33,14 @@ final class MapScene {
     private var borderClouds: [(e: Entity, phase: Float, base: SIMD3<Float>)] = []
     private var pathLights: [(e: Entity, phase: Float)] = []
     private var shadows: [(e: Entity, speed: Float, span: Float)] = []
+    private var nearClouds: [(e: Entity, base: SIMD3<Float>, phase: Float, depth: Float)] = []
+    private var circlers: [(e: Entity, center: SIMD3<Float>, radius: Float, speed: Float, phase: Float)] = []
+    /// The living parallax: the camera orbits a little around what you look at (leaning as you drag, following the
+    /// phone's tilt), so the relief really moves: hills and islands shift against the sea like a diorama.
+    private let tiltSensor = CMMotionManager()
+    private var tiltRef: (roll: Double, pitch: Double)?
+    private var orbit = SIMD2<Float>(0, 0), orbitVel = SIMD2<Float>(0, 0)
+    static let orbitMax: Float = 0.035
     private var birds: [(e: Entity, phase: Float, base: SIMD3<Float>, vel: SIMD2<Float>, span: SIMD2<Float>)] = []
     private var beacons: [(e: Entity, phase: Float)] = []
     private var mistRealm: [RealmID] = [], beaconRealm: [RealmID] = []
@@ -65,7 +74,7 @@ final class MapScene {
         let x = max(0, min(d.w - 1, Int(u * Float(d.w - 1)))), y = max(0, min(d.h - 1, Int((1 - v) * Float(d.h - 1))))
         return Float(d.px[y * d.w + x]) / 255
     }
-    private func relief(_ g: Float) -> Float { 0.2 * pow(g, 0.6) - 0.065 }
+    private func relief(_ g: Float) -> Float { 0.27 * pow(g, 0.6) - 0.085 }    // deep enough that the parallax shows
     /// A point on the map's relief (world space), from uv.
     func spot(_ u: Float, _ v: Float, lift: Float = 0) -> SIMD3<Float> {
         let rest = SIMD3<Float>((u - 0.5) * planeW, (v - 0.5) * planeH, -Self.distance)
@@ -74,21 +83,24 @@ final class MapScene {
     }
     /// Where a map pixel shows on screen (points), for the tappable realms floating over the map.
     func screenPoint(_ p: CGPoint, in size: CGSize) -> CGPoint {
-        let w = spot(uv(p).x, uv(p).y)
-        let cam = camera.position(relativeTo: root)
-        let dz = max(0.01, cam.z - w.z)
-        let t = tan(Self.fov / 2 * .pi / 180)
-        let aspect = Float(size.width / size.height)
-        let sx = (w.x - cam.x) / dz / (t * aspect), sy = (w.y - cam.y) / dz / t
-        return CGPoint(x: CGFloat(0.5 + sx * 0.5) * size.width, y: CGFloat(0.5 - sy * 0.5) * size.height)
+        let w = spot(uv(p).x, uv(p).y)                       // through the camera as it really is (it orbits)
+        let rel = camera.transformMatrix(relativeTo: root).inverse * SIMD4<Float>(w.x, w.y, w.z, 1)
+        let dz = max(0.01, -rel.z), t = tan(Self.fov / 2 * .pi / 180), aspect = Float(size.width / size.height)
+        return CGPoint(x: CGFloat(0.5 + rel.x / dz / (t * aspect) * 0.5) * size.width, y: CGFloat(0.5 - rel.y / dz / t * 0.5) * size.height)
     }
     /// How far you may move from the center at a zoom: no edge of the map can ever come into view (EdgeSafety:
     /// each edge's nearness from the relief, the zoom bringing the camera closer, the rubber band and breathing).
     private var edgeDist: (l: Float, r: Float, b: Float, t: Float) = (1.2, 1.2, 1.2, 1.2)
     func panLimit(zoom z: Float) -> SIMD2<Float> {
-        EdgeSafety.limit(planeW: planeW, planeH: planeH, restDistance: Self.distance, edges: edgeDist,
-                         camForward: Self.distance - Self.distance / max(0.5, z), fov: Self.fov, aspect: screenAspect,
-                         margin: EdgeSafety.rubber + 0.008)
+        var lim = EdgeSafety.limit(planeW: planeW, planeH: planeH, restDistance: Self.distance, edges: edgeDist,
+                                   camForward: Self.distance - Self.distance / max(0.5, z), fov: Self.fov, aspect: screenAspect,
+                                   margin: EdgeSafety.rubber + 0.008 + Self.orbitMax)
+        // Sideways only a little past the realms (Mathis: "no need to go so much on each side"): the land beyond is
+        // there for breathing room, not to wander into. Zoomed in, you can still reach every realm.
+        let realmsW = planeW * 803 / Self.mapPixels.x
+        let visibleW = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180) * screenAspect / max(0.5, z)
+        lim.x = min(lim.x, max(0, realmsW * 0.56 - visibleW / 2))
+        return lim
     }
 
     // MARK: Build
@@ -221,6 +233,76 @@ final class MapScene {
             }
         }
 
+        // A sky you look down through: soft cloud banks close to you at the edges, sliding past much faster than the
+        // land when you move (they are near), so the map reads as a world far below.
+        for k in 0..<8 {
+            let side: Float = k % 2 == 0 ? -1 : 1
+            let d: Float = 0.45 + Float(k / 2) * 0.06, z = -d, kz = d / Self.distance
+            let half = d * tan(Self.fov / 2 * .pi / 180) * screenAspect             // half the screen's width at that depth
+            let y = (Float(k / 2) / 3 - 0.5) * 2 * d * tan(Self.fov / 2 * .pi / 180) * 0.85
+            let size = half * Float.random(in: 0.8...1.0, using: &rng)
+            let e = card(cloudTex, [size, size * 0.55], tint: UIColor(red: 1, green: 0.96, blue: 0.93, alpha: CGFloat(Float.random(in: 0.35...0.5, using: &rng))))
+            let base = SIMD3<Float>(side * (half + size * 0.12), y, z)               // only peeking in from the side
+            e.position = base
+            root.addChild(e); nearClouds.append((e, base, Float(k) * 1.9, kz))
+        }
+        // Each realm alive (small particle systems, cheap on the graphics chip).
+        func emitter(at r: RealmID, lift: Float = 0.02, _ make: (inout ParticleEmitterComponent) -> Void) {
+            let c = uv(r.mapPoint)
+            let e = Entity(); var p = ParticleEmitterComponent()
+            p.emitterShape = .sphere; p.emitterShapeSize = [0.05, 0.03, 0.02]
+            p.mainEmitter.blendMode = .additive
+            make(&p)
+            e.components.set(p); e.position = spot(c.x, c.y, lift: lift)
+            root.addChild(e)
+        }
+        emitter(at: .forge, lift: 0.03) { p in           // smoke rising from the forge, and its sparks
+            p.emitterShapeSize = [0.03, 0.01, 0.01]; p.emissionDirection = [0, 1, 0.3]; p.speed = 0.012; p.speedVariation = 0.004
+            p.mainEmitter.birthRate = 6; p.mainEmitter.lifeSpan = 6; p.mainEmitter.size = 0.03; p.mainEmitter.sizeMultiplierAtEndOfLifespan = 3
+            p.mainEmitter.blendMode = .alpha
+            p.mainEmitter.color = .evolving(start: .single(UIColor(red: 0.45, green: 0.38, blue: 0.4, alpha: 0.35)), end: .single(UIColor(red: 0.6, green: 0.55, blue: 0.6, alpha: 0)))
+        }
+        emitter(at: .forge, lift: 0.025) { p in
+            p.emissionDirection = [0, 1, 0.2]; p.speed = 0.02; p.speedVariation = 0.01; p.emitterShapeSize = [0.02, 0.01, 0.01]
+            p.mainEmitter.birthRate = 14; p.mainEmitter.lifeSpan = 1.8; p.mainEmitter.size = 0.0022
+            p.mainEmitter.color = .evolving(start: .single(UIColor(red: 1, green: 0.7, blue: 0.3, alpha: 1)), end: .single(UIColor(red: 1, green: 0.3, blue: 0.1, alpha: 0)))
+        }
+        emitter(at: .grove) { p in                          // fireflies among the lantern trees
+            p.emitterShapeSize = [0.12, 0.08, 0.03]; p.speed = 0.003; p.speedVariation = 0.003
+            p.mainEmitter.birthRate = 10; p.mainEmitter.lifeSpan = 4; p.mainEmitter.lifeSpanVariation = 1.5; p.mainEmitter.size = 0.0025
+            p.mainEmitter.color = .evolving(start: .single(UIColor(red: 1, green: 0.85, blue: 0.4, alpha: 1)), end: .single(UIColor(red: 1, green: 0.6, blue: 0.2, alpha: 0)))
+        }
+        emitter(at: .library, lift: 0.04) { p in            // motes of magic rising around the floating library
+            p.emitterShapeSize = [0.1, 0.07, 0.03]; p.emissionDirection = [0, 1, 0]; p.speed = 0.006; p.speedVariation = 0.003
+            p.mainEmitter.birthRate = 9; p.mainEmitter.lifeSpan = 4; p.mainEmitter.size = 0.0022
+            p.mainEmitter.color = .evolving(start: .single(UIColor(red: 0.7, green: 0.85, blue: 1, alpha: 1)), end: .single(UIColor(red: 0.6, green: 0.6, blue: 1, alpha: 0)))
+        }
+        emitter(at: .wilds) { p in                          // green fireflies in the wild woods
+            p.emitterShapeSize = [0.1, 0.07, 0.03]; p.speed = 0.003; p.speedVariation = 0.003
+            p.mainEmitter.birthRate = 8; p.mainEmitter.lifeSpan = 4; p.mainEmitter.size = 0.0022
+            p.mainEmitter.color = .evolving(start: .single(UIColor(red: 0.7, green: 1, blue: 0.5, alpha: 1)), end: .single(UIColor(red: 0.4, green: 0.9, blue: 0.4, alpha: 0)))
+        }
+        for r in [RealmID.stillwater, .sanctuary] {          // mist breathing over the lake and the falls
+            emitter(at: r, lift: 0.01) { p in
+                p.emitterShapeSize = [0.14, 0.04, 0.02]; p.emissionDirection = [1, 0.2, 0]; p.speed = 0.004; p.speedVariation = 0.002
+                p.mainEmitter.birthRate = 2; p.mainEmitter.lifeSpan = 6; p.mainEmitter.size = 0.022; p.mainEmitter.sizeMultiplierAtEndOfLifespan = 1.8
+                p.mainEmitter.blendMode = .alpha
+                p.mainEmitter.color = .evolving(start: .single(UIColor(white: 1, alpha: 0.12)), end: .single(UIColor(white: 1, alpha: 0)))
+            }
+        }
+        if let birdTex = try? await TextureResource(named: "bird.png") {      // birds circling the Highlands' peaks
+            let c = uv(RealmID.highlands.mapPoint)
+            let center = spot(c.x, c.y, lift: 0.07)
+            for b in 0..<3 {
+                let e = card(birdTex, [0.018, 0.011], tint: UIColor(red: 0.2, green: 0.13, blue: 0.16, alpha: 0.9))
+                root.addChild(e); circlers.append((e, center, 0.05 + Float(b) * 0.012, 0.5 + Float(b) * 0.08, Float(b) * 2.1))
+            }
+        }
+        if tiltSensor.isDeviceMotionAvailable {
+            tiltSensor.deviceMotionUpdateInterval = 1.0 / 60
+            tiltSensor.startDeviceMotionUpdates()
+        }
+
         // The Hush: soft grey mist resting over the realms not opened yet (nothing destroyed, only quiet).
         // Every realm gets its mist and its beacon; which one shows follows what's open (updated on each visit).
         for r in roadOrder where r != .sanctuary {
@@ -334,7 +416,23 @@ final class MapScene {
         }
         let breathe = SIMD3<Float>(sin(time * 0.21) * 0.004, sin(time * 0.17) * 0.003, 0)
         let pos = SIMD3<Float>(camXY.x, camXY.y, -camZ) + breathe        // closer = toward the map (−z)
-        camera.look(at: pos + SIMD3(0, 0, -1), from: pos, relativeTo: root)
+        // The living parallax: lean with the drag and with the phone's tilt, always looking at the same spot on the
+        // land, so near hills slide against the far sea. Calm when nothing moves (it drifts back to centre).
+        var want = -panVel * 0.06
+        if let a = tiltSensor.deviceMotion?.attitude {
+            if tiltRef == nil { tiltRef = (a.roll, a.pitch) }
+            if let r = tiltRef {
+                want += SIMD2(Float(a.roll - r.roll), Float(r.pitch - a.pitch)) * 0.09
+                tiltRef = (r.roll + (a.roll - r.roll) * 0.004, r.pitch + (a.pitch - r.pitch) * 0.004)    // slowly re-centres
+            }
+        }
+        want += SIMD2(sin(time * 0.13), sin(time * 0.11 + 1)) * 0.006 * (1 - dive)           // a slow living sway
+        want = simd_clamp(want, SIMD2(repeating: -Self.orbitMax), SIMD2(repeating: Self.orbitMax)) * (1 - min(1, dive))
+        let wo: Float = 4
+        orbitVel += (wo * wo * (want - orbit) - 2 * wo * orbitVel) * dt; orbit += orbitVel * dt
+        let focus = SIMD3<Float>(pos.x, pos.y, -Self.distance + 0.05)
+        let eye = pos + SIMD3(orbit.x, orbit.y, 0)
+        camera.look(at: focus, from: eye, relativeTo: root)
 
         // The light of the hour on the whole map.
         // (Re-sent four times a second, not every frame: the wind and the hour change slowly.)
@@ -368,6 +466,15 @@ final class MapScene {
             birds[i].e.position = b + SIMD3(0, 0.004 * sin(time * 0.8 + ph), 0)
             let flap = 0.55 + 0.45 * abs(sin(time * 7 + ph)) * (0.5 + 0.5 * max(0, sin(time * 0.6 + ph)))
             birds[i].e.scale = [birds[i].vel.x < 0 ? -1 : 1, flap, 1]
+        }
+        for c in nearClouds {          // near clouds drift slowly and breathe
+            c.e.position = c.base + SIMD3(sin(time * 0.07 + c.phase) * 0.02 * c.depth, sin(time * 0.05 + c.phase) * 0.008, 0)
+        }
+        for c in circlers {            // birds wheeling over the peaks, flapping now and then
+            let a = time * c.speed + c.phase
+            c.e.position = c.center + SIMD3(cos(a) * c.radius, sin(a) * c.radius * 0.55, sin(a * 2) * 0.004)
+            let flap = 0.55 + 0.45 * abs(sin(time * 7 + c.phase)) * (0.5 + 0.5 * max(0, sin(time * 0.5 + c.phase)))
+            c.e.scale = [-sin(a) < 0 ? -1 : 1, flap, 1]
         }
         for c in borderClouds {        // the border breathes: clouds roll slowly in and out
             c.e.position = c.base + SIMD3(sin(time * 0.12 + c.phase) * 0.02, sin(time * 0.09 + c.phase * 1.3) * 0.01, 0)

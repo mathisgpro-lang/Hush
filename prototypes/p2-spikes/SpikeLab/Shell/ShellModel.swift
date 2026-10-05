@@ -280,8 +280,23 @@ final class ShellModel {
     /// building never competes with what you see (measured: 30 fps for seconds when it happened during home).
     func preloadCore() async {
         await ensure(.map)
+        await warm(mapScene.root)
         await ensure(.realm(.grove))
+        await warm(realmScene(.grove).root)
         coreReady = true
+    }
+    /// A world built but never drawn pays its whole first-draw cost (shaders, its big painting sent to the graphics
+    /// chip) the moment it first shows: the map froze 1.7 s on its first opening. So right after building it, a
+    /// microscopic copy of it (smaller than a pixel) is drawn in front of the camera on screen for half a second,
+    /// out of sight; its first real opening is then instant.
+    func warm(_ root: Entity) async {
+        guard let cam = activeCamera else { return }
+        let ghost = root.clone(recursive: true)
+        ghost.position = [0, 0, -0.5]
+        ghost.scale = .init(repeating: 0.0002)
+        cam.addChild(ghost)
+        try? await Task.sleep(for: .milliseconds(500))
+        ghost.removeFromParent()
     }
     func preloadLater() {}
     /// The ember you chose in the introduction: your Spark burns in its color (Mathis, 2026-10-03).

@@ -43,7 +43,9 @@ struct StreakBar: View {
 func streakLine(_ j: Journey, light: Int) -> String {
     let s = j.streak()
     switch s.state {
-    case .livedToday: return light <= 1 ? "Day kept · your flame burns \(s.current) days strong" : "\(light) lights sent today · \(s.current) days strong"
+    case .livedToday:
+        let days = s.current == 1 ? "1 day" : "\(s.current) days"
+        return light <= 1 ? (s.current == 1 ? "Day kept · your flame is lit" : "Day kept · your flame burns \(days) strong") : "\(light) lights sent today · \(days) strong"
     case .waiting: return s.current > 0 ? "One quest today keeps your \(s.current)-day flame alive" : "Your day is ready"
     case .shieldedYesterday: return "A shield caught yesterday · your \(s.current)-day flame lives on"
     case .repairable(let need): return need >= 2 ? "Live 2 quests today to save your \(s.current)-day flame" : "One more quest today saves your \(s.current)-day flame"
