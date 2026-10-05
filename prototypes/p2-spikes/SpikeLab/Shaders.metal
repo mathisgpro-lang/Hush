@@ -131,8 +131,10 @@ float s2noise(float2 p) {
     float2 u = f * f * (3.0 - 2.0 * f);
     return mix(mix(s2hash(i), s2hash(i + float2(1, 0)), u.x), mix(s2hash(i + float2(0, 1)), s2hash(i + float2(1, 1)), u.x), u.y);
 }
-float3 s2hourLight(float3 rgb, float2 uv, float skyM, float seaM, float hour, float sunU, float ratio, float t);   // (defined below)
+float3 s2hourLight(float3 rgb, float2 uv, float skyM, float seaM, float hour, float sunU, float ratio, float t, texture2d<half> lut, float lightM);   // (defined below)
 float s2night(float hour);
+float3 s2moods(float hour);
+float3 s2look(texture2d<half> lut, float3 c, float skyM, float3 m);
 float s2fbm(float2 p) { return s2noise(p) * 0.55 + s2noise(p * 2.1 + 3.7) * 0.3 + s2noise(p * 4.3 + 9.1) * 0.15; }
 
 // The painting comes alive: rippling water with sparkles in the lower part, falling water where the painting is
@@ -266,6 +268,9 @@ void groveRestore(realitykit::surface_parameters params)
     float2 breeze = float2(sw * 0.0022 * green * (0.3 + uv.y) * (0.35 + wind * 1.3 * gust), sw * 0.0006 * green) * (newRealm ? 1.0 : 0.0);
     half4 col = params.textures().base_color().sample(s, tuv + ripple * (1.0 - paleW) + sway + flow + breeze + cloud);
     float3 rgb = float3(col.rgb);
+    float3 rgbRaw = rgb;                              // (its lanterns keep their own fire, whatever the hour)
+    float hourK0 = params.material_constants().clearcoat_scale();
+    if (newRealm && hourK0 > 0.0) rgb = s2look(params.textures().emissive_color(), rgb, skyM, s2moods(hourK0 * 24.0));
     // Waterfalls: bright streaks racing down, glints on still water.
     float colI = floor(uv.x * 260.0);
     float streak = fract(uv.y * 18.0 + t * (1.6 + fract(sin(colI * 12.9) * 43758.5) * 0.8));
@@ -293,7 +298,7 @@ void groveRestore(realitykit::surface_parameters params)
     graded *= max(base + 0.12 * smoothstep(0.0, 0.8, r), base + 0.2 * localLight);
     // Unlit lanterns dim their own painted glow; lit ones shine (flickering, flaring right after relighting).
     float3 dark = rgb * float3(0.32, 0.3, 0.34);          // an unlit lantern: its own colors, just without fire
-    float3 shining = rgb * flicker * 1.12 + float3(1.0, 0.8, 0.45) * flare * 1.4;
+    float3 shining = rgbRaw * flicker * 1.12 + float3(1.0, 0.8, 0.45) * flare * 1.4;
     graded = mix(graded, mix(dark, shining, lit), core);
     graded += float3(1.0, 0.7, 0.35) * pool * lit * 0.06 * flicker + float3(1.0, 0.75, 0.4) * pool * flare * 0.35;
     float m0 = 0.0;
@@ -309,10 +314,7 @@ void groveRestore(realitykit::surface_parameters params)
         float hourNow = hourK * 24.0;
         float3 before = graded;
         // The sky keeps some of its painting by day (a lavender sky shouldn't turn into a white cloud).
-        graded = s2hourLight(graded, uv, skyM * 0.55, water * 0.3, hourNow, params.material_constants().specular_scale(), 0.37, t);
-        // Nights in a realm stay warm and alive (moonlit, not grey), even before its lights are relit.
-        float nightK = s2night(hourNow);
-        graded = mix(graded, before * float3(0.62, 0.62, 0.78), nightK * 0.4);
+        graded = s2hourLight(graded, uv, skyM, water, hourNow, params.material_constants().specular_scale(), 0.37, t, params.textures().emissive_color(), core * lit + pool * lit * 0.5);
     }
     params.surface().set_base_color(half3(0));
     params.surface().set_emissive_color(half3(graded));
@@ -378,67 +380,68 @@ void tongueFire(realitykit::surface_parameters params)
 // moon crossing the sky) and dusk (the painting itself), plus sun shafts. skyM = how much this pixel is sky.
 float3 s2sat(float3 c, float k) { float g = dot(c, float3(0.299, 0.587, 0.114)); return mix(float3(g), c, k); }
 
-float3 s2hourLight(float3 rgb, float2 uv, float skyM, float seaM, float hour, float sunU, float ratio, float t)
+// The time-of-day looks (corrections list #7, 2026-10-05), taken from Codex's paintings of the Sanctuary at dawn,
+// day, dusk and night (tools/build_tod_luts.py): a colour look-up per mood, one for the land and one for the sky,
+// in tod-lut.png (32 tiles of 32×32 per row of 32 pixels: rows 0–3 land dawn/day/dusk/night, rows 4–7 sky).
+// Indexed in a gamma-2 space (sqrt of linear) so dark colours keep their precision.
+float3 s2lut(texture2d<half> lut, float3 c, float row)
+{
+    constexpr sampler ls(address::clamp_to_edge, filter::linear, mip_filter::none);
+    float3 g = sqrt(saturate(c));
+    float b = g.b * 31.0, b0 = floor(b), b1 = min(b0 + 1.0, 31.0), f = b - b0;
+    float x = (g.r * 31.0 + 0.5) / 1024.0, y = (row * 32.0 + g.g * 31.0 + 0.5) / 256.0;
+    float3 s0 = float3(lut.sample(ls, float2(x + b0 / 32.0, y)).rgb);
+    float3 s1 = float3(lut.sample(ls, float2(x + b1 / 32.0, y)).rgb);
+    float3 o = mix(s0, s1, f);
+    return o * o;
+}
+
+/// Which two moods the hour sits between, and how far (rows: 0 dawn, 1 day, 2 dusk, 3 night). The hour is the
+/// "light hour" (SolarClock): sunrise is always 6:15, sunset 18:45, whatever the season.
+float3 s2moods(float hour)
+{
+    if (hour < 4.5) return float3(3, 3, 0);
+    if (hour < 6.5) return float3(3, 0, smoothstep(4.5, 6.5, hour));
+    if (hour < 7.5) return float3(0, 0, 0);
+    if (hour < 10.0) return float3(0, 1, smoothstep(7.5, 10.0, hour));
+    if (hour < 15.5) return float3(1, 1, 0);
+    if (hour < 18.5) return float3(1, 2, smoothstep(15.5, 18.5, hour));
+    if (hour < 19.5) return float3(2, 2, 0);
+    if (hour < 21.5) return float3(2, 3, smoothstep(19.5, 21.5, hour));
+    return float3(3, 3, 0);
+}
+
+float3 s2look(texture2d<half> lut, float3 c, float skyM, float3 m)
+{
+    float3 land = s2lut(lut, c, m.x), sky = float3(0);
+    if (m.z > 0.001) land = mix(land, s2lut(lut, c, m.y), m.z);
+    if (skyM > 0.001) {
+        sky = s2lut(lut, c, m.x + 4.0);
+        if (m.z > 0.001) sky = mix(sky, s2lut(lut, c, m.y + 4.0), m.z);
+        land = mix(land, sky, skyM);
+    }
+    return land;
+}
+
+// The light of the hour, shared by every layer of every world: the painted look of the hour (above), stars and a
+// moon crossing the night sky, warm lights that keep glowing in the dark (lightM), and sun shafts at low sun.
+float3 s2hourLight(float3 rgb, float2 uv, float skyM, float seaM, float hour, float sunU, float ratio, float t, texture2d<half> lut, float lightM)
 {
     float asp = 0.4615 / ratio;
-    float night = saturate(1.0 - smoothstep(5.0, 7.0, hour) + smoothstep(20.5, 22.5, hour));
+    float night = s2night(hour);
     float morning = smoothstep(5.0, 7.0, hour) * (1.0 - smoothstep(9.5, 11.5, hour));
     float day = smoothstep(9.5, 11.5, hour) * (1.0 - smoothstep(16.0, 18.0, hour));
     float dusk = saturate(1.0 - night - morning - day);
-    // ---- The light of the hour. Day and morning are clear and vivid, never grey (Mathis, 2026-10-02). ----
-    // Each mood is only computed when its hour is on (most of the day only one is): every pixel of three
-    // full-screen layers runs this, so skipping the hidden ones is what keeps the phone at 60 frames a second.
-    float g0 = dot(rgb, float3(0.299, 0.587, 0.114));
-    float3 outRGB = rgb * dusk;
-    float3 daySky = float3(0), seaDay = float3(0);
-    float seaAmt = 0.0;
-    if (day + morning > 0.001) {
-        // Day sky: a clear blue with the painted clouds turned white (in the sunset plate the clouds are lavender
-        // and the gaps orange, so "how little red over blue" finds the clouds).
-        if (skyM > 0.001) {
-            float cloud = 1.0 - smoothstep(0.2, 0.42, rgb.r - rgb.b);
-            float3 blue = mix(float3(0.62, 0.80, 0.98), float3(0.24, 0.52, 0.93), smoothstep(0.78, 1.0, uv.y));
-            float3 cloudCol = mix(float3(0.80, 0.84, 0.94), float3(1.0, 0.99, 0.97), smoothstep(0.36, 0.62, g0));
-            daySky = mix(blue, cloudCol, cloud * 0.9);
-        }
-        // Day sea: blue and turquoise, keeping the painted waves' light and shade.
-        if (seaM > 0.001) {
-            float3 seaBase = mix(float3(0.06, 0.64, 0.74), float3(0.16, 0.44, 0.80), smoothstep(0.3, 0.79, uv.y));
-            seaDay = seaBase * (0.55 + 0.9 * g0) + float3(1.0) * smoothstep(0.82, 0.96, g0) * 0.5;
-            seaAmt = seaM * (0.35 + 0.55 * smoothstep(0.3, 0.75, uv.y));
-        }
+    // (The painted look of the hour is applied where each layer reads its painting: s2look.)
+    if (night > 0.001 && skyM > 0.001) {
+        // Stars (square cells: dots, not dashes), twinkling slowly; and the moon crossing the sky (20:00 → 06:00).
+        float star = smoothstep(0.988, 1.0, s2hash(floor(uv * float2(470.0 / ratio * 0.4615, 470.0)))) * (0.6 + 0.4 * sin(t * 1.7 + uv.x * 90.0));
+        float moonT = saturate(fmod(hour - 20.0 + 24.0, 24.0) / 10.0);
+        float2 moonP = float2(sunU + mix(0.07, -0.33, moonT) * ratio, 0.8 + 0.09 * sin(moonT * 3.14159));
+        float2 moonD = float2((uv.x - moonP.x) * asp, uv.y - moonP.y);
+        float3 moon = float3(0.95, 0.95, 1.0) * (smoothstep(0.018, 0.014, length(moonD)) + exp(-length(moonD) * 18.0) * 0.22);
+        rgb += (star * 0.85 * smoothstep(0.55, 0.85, uv.y) + moon) * skyM * night;
     }
-    if (day > 0.001) {
-        // Day land: the dusk's orange balanced toward neutral, a touch more saturated and brighter.
-        float3 dayRGB = s2sat(rgb * float3(0.92, 1.0, 1.09), 1.15) * 1.07;
-        dayRGB = mix(dayRGB, daySky, skyM);
-        dayRGB = mix(dayRGB, seaDay, seaAmt);
-        outRGB += dayRGB * day;
-    }
-    if (morning > 0.001) {
-        // Morning: soft and pastel, pink and gold; a sky between dawn and blue.
-        float3 mornRGB = s2sat(rgb * float3(1.0, 0.97, 1.04), 1.05) * 1.04 + float3(0.03, 0.01, 0.03);
-        mornRGB = mix(mornRGB, mix(rgb, daySky, 0.45) * 1.05, skyM);
-        mornRGB = mix(mornRGB, mix(mornRGB, seaDay, 0.5), seaAmt);
-        outRGB += mornRGB * morning;
-    }
-    if (night > 0.001) {
-        // Night: deep blue, the world falls asleep; stars and a moon glow; fires and the Flame shine.
-        float3 nightRGB = float3(g0) * float3(0.32, 0.40, 0.66) * 0.62 + rgb * 0.08;
-        if (skyM > 0.001) {
-            float star = smoothstep(0.988, 1.0, s2hash(floor(uv * float2(470.0 / ratio * 0.4615, 470.0)))) * (0.6 + 0.4 * sin(t * 3.0 + uv.x * 90.0));   // square cells: dots, not dashes
-            float3 nightSky = mix(float3(0.05, 0.07, 0.18), float3(0.16, 0.2, 0.38), saturate(1.0 - (uv.y - 0.7) * 3.0));
-            // The moon crosses the sky through the night (20:00 → 06:00).
-            float moonT = saturate(fmod(hour - 20.0 + 24.0, 24.0) / 10.0);
-            float2 moonP = float2(sunU + mix(0.07, -0.33, moonT) * ratio, 0.8 + 0.09 * sin(moonT * 3.14159));
-            float2 moonD = float2((uv.x - moonP.x) * asp, uv.y - moonP.y);
-            nightSky += float3(0.95, 0.95, 1.0) * (smoothstep(0.018, 0.014, length(moonD)) + exp(-length(moonD) * 18.0) * 0.25);
-            nightRGB = mix(nightRGB, nightSky + star, skyM);
-        }
-        outRGB += nightRGB * night;
-    }
-    rgb = outRGB;
-
     // Sun rays (low sun at dusk and morning, softer at midday, none at night).
     float2 sunP = float2(sunU, 0.82);
     float2 dv = uv - sunP; dv.x *= asp;
@@ -450,7 +453,6 @@ float3 s2hourLight(float3 rgb, float2 uv, float skyM, float seaM, float hour, fl
         shafts = smoothstep(0.45, 1.0, shafts) * smoothstep(0.1, 0.2, rays);   // fades in: no visible edge
         rgb += float3(1.0, 0.78, 0.5) * shafts * rays * (0.14 + 0.04 * sin(t * 0.7));
     }
-
     return rgb;
 }
 
@@ -518,6 +520,13 @@ void stoneLive(realitykit::surface_parameters params)
     float sunU = params.material_constants().specular_scale();
     float ratio = max(0.05, params.material_constants().clearcoat_scale());
     float asp = 0.4615 / ratio;          // width ÷ height of what this texture shows
+    // The painting as painted for this hour (Codex's repaintings, tod-lut.png); lanterns and fires keep their
+    // own warm light in the dark.
+    {
+        float3 raw = rgb;
+        rgb = s2look(params.textures().emissive_color(), rgb, skyM, s2moods(hour));
+        rgb = mix(rgb, raw, saturate(fire * 1.5) * (0.3 + 0.7 * s2night(hour)));
+    }
     float night = 1.0 - smoothstep(5.0, 7.0, hour) + smoothstep(20.5, 22.5, hour);
     night = saturate(night);
     float morning = smoothstep(5.0, 7.0, hour) * (1.0 - smoothstep(9.5, 11.5, hour));
@@ -570,7 +579,7 @@ void stoneLive(realitykit::surface_parameters params)
         rgb = max((rgb - A * amount) / tr, 0.0);
     }
 
-    rgb = s2hourLight(rgb, uv, skyM, 0.0, hour, sunU, ratio, t);
+    rgb = s2hourLight(rgb, uv, skyM, 0.0, hour, sunU, ratio, t, params.textures().emissive_color(), saturate(fire + halo * 0.6));
 
     // The Flame lights the circle around it (A1); at night its light carries much further.
     float2 fd = float2((uv.x - c.y) * asp, uv.y - c.z);
@@ -620,8 +629,9 @@ void skyLive(realitykit::surface_parameters params)
     float2 sd = float2((uv.x - sunU) * asp, uv.y - 0.82);
     float sun = exp(-dot(sd, sd) / 0.0012);
     rgb = mix(rgb, float3(params.textures().base_color().sample(s, tuv).rgb), sun);
+    rgb = s2look(params.textures().emissive_color(), rgb, 1.0, s2moods(hour));     // the sky as painted for this hour
 
-    rgb = s2hourLight(rgb, uv, 1.0, 0.0, hour, sunU, ratio, t);
+    rgb = s2hourLight(rgb, uv, 1.0, 0.0, hour, sunU, ratio, t, params.textures().emissive_color(), 0.0);
     rgb = s2hush(rgb, uv, c.x, t);
     params.surface().set_base_color(half3(0));
     params.surface().set_emissive_color(half3(rgb));
@@ -659,7 +669,9 @@ void seaLive(realitykit::surface_parameters params)
     float w0 = 1.0 - abs(2.0 * p0 - 1.0);
     half4 col = c0 * half(w0) + c1 * half(1.0 - w0);
     col.a = params.textures().base_color().sample(s, tuv).a;
-    float3 rgb = float3(col.rgb);
+    float3 rgb = s2look(params.textures().emissive_color(), float3(col.rgb), 0.0, s2moods(hour));   // as painted for this hour
+    // At night the painted sun path on the water goes too (the moon's glints come below).
+    rgb = mix(rgb, float3(dot(rgb, float3(0.299, 0.587, 0.114))) * float3(0.5, 0.68, 1.05) * 0.8, s2night(hour) * 0.85);
 
     // Swell bands travelling in (spaced by perspective: crowded at the horizon, wide near us).
     float z = 1.0 / (0.06 + near);
@@ -673,7 +685,7 @@ void seaLive(realitykit::surface_parameters params)
     float3 glitCol = mix(float3(1.0, 0.85, 0.6), float3(0.8, 0.88, 1.0), night);
     rgb += glitCol * glit * (0.15 + 0.85 * path) * (0.9 - 0.4 * night);
 
-    rgb = s2hourLight(rgb, uv, 0.0, 1.0, hour, sunU, ratio, t);
+    rgb = s2hourLight(rgb, uv, 0.0, 1.0, hour, sunU, ratio, t, params.textures().emissive_color(), 0.0);
     rgb = s2hush(rgb, uv, c.x, t);
     params.surface().set_base_color(half3(0));
     params.surface().set_emissive_color(half3(rgb));

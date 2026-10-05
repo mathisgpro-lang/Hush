@@ -44,6 +44,7 @@ final class MapScene {
     private var sparkBase = SIMD3<Float>(0, 0, 0)
     private var time: Float = 0
     var hourOverride: Float?
+    private var clockHour: Float = 18, clockReadAt: Float = 0, lightSentAt: Float = -1
 
     // Camera: pan (meters on the map) and zoom (1 = the default view), both on critically damped springs.
     var panTarget = SIMD2<Float>(0, 0), zoomTarget: Float = 1
@@ -131,6 +132,7 @@ final class MapScene {
         var material: any RealityKit.Material = unlit
         if let lib {
             var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: "stoneLive", in: lib))
+            if let lut = await SolarClock.lut() { m.emissiveColor = .init(texture: .init(lut)) }   // the looks of the hour
             m.custom.texture = .init(motion)
             m.custom.value = [1, 0.5, 0.5, 0]                        // full vitality, no Flame light on the map
             m.specular = .init(floatLiteral: -5)                     // no sun rays (the sun is beyond the map's top)
@@ -335,9 +337,11 @@ final class MapScene {
         camera.look(at: pos + SIMD3(0, 0, -1), from: pos, relativeTo: root)
 
         // The light of the hour on the whole map.
-        if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
-            let comps = Calendar.current.dateComponents([.hour, .minute], from: Date())
-            let hour = hourOverride ?? (Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60)
+        // (Re-sent four times a second, not every frame: the wind and the hour change slowly.)
+        if time - lightSentAt > 0.25, let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
+            lightSentAt = time
+            if time - clockReadAt > 5 || clockReadAt == 0 { clockHour = SolarClock.lightHour(); clockReadAt = time }
+            let hour = hourOverride ?? clockHour
             m.metallic = .init(floatLiteral: hour / 24)
             m.roughness = .init(floatLiteral: 0.25 + 0.15 * sin(time * 0.3))
             comp.materials = [m]; painting.model = comp

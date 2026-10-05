@@ -163,6 +163,7 @@ final class RealmScene {
         var material: any RealityKit.Material = unlit
         if let lib {
             var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: "groveRestore", in: lib))
+            if let lut = await SolarClock.lut() { m.emissiveColor = .init(texture: .init(lut)) }   // the looks of the hour
             m.custom.texture = .init(lanternTex)
             m.custom.value = [0, 1, -1, 10]
             m.metallic = .init(floatLiteral: hasWater ? 1 : 0)      // 1 = the water mask is in the lights map's alpha
@@ -274,8 +275,7 @@ final class RealmScene {
         if let i = CommandLine.arguments.firstIndex(of: "-hour"), i + 1 < CommandLine.arguments.count, let h = Float(CommandLine.arguments[i + 1]) {
             hero.hour = h                                            // (test: a given hour, as at home)
         } else if time - clockReadAt > 5 || clockReadAt == 0 {     // the real clock, read every few seconds
-            let comps = Calendar.current.dateComponents([.hour, .minute], from: Date())
-            hero.hour = Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60; clockReadAt = time
+            hero.hour = SolarClock.lightHour(); clockReadAt = time          // the real sun (seasons included)
         }
         hero.update(dt: dt)
         flareAge += dt

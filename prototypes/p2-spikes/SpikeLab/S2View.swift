@@ -156,6 +156,7 @@ final class SanctuaryScene {
         var material: any RealityKit.Material = unlit
         if let lib {
             var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: "stoneLive", in: lib))
+            if let lut = await SolarClock.lut() { m.emissiveColor = .init(texture: .init(lut)) }   // the looks of the hour
             m.custom.texture = .init(motion)
             m.custom.value = [1, 0.5, 0.5, 0]
             if layers != nil {        // the land is cut out where the sky and the sea live (soft edges, still writes depth)
@@ -172,6 +173,7 @@ final class SanctuaryScene {
             let skyBase = try await TextureResource(named: "world-sky-base.png")
             var su = UnlitMaterial(); su.color = .init(tint: .white, texture: .init(skyTex))
             var sm = try CustomMaterial(from: su, surfaceShader: .init(named: "skyLive", in: lib))
+            if let lut = await SolarClock.lut() { sm.emissiveColor = .init(texture: .init(lut)) }   // the looks of the hour
             sm.custom.texture = .init(skyBase); sm.custom.value = [1, 0, 0, 0]
             let skyD: Float = 3.5, ks = skyD / Self.distance
             let sk = ModelEntity(mesh: .generatePlane(width: w * ks * 1.06, height: h * ks * 1.06), materials: [sm])
@@ -183,6 +185,7 @@ final class SanctuaryScene {
             let seaTex = try await TextureResource(named: "world-sea.png")
             var qu = UnlitMaterial(); qu.color = .init(tint: .white, texture: .init(seaTex))
             var qm = try CustomMaterial(from: qu, surfaceShader: .init(named: "seaLive", in: lib))
+            if let lut = await SolarClock.lut() { qm.emissiveColor = .init(texture: .init(lut)) }   // the looks of the hour
             qm.custom.value = [1, 0, 0, 0]; qm.blending = .transparent(opacity: .init(floatLiteral: 1.0)); qm.writesDepth = true
             let (sx, sy) = (40, 120)
             var spos: [SIMD3<Float>] = [], suv: [SIMD2<Float>] = [], sidx: [UInt32] = []
@@ -209,6 +212,7 @@ final class SanctuaryScene {
             let blank = try await TextureResource(named: "blank-mask.png", options: .init(semantic: .raw))
             var u = UnlitMaterial(); u.color = .init(tint: .white, texture: .init(bTex))
             var m = try CustomMaterial(from: u, surfaceShader: .init(named: "stoneLive", in: lib))
+            if let lut = await SolarClock.lut() { m.emissiveColor = .init(texture: .init(lut)) }   // the looks of the hour
             m.custom.texture = .init(blank); m.custom.value = [1, 0.5, 0.5, 0]
             let back: Float = layers == nil ? 0.5 : 3.0, k = (Self.distance + back) / Self.distance   // behind the sky when it exists
             let bw = layout.map { w * $0.backdropW / $0.total * k } ?? w * (1618.0 / 852.0) * k
@@ -421,8 +425,7 @@ final class SanctuaryScene {
         if Self.hourCycle { hourOverride = (6 + time * 0.8).truncatingRemainder(dividingBy: 24) }
         else if let h = Self.hourArg { hourOverride = h }
         if time - clockReadAt > 5 || clockReadAt == 0 {       // the clock is read every few seconds, not every frame
-            let comps = Calendar.current.dateComponents([.hour, .minute], from: Date())
-            clockHour = Float(comps.hour ?? 18) + Float(comps.minute ?? 0) / 60; clockReadAt = time
+            clockHour = SolarClock.lightHour(); clockReadAt = time          // the real sun (seasons included)
         }
         currentHour = hourOverride ?? clockHour
         // Re-sending a material to the graphics chip costs time on every frame: only when something really changed

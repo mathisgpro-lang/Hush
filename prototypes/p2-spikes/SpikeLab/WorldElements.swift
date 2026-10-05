@@ -8,6 +8,7 @@ import UIKit
 final class WorldElements {
     let root = Entity()
     private var clouds: [(e: ModelEntity, speed: Float, baseX: Float)] = []
+    private var lastTintKey = -1
     private var fireflies: Entity?
     private var flames: [Entity] = []
     private var time: Float = 0
@@ -110,13 +111,16 @@ final class WorldElements {
         let n = min(1, night)
         let tint: UIColor = n > 0.5 ? UIColor(red: 0.45, green: 0.5, blue: 0.7, alpha: 0.35)
             : (hour > 9.5 && hour < 17) ? UIColor(white: 1, alpha: 0.6) : UIColor(red: 1, green: 0.82, blue: 0.78, alpha: 0.55)
+        let tintKey = n > 0.5 ? 2 : (hour > 9.5 && hour < 17) ? 1 : 0
+        let retint = tintKey != lastTintKey             // materials re-sent only when the hour's colour changes
+        lastTintKey = tintKey
         for i in clouds.indices {
             var c = clouds[i]
             var p = c.e.position
             p.x += (c.speed + wind * 0.004) * dt
             if p.x > cloudBounds { p.x = -cloudBounds }
             c.e.position = p
-            if var comp = c.e.model, var m = comp.materials.first as? UnlitMaterial {
+            if retint, var comp = c.e.model, var m = comp.materials.first as? UnlitMaterial {
                 m.color = .init(tint: tint, texture: m.color.texture); comp.materials = [m]; c.e.model = comp
             }
             clouds[i] = c
