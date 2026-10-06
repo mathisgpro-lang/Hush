@@ -323,7 +323,7 @@ final class MapScene {
                 let t = CGFloat(s) / 3
                 let p = CGPoint(x: pts[i].x + (pts[i + 1].x - pts[i].x) * t, y: pts[i].y + (pts[i + 1].y - pts[i].y) * t)
                 let c = uv(p)
-                let e = card(glowTex, [0.03, 0.03], tint: UIColor(red: 1, green: 0.82, blue: 0.5, alpha: 0.9))
+                let e = card(glowTex, [0.018, 0.018], tint: UIColor(red: 1, green: 0.82, blue: 0.5, alpha: 0.7))
                 e.position = spot(c.x, c.y, lift: 0.01)
                 root.addChild(e); pathLights.append((e, Float(i * 3 + s) * 0.7))
             }
@@ -332,7 +332,7 @@ final class MapScene {
         // A beacon of light on each open realm, in its color.
         for r in roadOrder {
             let c = uv(r.mapPoint)
-            let e = card(glowTex, [0.16, 0.16], tint: UIColor(r.color).withAlphaComponent(0.85))
+            let e = card(glowTex, [0.07, 0.07], tint: UIColor(r.color).withAlphaComponent(0.4))       // a soft halo, never a blotch
             e.position = spot(c.x, c.y, lift: 0.03)
             e.isEnabled = open.contains(r)
             root.addChild(e); beacons.append((e, Float(c.y) * 7)); beaconRealm.append(r)

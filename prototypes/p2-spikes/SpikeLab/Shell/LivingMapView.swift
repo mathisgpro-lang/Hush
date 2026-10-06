@@ -176,7 +176,7 @@ struct LivingMapView: View {
                 .background(Capsule().fill(.black.opacity(isSelected ? 0.7 : 0.45)))
                 .overlay(Capsule().stroke((isOpen ? r.color : .white).opacity(isSelected ? 0.9 : 0.35), lineWidth: 1))
                 .foregroundStyle(.white.opacity(isOpen ? 1 : 0.75))
-            if !isOpen && ShellModel.builtRealms.contains(r) && r != .veil {       // its price, on the map
+            if !isOpen && r == model.journey.nextToBuy(among: ShellModel.builtRealms) {   // the next world: its price
                 HStack(spacing: 3) {
                     Image(systemName: "lock.fill").font(.system(size: 9, weight: .bold))
                     EmberCoin(size: 12)
@@ -237,6 +237,10 @@ struct LivingMapView: View {
             Text(r.lore).font(.ui(15)).foregroundStyle(ink.opacity(0.85)).fixedSize(horizontal: false, vertical: true)
             if isOpen {
                 Button { enter(r) } label: { goldLabel(r == .sanctuary ? "Fly home" : "Fly there") }
+            } else if canBuy, let next = model.journey.nextToBuy(among: ShellModel.builtRealms), next != r {
+                // One world after another: this one waits for the one before it on the road.
+                Label("Opens after \(next.name)", systemImage: "lock.fill")
+                    .font(.ui(14, .semibold)).foregroundStyle(ink.opacity(0.7))
             } else if canBuy {
                 // Decision 136: Embers earned by living open the next world (never bought with money).
                 let have = model.journey.embers
@@ -257,7 +261,7 @@ struct LivingMapView: View {
     /// Buying a world: the Embers pour from your counter into the realm, the Hush lifts, its light blooms.
     private func buy(_ r: RealmID) {
         let before = model.journey.embers
-        guard model.journey.buy(r) else { return }
+        guard model.journey.buy(r, among: ShellModel.builtRealms) else { return }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         let target = scene.screenPoint(r.mapPoint, in: UIScreen.main.bounds.size)
         shownEmbers = before

@@ -165,8 +165,12 @@ final class Journey {
         return deeds.count * 10 + days * 5 + milestones * 25 + checkIns.count * Self.dailyGift + grants.values.reduce(0, +)
     }
     var embers: Int { embersEarned - bought.compactMap { RealmID(rawValue: $0)?.price }.reduce(0, +) }
-    func buy(_ r: RealmID) -> Bool {
-        guard !bought.contains(r.rawValue), embers >= r.price else { return false }
+    /// Worlds open one after another along the road: only the next one can be bought.
+    func nextToBuy(among built: Set<RealmID>) -> RealmID? {
+        roadOrder.first { built.contains($0) && $0.price > 0 && $0 != .veil && !bought.contains($0.rawValue) }
+    }
+    func buy(_ r: RealmID, among built: Set<RealmID>) -> Bool {
+        guard r == nextToBuy(among: built), embers >= r.price else { return false }
         bought.insert(r.rawValue); save(); return true
     }
 

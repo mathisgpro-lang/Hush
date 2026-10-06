@@ -299,7 +299,7 @@ void groveRestore(realitykit::surface_parameters params)
     if (newRealm && hourK0 > 0.0) {
         rgb = s2look(params.textures().emissive_color(), rgb, skyM, s2moods(hourK0 * 24.0));
         float rawY = dot(rgbRaw, float3(0.299, 0.587, 0.114));                 // bright warm glows keep their gold
-        rgb = mix(rgb, rgbRaw, smoothstep(0.5, 0.85, rawY) * saturate((rgbRaw.r - rgbRaw.b) * 2.5) * 0.7);
+        rgb = mix(rgb, rgbRaw, smoothstep(0.5, 0.85, rawY) * saturate((rgbRaw.r - rgbRaw.b) * 2.5) * 0.7 * (1.0 - s2night(hourK0 * 24.0)));
     }
     // Waterfalls: bright streaks racing down, glints on still water.
     float colI = floor(uv.x * 260.0);
@@ -579,11 +579,11 @@ void stoneLive(realitykit::surface_parameters params)
     {
         float3 raw = rgb;
         rgb = s2look(params.textures().emissive_color(), rgb, skyM, s2moods(hour));
-        rgb = mix(rgb, raw, saturate(fire * 1.5) * (0.3 + 0.7 * s2night(hour)));
+        rgb = mix(rgb, raw, saturate(fire * 1.2) * (0.3 + 0.6 * s2night(hour)));
         // Bright warm glows (the rune circle, sunlit gold) keep their painted gold at every hour.
         float rawY = dot(raw, float3(0.299, 0.587, 0.114));
         float glowK = smoothstep(0.5, 0.85, rawY) * saturate((raw.r - raw.b) * 2.5);
-        rgb = mix(rgb, raw, glowK * 0.7 * (1.0 - s2night(hour) * 0.6));
+        rgb = mix(rgb, raw, glowK * 0.7 * (1.0 - s2night(hour)));          // (never at night: moonlight everywhere)
     }
     float night = 1.0 - smoothstep(5.0, 7.0, hour) + smoothstep(20.5, 22.5, hour);
     night = saturate(night);

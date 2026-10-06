@@ -385,7 +385,8 @@ struct HomeView: View {
                 }
                 Text(label).font(.ui(12, .semibold))
             }
-            .frame(maxWidth: .infinity).foregroundStyle(Theme.cream)
+            .frame(maxWidth: .infinity).padding(.vertical, 4).foregroundStyle(Theme.cream)
+            .contentShape(Rectangle())                        // the whole slot answers a tap, not only its word
         }
     }
 

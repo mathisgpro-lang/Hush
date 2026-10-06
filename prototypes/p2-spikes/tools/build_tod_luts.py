@@ -112,6 +112,12 @@ for part, mask in (("land", land), ("sky", sky)):
             rows.append(tile(identity)); print(part, mood, "identity"); continue
         dst = prep(Image.open(ref))
         lut = match(fit(src, dst, mask), src[mask], dst[mask])
+        if mood == "night":
+            # Moonlight is calm: a little less saturated than the fit, so warm lights don't clash with neon blues.
+            Y = (lut ** 2) @ [0.2126, 0.7152, 0.0722]
+            L2 = lut ** 2
+            L2 = L2 * 0.78 + Y[..., None] * np.array([0.82, 0.92, 1.12]) * 0.22
+            lut = np.sqrt(np.clip(L2, 0, 1))
         rows.append(tile(lut)); print(part, mood, "fitted")
 out = (np.concatenate(rows, 0) * 255 + 0.5).clip(0, 255).astype(np.uint8)
 Image.fromarray(out).save(f"{A}/tod-lut.png")

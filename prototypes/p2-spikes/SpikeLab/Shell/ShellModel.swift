@@ -163,8 +163,9 @@ final class ShellModel {
     }
     var grove: RealmScene { realmScene(.grove) }
     /// Realms that have their painted world in the app (the others only exist on the map for now).
-    /// Every world open (test only: -allopen). Otherwise Embers buy them (decision 141).
-    static let beta = CommandLine.arguments.contains("-allopen")
+    /// Every world open for Mathis's testing (2026-10-06: "make sure I have access to all worlds"); -locked shows
+    /// the real flow, where Embers buy the next world on the road, one after another (decision 144).
+    static let beta = !CommandLine.arguments.contains("-locked")
     static let builtRealms: Set<RealmID> = {
         let all: [RealmID] = [.grove, .stillwater, .highlands, .library, .wilds, .forge]
         var s: Set<RealmID> = [.grove]
