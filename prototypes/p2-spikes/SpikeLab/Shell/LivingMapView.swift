@@ -29,6 +29,11 @@ struct LivingMapView: View {
     @State private var diving = false
     @State private var flash: Double = 0
     @State private var ready = false
+    @State private var coinTarget = CGPoint(x: 330, y: 70)
+    @State private var burst: CoinFlight.Burst?
+    @State private var shownEmbers: Int?
+    @State private var waking: RealmID?          // the buying ceremony: the realm's light blooms on the map
+    @State private var wakeGlow: Double = 0
 
     var body: some View {
         let _ = PerfProbe.body("Map")
@@ -54,6 +59,25 @@ struct LivingMapView: View {
             }
             .padding(.horizontal, 16)
         }
+        .overlay {
+            if let b = burst {
+                CoinFlight(burst: b, landed: { _ in UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.7) }, done: { burst = nil })
+                    .id(b.id)
+            }
+        }
+        .overlay {
+            // The buying ceremony: the realm's light blooms where it sits on the map.
+            if let r = waking {
+                GeometryReader { g in
+                    let p = scene.screenPoint(r.mapPoint, in: g.size)
+                    Circle().fill(RadialGradient(colors: [.white.opacity(0.9), r.color.opacity(0.7), .clear], center: .center, startRadius: 2, endRadius: 160))
+                        .frame(width: 320, height: 320).scaleEffect(0.4 + wakeGlow * 1.2).opacity(1 - wakeGlow * 0.85)
+                        .position(p).blendMode(.screen)
+                }
+                .ignoresSafeArea().allowsHitTesting(false)
+            }
+        }
+        .onPreferenceChange(EmberTargetKey.self) { p in if let p { coinTarget = p } }
         .overlay {
             // The end of the dive: the realm's light fills the screen, then the realm opens.
             ZStack {
@@ -152,6 +176,16 @@ struct LivingMapView: View {
                 .background(Capsule().fill(.black.opacity(isSelected ? 0.7 : 0.45)))
                 .overlay(Capsule().stroke((isOpen ? r.color : .white).opacity(isSelected ? 0.9 : 0.35), lineWidth: 1))
                 .foregroundStyle(.white.opacity(isOpen ? 1 : 0.75))
+            if !isOpen && ShellModel.builtRealms.contains(r) && r != .veil {       // its price, on the map
+                HStack(spacing: 3) {
+                    Image(systemName: "lock.fill").font(.system(size: 9, weight: .bold))
+                    EmberCoin(size: 12)
+                    Text("\(r.price)").font(.num(11, .heavy))
+                }
+                .padding(.horizontal, 7).padding(.vertical, 2)
+                .background(Capsule().fill(.black.opacity(0.6))).overlay(Capsule().stroke(Theme.gold.opacity(0.6), lineWidth: 1))
+                .foregroundStyle(model.journey.embers >= r.price ? Theme.gold : .white.opacity(0.8))
+            }
             if isNew {
                 Text("Something new").font(.ui(10, .bold))
                     .padding(.horizontal, 7).padding(.vertical, 2)
@@ -206,12 +240,7 @@ struct LivingMapView: View {
             } else if canBuy {
                 // Decision 136: Embers earned by living open the next world (never bought with money).
                 let have = model.journey.embers
-                Button {
-                    if model.journey.buy(r) {
-                        UINotificationFeedbackGenerator().notificationOccurred(.success)
-                        model.newHere.insert(r); model.mapScene.refresh(open: model.open)      // the realm wakes on the map
-                    }
-                } label: { goldLabel("Open it · \(r.price) Embers").opacity(have >= r.price ? 1 : 0.45) }
+                Button { buy(r) } label: { goldLabel("Open it · \(r.price) Embers").opacity(have >= r.price ? 1 : 0.45) }
                 .disabled(have < r.price)
                 Text(have >= r.price ? "You have \(have) Embers, all earned by living." : "You have \(have) of \(r.price) Embers. Every quest, every day kept adds more.")
                     .font(.ui(12)).foregroundStyle(ink.opacity(0.6))
@@ -223,6 +252,27 @@ struct LivingMapView: View {
         .padding(20)
         .background(SheetPaper(corner: 24))
         .padding(.bottom, 24)
+    }
+
+    /// Buying a world: the Embers pour from your counter into the realm, the Hush lifts, its light blooms.
+    private func buy(_ r: RealmID) {
+        let before = model.journey.embers
+        guard model.journey.buy(r) else { return }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        let target = scene.screenPoint(r.mapPoint, in: UIScreen.main.bounds.size)
+        shownEmbers = before
+        withAnimation(.easeOut(duration: 1.0)) { shownEmbers = model.journey.embers }   // the counter drains
+        burst = .init(from: coinTarget, to: target, coins: 10, start: Date())
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(1300))
+            shownEmbers = nil
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            model.newHere.insert(r); model.mapScene.refresh(open: model.open)       // the mist lifts, its beacon lights
+            waking = r; wakeGlow = 0
+            withAnimation(.easeOut(duration: 1.6)) { wakeGlow = 1 }
+            try? await Task.sleep(for: .milliseconds(1700))
+            waking = nil
+        }
     }
 
     private func goldLabel(_ t: String) -> some View {
@@ -242,12 +292,7 @@ struct LivingMapView: View {
             Text("The Emberlands").font(.story(20)).foregroundStyle(.white)
                 .padding(.horizontal, 14).padding(.vertical, 8).background(Capsule().fill(.black.opacity(0.45)))
             Spacer()
-            // Your Embers (decision 136): what living has earned you.
-            HStack(spacing: 5) {
-                Image(systemName: "sparkle").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.gold)
-                Text("\(model.journey.embers)").font(.num(15, .bold))
-            }
-            .foregroundStyle(.white).padding(.horizontal, 12).padding(.vertical, 8).background(Capsule().fill(.black.opacity(0.55)))
+            EmbersBadge(value: shownEmbers ?? model.journey.embers)       // your Embers (decision 141)
         }
         .padding(.top, 4)
     }

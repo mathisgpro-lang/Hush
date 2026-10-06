@@ -1,36 +1,38 @@
 # P2.7 · Living worlds, real money, a fantasy Flame screen (plan, 2026-10-05)
 
-*Source: Mathis: "the aliveness of every world is just not there… small details everywhere which feel alive, like you're in a lively game and not staring at pictures. This is vital." Plus: points that feel like earning money, a map icon, and the Flame screen redesigned like a Witcher inventory. Status: **draft, waiting for approval.***
+*Source: Mathis: "the aliveness of every world is just not there… small details everywhere which feel alive, like you're in a lively game and not staring at pictures. This is vital." Plus: points that feel like earning money, a map icon, and the Flame screen redesigned like a Witcher inventory. Status: **approved (decisions 141–142), building.***
 
-## 1. Why the worlds still feel like pictures
+## 1. Alive = what is already painted breathes (Mathis, 2026-10-05)
 
-What moves today is mostly **effects**: water, waterfalls, swaying leaves, fire, mist, a few fireflies. Games feel alive because of three other things we don't have yet:
-- **Characters with their own lives:** small creatures that perch, hop, fly off, come back, sleep at night. Each one does something different and is never on a loop.
-- **Things that happen:** a fish leaps, a flock crosses, a gust sweeps the trees and leaves fly, a shooting star at night. Small moments every 20–60 seconds, never on a timer you can feel.
-- **A world that answers you:** tap a tree and birds burst out and leaves fall; tap the water and it ripples; tap a creature and it reacts; drag across tall grass and it parts.
+*"It's not so much adding new elements, but making the current ones alive… the books floating with pages turning, the clouds in the back moving, the torches burning and the shades on the ground changing with the fire, the little plants moving in the wind… making things breathe is the core of what we started with the Flame, and it should be like this all throughout the app."*
 
-## 2. The Life system (one engine, every world)
+So the work is not new creatures: it's giving **every painted thing its own life**, as the Flame has.
 
-- **Actors:** small painted creatures and objects, each with a behaviour (perch, wander, fly a path, swim, idle, sleep) and random timings, so nothing ever repeats visibly (decision 93). Animated live: wings flap, bodies hop and squash, heads turn.
-- **Life spots per world:** perches (arches, branches, rooftops), paths (ground, sky lanes), water zones. Defined per world like today's places.
-- **Moving details:** banners and cloth that wave, hanging lanterns that swing, windmill blades, waterwheels, falling leaves and petals, smoke from chimneys, grass waves in the wind. Painted pieces from Codex placed over the painting, or masks the shader already knows how to move.
-- **Events:** a director picks one small moment every 20–60 seconds, weighted by world, time of day and weather.
-- **Touch:** every tap on the world answers with a reaction, a haptic and, later, a sound.
-- **Day and night swap the cast:** butterflies and birds by day; moths, owls and fireflies at night.
-- **Budget:** about 20–30 actors on screen, all cheap flat cards; 60 fps measured on the iPhone 15 after each world.
+## 2. How (one engine, every world)
 
-## 3. What lives where (first pass)
+- **Floating things are cut out** of the painting (books, islands, lanterns), with what's behind them filled in, so they really float: they bob, drift, tilt, and books open and close their pages like wings. They sit in 3D at their own depth, so they move against the background as you look around.
+- **A life map per world** (`<id>-world-life.png`, made by a tool from the painting and its depth, checked by eye): what is foliage, cloth, flame, cloud.
+- **The world shader brings each kind alive:**
+  - plants and vines sway, each with its own rhythm, and gusts travel across them;
+  - banners and cloth wave, more at the bottom than at the top;
+  - clouds drift continuously behind everything;
+  - each flame flickers on its own, and its pool of light on the floor, walls and objects flickers and shifts with it, so the shadows breathe;
+  - water and waterfalls flow (already there), glossy floors shimmer with the light.
+- **Touch** (later in this phase): tapping something makes it answer (a book flutters, a lantern flares, a plant shivers).
+- **Budget:** 60 fps measured on the iPhone 15 for every world.
 
-| World | Creatures | Moving details | Moments | Touch |
-|---|---|---|---|---|
-| **Sanctuary** | seagulls perching on the arches and gliding over the sea, butterflies around the wisteria, small fish in the turquoise water, a moth at night | lanterns swinging, wisteria swaying, spray on the rocks | a fish leaps (splash ring), a flock crosses the sun, a shooting star | tap the sea: ripple and fish dart; tap a gull: it flies off and circles back |
-| **Grove** | lantern moths, a squirrel running a branch, an owl that blinks at night, fireflies | falling leaves, hanging lanterns, ferns | a gust of leaves, a deer at the edge | tap a tree: leaves fall and birds burst out |
-| **Stillwater** | frogs on lily pads, koi under the surface, dragonflies, Ilo the heron | mist drifting, lotus flowers opening | a frog jumps (plop and ripple), koi surface | tap the lake: ripples, koi gather |
-| **Highlands** | mountain goats on the cliffs, an eagle circling, marmots | a windmill turning, prayer flags, grass waves | wind gusts across the slopes | tap a goat: it bleats and hops away |
-| **Library** | books flying like birds, pages fluttering, Quill the paper owl | floating islands bobbing, glowing motes | a stack of books rearranges itself | tap a book: it opens and flaps off |
-| **Wilds** | deer, a fox peeking, butterflies, songbirds | tall grass waves, falling petals | a fox crosses, a butterfly swarm | tap the grass: it parts and butterflies rise |
-| **Forge** | sparks, Orrin the salamander, crows on the chimneys | smoke plumes, glowing furnaces pulsing | a hammer strike flashes the whole forge | tap the furnace: it roars and sparks fly |
-| **World map** | your Spark travelling the road, boats on the sea, flocks over the realms | clouds, smoke, waterfalls, each realm's own life seen from above | a light runs along the road when you complete a quest | tap a realm: it lifts and glows |
+## 3. What breathes where
+
+| World | What comes alive |
+|---|---|
+| **Library** (first, the benchmark) | the dozen floating books (drifting, pages flapping), the floating castles bobbing, clouds drifting, every hanging lantern and the fireplace flickering with light dancing on the glossy floor, vines and wisteria swaying, the blue banners waving, the globe slowly turning, the waterfalls of the islands |
+| **Sanctuary** | braziers and lanterns flickering with moving light pools, wisteria and vines swaying, clouds drifting, the sea and the falls, the rune circle's glow breathing |
+| **Grove** | the lantern trees swaying and flickering, leaves and ferns in the wind, light dappling through the canopy |
+| **Stillwater** | the lotus swaying on the water, mist drifting, reflections rippling, lanterns flickering |
+| **Highlands** | grass and trees in the wind, the windmill turning, flags waving, clouds racing over the peaks |
+| **Wilds** | tall grass waves, trees swaying, light shifting through leaves |
+| **Forge** | furnaces flickering with their glow on the stone, smoke rising, sparks |
+| **World map** | every realm's details breathing from above, clouds and sea, the road's lights |
 
 ## 4. Embers that feel like money
 
@@ -39,7 +41,7 @@ What moves today is mostly **effects**: water, waterfalls, swaying leaves, fire,
 - **A daily gift:** your first open of the day gives a small pouch of Embers, with a little animation (the daily check-in).
 - **Buying a world:** on the map, locked worlds sit in the grey Hush with a price tag. Buying one is a small ceremony: Embers pour out, the mist lifts, the realm lights up, and the camera dives in. Prices allow the first world after about 3–4 days of living.
 - **Never sold for money** (decision 81). Later, the same Embers buy Flame equipment and decorations in the shop.
-- **Beta:** worlds locked again so you can feel the loop (Sanctuary and Grove free), with enough Embers already in the test data to buy one right away. A hidden switch reopens everything.
+- **Beta (Mathis chose):** worlds locked again so you can feel the loop (Sanctuary and Grove free), with enough Embers in the test data to buy one right away. `-allopen` reopens everything.
 
 ## 5. The Flame screen as a fantasy character sheet (Witcher-inventory feel)
 
@@ -55,12 +57,11 @@ What moves today is mostly **effects**: water, waterfalls, swaying leaves, fire,
 
 - World icon (folded map), Flame icon (Spark in a lantern), the Ember coin and pouch.
 - The character-sheet frame, equipment sockets, the wax seal.
-- Creature sheets, each creature in 1–3 pieces on magenta so they can be animated live (body, wings): seagull, butterfly, fish, moth, squirrel, owl, frog, koi, dragonfly, goat, eagle, flying book, deer, fox, crow.
-- Moving pieces: banner, hanging lantern, windmill blades, waterwheel, leaves and petals.
+- Clean plates where cut-outs need what's behind them (only if the tool's fill isn't good enough).
 
 ## 7. Order
 
 1. **Embers on screen and the buying loop.** Code only, so it can start now; it gives the strongest feeling soonest.
-2. **The Life system in the Sanctuary**, to set the bar there first (stand-in sprites until Codex's creatures land).
+2. **The Library breathing** (Mathis's example), as the bar; then the Sanctuary.
 3. **The Flame screen redesign** and the two icons, once Codex's frame and icons arrive.
 4. **Life in every realm, then the map**, one world at a time, each measured at 60 fps on the phone.

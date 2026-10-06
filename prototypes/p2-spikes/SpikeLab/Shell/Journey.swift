@@ -27,6 +27,7 @@ struct DeedOutcome {
     let streakBefore: Int, streakAfter: Int
     let milestone: Int?
     let shieldEarned: Bool
+    var embers = 0              // Embers it earned (they fly into the counter, decision 141)
 }
 
 @MainActor @Observable
@@ -45,6 +46,9 @@ final class Journey {
     private(set) var dayOne: [String: Int] = [:]
     private(set) var meetHour: Int?
     private(set) var promise: Int?
+    private(set) var grants: [String: Int] = [:]     // one-time gifts (the beta's starter purse)
+    /// A one-time gift of Embers (given once per id).
+    func grant(_ amount: Int, id: String) { guard grants[id] == nil else { return }; grants[id] = amount; save() }
     func setUp(dayOne: [String: Int], meetHour: Int?, promise: Int?) {
         if !dayOne.isEmpty { self.dayOne = dayOne }
         if let meetHour { self.meetHour = meetHour }
@@ -52,19 +56,19 @@ final class Journey {
         save()
     }
     private let key = "journey.v1"
-    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil; var dayOne: [String: Int]? = nil; var meetHour: Int? = nil; var promise: Int? = nil }
+    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil; var dayOne: [String: Int]? = nil; var meetHour: Int? = nil; var promise: Int? = nil; var grants: [String: Int]? = nil }
 
     init() {
         if CommandLine.arguments.contains("-freshjourney") { UserDefaults.standard.removeObject(forKey: key) }
         if let d = UserDefaults.standard.data(forKey: key), let s = try? JSONDecoder().decode(Saved.self, from: d) {
             bornOn = s.bornOn; name = s.name; ember = s.ember; pages = s.pages; deeds = s.deeds
-            checkIns = s.checkIns ?? []; bought = Set(s.bought ?? []); dayOne = s.dayOne ?? [:]; meetHour = s.meetHour; promise = s.promise
+            checkIns = s.checkIns ?? []; bought = Set(s.bought ?? []); dayOne = s.dayOne ?? [:]; meetHour = s.meetHour; promise = s.promise; grants = s.grants ?? [:]
         }
         if CommandLine.arguments.contains("-seedjourney") { seedForTesting() }
     }
 
     private func save() {
-        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought), dayOne: dayOne, meetHour: meetHour, promise: promise)
+        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought), dayOne: dayOne, meetHour: meetHour, promise: promise, grants: grants)
         if let d = try? JSONEncoder().encode(s) { UserDefaults.standard.set(d, forKey: key) }
     }
 
@@ -101,6 +105,7 @@ final class Journey {
     @discardableResult
     func did(_ title: String, detail: String, realm: RealmID, minutes: Int = 5, on date: Date = Date()) -> DeedOutcome {
         let before = streak(at: date)
+        let embersBefore = embers
         let pillar = Pillar6.of(realm)
         let attrBefore = attribute(pillar), lvlBefore = Progression.level(xp: totalXP).level
         let gain = Progression.xp(minutes: minutes, streak: before.current)
@@ -113,10 +118,11 @@ final class Journey {
                           : "For \(m) days in a row, you kept your word to yourself. Your Spark burned a little steadier each morning, and the Sanctuary noticed.", on: date)
         }
         defer { save() }
-        let outcome = DeedOutcome(xp: gain, pillar: pillar, attributeBefore: attrBefore, attributeAfter: attribute(pillar),
+        var outcome = DeedOutcome(xp: gain, pillar: pillar, attributeBefore: attrBefore, attributeAfter: attribute(pillar),
                                   levelBefore: lvlBefore, levelAfter: Progression.level(xp: totalXP).level,
                                   streakBefore: before.current, streakAfter: after.current,
                                   milestone: milestone, shieldEarned: after.shields > before.shields)
+        outcome.embers = embers - embersBefore
         let n = dayNumber(of: date)
         let today = deeds.filter { Calendar.current.isDate($0.date, inSameDayAs: date) }
         let lines = today.map { "“\($0.title)”" }
@@ -145,16 +151,18 @@ final class Journey {
     // MARK: Embers (decision 136): earned only by living, they buy the next worlds. Calculated from the record.
 
     /// The daily check-in: the first open of a day counts once.
-    func checkIn(on date: Date = Date()) {
-        guard !checkIns.contains(where: { Calendar.current.isDate($0, inSameDayAs: date) }) else { return }
-        checkIns.append(date); save()
+    @discardableResult func checkIn(on date: Date = Date()) -> Bool {
+        guard !checkIns.contains(where: { Calendar.current.isDate($0, inSameDayAs: date) }) else { return false }
+        checkIns.append(date); save(); return true
     }
-    /// Quests 10 each, every day lived 5 (keeping your streak), each streak milestone reached 25, each check-in 2.
+    static let dailyGift = 5
+    /// Quests 10 each, every day lived 5 (keeping your streak), each streak milestone reached 25, the daily gift 5,
+    /// one-time gifts.
     var embersEarned: Int {
         let days = Set(deeds.map { Calendar.current.startOfDay(for: $0.date) }).count
         let best = streak().best
         let milestones = StreakStatus.milestones.filter { $0 <= best }.count
-        return deeds.count * 10 + days * 5 + milestones * 25 + checkIns.count * 2
+        return deeds.count * 10 + days * 5 + milestones * 25 + checkIns.count * Self.dailyGift + grants.values.reduce(0, +)
     }
     var embers: Int { embersEarned - bought.compactMap { RealmID(rawValue: $0)?.price }.reduce(0, +) }
     func buy(_ r: RealmID) -> Bool {

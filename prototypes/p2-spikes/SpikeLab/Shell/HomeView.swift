@@ -22,6 +22,10 @@ struct HomeView: View {
     @State private var toast: String?
     @State private var dragStartPan: SIMD2<Float>?
     @State private var barTaps: [String: Int] = [:]
+    @State private var coinTarget = CGPoint(x: 320, y: 130)     // where the Embers counter is (coins fly there)
+    @State private var burst: CoinFlight.Burst?
+    @State private var shownEmbers: Int?                       // the counter lags while coins are in the air
+    @State private var burstAmount = 0
     @State private var satchelOpen = false
     @State private var bookOpen = CommandLine.arguments.contains("-book")
     @State private var flameOpen = CommandLine.arguments.contains("-flamesheet")
@@ -94,6 +98,26 @@ struct HomeView: View {
                 if let call = open { card(call, size: geo.size) }
                 if let r = reward { RewardBurst(outcome: r) { withAnimation { reward = nil } }.id(r.xp ^ r.streakAfter << 8 ^ r.attributeAfter << 16) }
                 tourLayer
+                if model.dailyGift > 0 && model.tour == nil && built && open == nil && !(satchelOpen || bookOpen || flameOpen) {
+                    DailyPouch(amount: model.dailyGift) { pt in
+                        let a = model.dailyGift
+                        withAnimation(.easeOut(duration: 0.25)) { model.dailyGift = 0 }
+                        coins(from: pt, amount: a)
+                    }
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                }
+                if let b = burst {
+                    CoinFlight(burst: b, landed: { i in
+                        let per = max(1, b.coins == 0 ? 0 : (burstAmount / b.coins))
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.7)
+                        shownEmbers = min(model.journey.embers, (shownEmbers ?? model.journey.embers) + per)
+                    }, done: {
+                        burst = nil
+                        withAnimation(.spring(response: 0.3)) { shownEmbers = nil }      // exact total
+                        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                    })
+                    .id(b.id)
+                }
                 // Behind full sheets: a soft, dimmed picture of this world; the live 3D pauses until they close.
                 if backdrop > 0 {
                     Image(uiImage: UIImage(named: "backdrop-\(world.rawValue).jpg") ?? UIImage(named: "backdrop-sanctuary.jpg") ?? UIImage())
@@ -108,6 +132,7 @@ struct HomeView: View {
             .simultaneousGesture(lookAround(geo.size), including: satchelOpen || bookOpen || flameOpen || open != nil ? .subviews : .all)
         }
         .onAppear { meter.start(); setUpWorld() }
+        .onPreferenceChange(EmberTargetKey.self) { p in if let p { coinTarget = p } }
         .onReceive(NotificationCenter.default.publisher(for: .perfCommand)) { n in       // (-uitest)
             switch n.object as? String {
             case "satchel": withAnimation(.sheet) { satchelOpen = true }
@@ -248,7 +273,11 @@ struct HomeView: View {
                     .font(.ui(12, .semibold)).foregroundStyle(world.color)
                     .padding(.horizontal, 10).padding(.vertical, 3).background(Capsule().fill(.black.opacity(0.45)))
             }
-            StreakBar(journey: model.journey).padding(.top, 2)          // the streak at the core (decision 134)
+            HStack(spacing: 8) {
+                StreakBar(journey: model.journey)                        // the streak at the core (decision 134)
+                EmbersBadge(value: shownEmbers ?? model.journey.embers)  // your Embers, always in sight (decision 141)
+            }
+            .padding(.top, 2)
             Text(streakLine(model.journey, light: model.light))
                 .font(.ui(13)).foregroundStyle(.white.opacity(0.9))
                 .shadow(color: .black.opacity(0.5), radius: 4)
@@ -426,6 +455,7 @@ struct HomeView: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         let outcome = withAnimation(.sheet) { model.complete(call.id) }
         strand = (from, Date())
+        if let e = outcome?.embers, e > 0 { coins(from: from, amount: e) }      // the Embers burst out and fly up
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(900))
             strand = nil
@@ -434,6 +464,14 @@ struct HomeView: View {
             if call.realm == world { realmScene?.act() }        // done here, for this realm: its next lights relight
             director?.actionCompleted(call.realm == .grove ? .heart : call.realm == .library ? .mind : call.realm == .highlands ? .body : .spirit)
         }
+    }
+
+    /// Coins burst from a point and fly into the counter, which counts up as each one lands.
+    private func coins(from: CGPoint, amount: Int) {
+        let n = min(10, max(3, amount / 2))
+        burstAmount = amount
+        shownEmbers = model.journey.embers - amount
+        burst = .init(from: from, to: coinTarget, coins: n, start: Date())
     }
 
     private func flash(_ s: String) {

@@ -266,11 +266,41 @@ void groveRestore(realitykit::surface_parameters params)
     float gust = 0.5 + 0.5 * sin(uv.x * 7.0 - t * 1.4);
     float sw = sin(t * 1.7 + uv.y * 14.0 + uv.x * 6.0) * 0.6 + sin(t * 3.1 + uv.y * 31.0) * 0.4;
     float2 breeze = float2(sw * 0.0022 * green * (0.3 + uv.y) * (0.35 + wind * 1.3 * gust), sw * 0.0006 * green) * (newRealm ? 1.0 : 0.0);
+    // The painting breathes (decision 142): the life map (normal texture; clearcoat_roughness_scale = 1 when the
+    // realm has one) says what is foliage (R) and cloth (G). Each plant sways in its own rhythm and gusts roll
+    // across them; banners ripple; clouds drift behind everything.
+    bool hasLife = params.material_constants().clearcoat_roughness_scale() > 0.5;
+    float foliage = 0.0, cloth = 0.0;
+    if (hasLife) {
+        half4 lifeM = params.textures().normal().sample(s, tuv);
+        foliage = float(lifeM.r); cloth = float(lifeM.g);
+        float ph = s2noise(uv * 9.0) * 6.2831853;                                   // each plant its own rhythm
+        float roll = 0.5 + 0.5 * sin(uv.x * 5.0 - t * 1.1 + sin(uv.y * 3.0 + t * 0.35) * 1.5);   // a gust rolling across
+        float bend = sin(t * 1.5 + ph + uv.y * 10.0) * 0.6 + sin(t * 2.7 + ph * 1.7) * 0.4;
+        breeze = float2(bend * 0.0024 * (0.35 + roll * 1.1 + wind), cos(t * 1.2 + ph) * 0.0007) * foliage;
+        float wave = sin(uv.y * 55.0 - t * 2.6 + uv.x * 8.0) * 0.6 + sin(uv.y * 23.0 - t * 1.7) * 0.4;
+        breeze += float2(wave * 0.0016 * (0.6 + roll * 0.8), 0.0) * cloth;
+        sway = float2(0.0);
+        green = 0.0;
+    }
     half4 col = params.textures().base_color().sample(s, tuv + ripple * (1.0 - paleW) + sway + flow + breeze + cloud);
+    if (hasLife && skyM > 0.01) {
+        // Clouds drift without end: two readings sliding the same way, crossfaded (no jump, no visible loop).
+        float2 dir = float2(0.012, 0.0015);
+        float p1 = fract(t * 0.012), p2 = fract(t * 0.012 + 0.5);
+        half4 cA = params.textures().base_color().sample(s, tuv - dir * p1 + cloud);
+        half4 cB = params.textures().base_color().sample(s, tuv - dir * p2 + cloud);
+        float wA = 1.0 - abs(p1 * 2.0 - 1.0);
+        col = mix(col, cA * half(wA) + cB * half(1.0 - wA), half(skyM));
+    }
     float3 rgb = float3(col.rgb);
     float3 rgbRaw = rgb;                              // (its lanterns keep their own fire, whatever the hour)
     float hourK0 = params.material_constants().clearcoat_scale();
-    if (newRealm && hourK0 > 0.0) rgb = s2look(params.textures().emissive_color(), rgb, skyM, s2moods(hourK0 * 24.0));
+    if (newRealm && hourK0 > 0.0) {
+        rgb = s2look(params.textures().emissive_color(), rgb, skyM, s2moods(hourK0 * 24.0));
+        float rawY = dot(rgbRaw, float3(0.299, 0.587, 0.114));                 // bright warm glows keep their gold
+        rgb = mix(rgb, rgbRaw, smoothstep(0.5, 0.85, rawY) * saturate((rgbRaw.r - rgbRaw.b) * 2.5) * 0.7);
+    }
     // Waterfalls: bright streaks racing down, glints on still water.
     float colI = floor(uv.x * 260.0);
     float streak = fract(uv.y * 18.0 + t * (1.6 + fract(sin(colI * 12.9) * 43758.5) * 0.8));
@@ -286,6 +316,13 @@ void groveRestore(realitykit::surface_parameters params)
     float lit = step(0.001, order) * smoothstep(order - 0.004, order, r);
     float lum = dot(rgb, float3(0.299, 0.587, 0.114));
     float flicker = 0.92 + 0.08 * sin(t * 9.0 + order * 300.0) * sin(t * 3.7 + order * 91.0);
+    if (hasLife) {
+        // Every flame alive on its own: an uneven flicker, and its pool of light swaying with it, so the light and
+        // the shadows on the floor, walls and books breathe with the fire.
+        flicker = 0.78 + 0.22 * s2noise(float2(t * 5.5 + order * 53.0, order * 17.0)) + 0.05 * sin(t * 19.0 + order * 80.0);
+        float2 jit = float2(sin(t * 6.1 + order * 41.0), cos(t * 4.7 + order * 23.0)) * 0.003;
+        pool = float(params.textures().custom().sample(s, tuv + jit).b);
+    }
     float flare = (1.0 - smoothstep(0.0, 0.006, abs(order - c.z))) * exp(-c.w * 2.5);
 
     // The Grove is always vivid (Mathis: never grey); while it sleeps, it is only a little dimmer and cooler, and
@@ -301,6 +338,12 @@ void groveRestore(realitykit::surface_parameters params)
     float3 shining = rgbRaw * flicker * 1.12 + float3(1.0, 0.8, 0.45) * flare * 1.4;
     graded = mix(graded, mix(dark, shining, lit), core);
     graded += float3(1.0, 0.7, 0.35) * pool * lit * 0.06 * flicker + float3(1.0, 0.75, 0.4) * pool * flare * 0.35;
+    if (hasLife) {
+        // The painted light around every flame (lit or not yet) rises and falls with it: shadows deepen and lift.
+        float breathe = (flicker - 0.9) * (0.55 + 0.45 * lit);
+        graded *= 1.0 + pool * breathe * 0.9;
+        graded += float3(1.0, 0.62, 0.3) * core * max(0.0, flicker - 0.85) * 0.5 * (0.4 + 0.6 * lit);
+    }
     float m0 = 0.0;
 
     // Mist: thick when Hushed, lifting with restoration; vitality thickens or thins it day to day.
@@ -512,6 +555,17 @@ void stoneLive(realitykit::surface_parameters params)
     float gust = 0.5 + 0.5 * sin(uv.x * 7.0 - t * 1.4);
     float sw = sin(t * 1.7 + uv.y * 14.0 + uv.x * 6.0) * 0.6 + sin(t * 3.1 + uv.y * 31.0) * 0.4;
     float2 sway = float2(sw * 0.0022 * green * (0.3 + uv.y) * (0.35 + wind * 1.3 * gust), sw * 0.0006 * green);
+    {
+        // Each plant in its own rhythm, gusts rolling across, and the wisteria blossoms moving too (decision 142).
+        float3 b = float3(base0.rgb);
+        float mx = max(b.r, max(b.g, b.b)), mn = min(b.r, min(b.g, b.b));
+        float lilac = smoothstep(0.08, 0.2, b.b - b.g) * smoothstep(0.05, 0.15, b.r - b.g) * smoothstep(0.3, 0.5, mx) * step(0.12, mx - mn);
+        float plant = saturate(green + lilac) * (1.0 - skyM) * (1.0 - water);
+        float ph = s2noise(uv * 9.0) * 6.2831853;
+        float roll = 0.5 + 0.5 * sin(uv.x * 5.0 - t * 1.1 + sin(uv.y * 3.0 + t * 0.35) * 1.5);
+        float bend = sin(t * 1.5 + ph + uv.y * 10.0) * 0.6 + sin(t * 2.7 + ph * 1.7) * 0.4;
+        sway = float2(bend * 0.0022 * (0.35 + roll * 1.1 + wind), cos(t * 1.2 + ph) * 0.0006) * plant;
+    }
     half4 col = params.textures().base_color().sample(s, tuv + ripple + flow + sway + cloud);
     float3 rgb = float3(col.rgb);
 
@@ -526,6 +580,10 @@ void stoneLive(realitykit::surface_parameters params)
         float3 raw = rgb;
         rgb = s2look(params.textures().emissive_color(), rgb, skyM, s2moods(hour));
         rgb = mix(rgb, raw, saturate(fire * 1.5) * (0.3 + 0.7 * s2night(hour)));
+        // Bright warm glows (the rune circle, sunlit gold) keep their painted gold at every hour.
+        float rawY = dot(raw, float3(0.299, 0.587, 0.114));
+        float glowK = smoothstep(0.5, 0.85, rawY) * saturate((raw.r - raw.b) * 2.5);
+        rgb = mix(rgb, raw, glowK * 0.7 * (1.0 - s2night(hour) * 0.6));
     }
     float night = 1.0 - smoothstep(5.0, 7.0, hour) + smoothstep(20.5, 22.5, hour);
     night = saturate(night);
@@ -573,7 +631,7 @@ void stoneLive(realitykit::surface_parameters params)
         float mx = max(rgb.r, max(rgb.g, rgb.b)), mn = min(rgb.r, min(rgb.g, rgb.b));
         float satv = (mx - mn) / max(mx, 0.001);
         float misty = (1.0 - smoothstep(0.08, 0.3, satv)) * smoothstep(0.45, 0.85, mx) * (1.0 - fall);
-        float amount = (day + morning * 0.7 + dusk * 0.25) * misty * 0.38;
+        float amount = (day * 0.4 + morning * 0.3 + dusk * 0.25) * misty * 0.38;   // (the looks of the hour do most of it now)
         float3 A = float3(0.92, 0.9, 0.93);
         float tr = 1.0 - amount;
         rgb = max((rgb - A * amount) / tr, 0.0);

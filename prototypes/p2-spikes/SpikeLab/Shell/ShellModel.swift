@@ -144,6 +144,8 @@ final class ShellModel {
         for r in Self.builtRealms where Self.beta || CommandLine.arguments.contains("-allopen") || journey.bought.contains(r.rawValue) { s.insert(r) }
         return s
     }
+    /// A daily pouch waiting to be collected on home (its Embers are already counted; collecting makes them fly).
+    var dailyGift = 0
     var newHere: Set<RealmID> = [.grove]              // the glow + badge: "something new waits here"
     var flameAt: RealmID = .sanctuary
     var calls: [Call] = []
@@ -161,8 +163,8 @@ final class ShellModel {
     }
     var grove: RealmScene { realmScene(.grove) }
     /// Realms that have their painted world in the app (the others only exist on the map for now).
-    /// The beta build: every world is open (Mathis, 2026-10-05). Off after the beta: Embers buy them.
-    static let beta = !CommandLine.arguments.contains("-nobeta")
+    /// Every world open (test only: -allopen). Otherwise Embers buy them (decision 141).
+    static let beta = CommandLine.arguments.contains("-allopen")
     static let builtRealms: Set<RealmID> = {
         let all: [RealmID] = [.grove, .stillwater, .highlands, .library, .wilds, .forge]
         var s: Set<RealmID> = [.grove]
@@ -313,7 +315,8 @@ final class ShellModel {
         for e in Set(Friend.samples.map(\.ember)) { SparkTint.warmUp(ember: e) }      // friends' Sparks, ready too
         if let i = CommandLine.arguments.firstIndex(of: "-ember"), i + 1 < CommandLine.arguments.count { setEmber(CommandLine.arguments[i + 1]) }   // (test)
         makeCalls()
-        journey.checkIn()                                 // the daily check-in (Embers, decision 136)
+        if journey.checkIn() && journey.bornOn != nil { dailyGift = Journey.dailyGift }   // the daily pouch (decision 141)
+        journey.grant(200, id: "beta-purse")              // the test's starter purse: enough to buy a world right away
         if CommandLine.arguments.contains("-quests") { for id in ["a", "c", "d"] { toggleChosen(id) } }   // (test: three taken)
     }
 

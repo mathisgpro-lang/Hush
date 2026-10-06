@@ -37,6 +37,9 @@ final class RealmScene {
     @ObservationIgnored let life = SanctuaryLife()
     @ObservationIgnored private var painting: ModelEntity?
     @ObservationIgnored private var flies: Entity?
+    /// Things that float in the sky, cut out of the painting (tools/build_life.py): books drift and flap their pages,
+    /// islands bob, each in its own rhythm (decision 142).
+    @ObservationIgnored private var floaters: [(e: Entity, base: SIMD3<Float>, phase: Float, book: Bool, scale: Float)] = []
     @ObservationIgnored private var strand: ModelEntity?
     @ObservationIgnored private var lanterns: [(pos: SIMD3<Float>, order: Float)] = []
     @ObservationIgnored private var depthMap: (w: Int, h: Int, px: [UInt8])?
@@ -167,10 +170,34 @@ final class RealmScene {
             m.custom.texture = .init(lanternTex)
             m.custom.value = [0, 1, -1, 10]
             m.metallic = .init(floatLiteral: hasWater ? 1 : 0)      // 1 = the water mask is in the lights map's alpha
+            // Its life map (what breathes: foliage, cloth), when the tool has made one.
+            if UIImage(named: "\(id)-world-life.png") != nil,
+               let life = try? await TextureResource(named: "\(id)-world-life.png", options: .init(semantic: .raw)) {
+                m.normal = .init(texture: .init(life))
+                m.clearcoatRoughness = .init(floatLiteral: 1)
+            }
             material = m
         }
         let p = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
         root.addChild(p); painting = p
+
+        // The floaters, each at its own depth a little in front of the painting (so they move against it).
+        if let url = Bundle.main.url(forResource: "\(id)-floaters", withExtension: "json"), let data = try? Data(contentsOf: url),
+           let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+            for (k, f) in list.enumerated() {
+                guard let file = f["file"] as? String, let tex = try? await TextureResource(named: "\(file).png"),
+                      let u = f["u"] as? Double, let v = f["v"] as? Double, let fw = f["w"] as? Double, let fh = f["h"] as? Double else { continue }
+                let extra = 0.03 + Float(k % 4) * 0.012
+                let pos = point(Float(u), Float(v), nearer: extra)
+                let ratio = -pos.z / Self.distance                          // keeps its painted size from the rest view
+                var mat = UnlitMaterial(); mat.color = .init(tint: .white, texture: .init(tex))
+                mat.blending = .transparent(opacity: .init(floatLiteral: 1)); mat.writesDepth = false
+                let e = ModelEntity(mesh: .generatePlane(width: Float(fw) * w * ratio, height: Float(fh) * h * ratio), materials: [mat])
+                e.position = pos
+                root.addChild(e)
+                floaters.append((e, pos, Float(k) * 1.37, (f["kind"] as? String ?? "book") == "book", 1))
+            }
+        }
 
         // Lantern positions (in front of the relief by a hair) and their relight order, from tools' detection.
         if let url = Bundle.main.url(forResource: "\(id)-lights", withExtension: "json") ?? Bundle.main.url(forResource: "\(id)-lanterns", withExtension: "json"),
@@ -268,6 +295,16 @@ final class RealmScene {
     }
 
     func update(dt: Float) {
+        for f in floaters {             // drift, bob, tilt; books open and close their pages like wings
+            let t = time + f.phase
+            f.e.position = f.base + SIMD3(sin(t * 0.31) * 0.004, sin(t * 0.73) * 0.005 + sin(t * 0.21) * 0.002, 0)
+            let tilt = sin(t * 0.52) * 0.09 + sin(t * 1.3) * 0.02
+            f.e.orientation = simd_quatf(angle: tilt, axis: [0, 0, 1])
+            if f.book {
+                let flap = pow(0.5 + 0.5 * sin(t * 2.1), 3) * (0.5 + 0.5 * max(0, sin(t * 0.37)))   // bursts of flapping
+                f.e.scale = [1 - flap * 0.35, 1 + flap * 0.04, 1]
+            }
+        }
         time += dt
         let chest = heroFeet + SIMD3(hero.standingX * heroScale, 0.13 * heroScale, 0.005)
         if let watch = life.update(dt: dt, flameAt: chest) { hero.look(at: watch) }
