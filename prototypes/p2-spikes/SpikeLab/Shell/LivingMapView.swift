@@ -102,7 +102,7 @@ struct LivingMapView: View {
                     ZStack {
                         ForEach(roadOrder) { r in
                             let p = scene.screenPoint(r.mapPoint, in: full)
-                            marker(r).position(inside(p, full)).opacity(p.y < 170 ? max(0, Double(p.y - 120) / 50) : 1)   // fades under the header
+                            marker(r).position(inside(p, full)).opacity(p.y < 150 ? max(0, Double(p.y - 115) / 35) : 1)   // fades only right under the header
                         }
                     }
                     .frame(width: full.width, height: full.height)
@@ -125,14 +125,13 @@ struct LivingMapView: View {
                 guard !diving else { return }
                 if dragStart == nil { dragStart = scene.pan; scene.fingerDown = true }
                 let raw = (dragStart ?? .zero) + SIMD2(-Float(v.translation.width), Float(v.translation.height)) / ppm(size)
-                let lim = scene.panLimit(zoom: scene.zoom)
-                scene.panTarget = SIMD2(EdgeSafety.rubberBand(raw.x, lim.x), EdgeSafety.rubberBand(raw.y, lim.y))
+                let r = scene.panRange(zoom: scene.zoom)
+                scene.panTarget = SIMD2(band(raw.x, r.lo.x, r.hi.x), band(raw.y, r.lo.y, r.hi.y))
             }
             .onEnded { v in
                 guard !diving else { return }
                 let projected = (dragStart ?? .zero) + SIMD2(-Float(v.predictedEndTranslation.width), Float(v.predictedEndTranslation.height)) / ppm(size)
-                let lim = scene.panLimit(zoom: scene.zoom)
-                scene.panTarget = simd_clamp(projected, -lim, lim)
+                scene.panTarget = scene.clampPan(projected, zoom: scene.zoom)
                 dragStart = nil; scene.fingerDown = false
             }
     }
@@ -146,11 +145,13 @@ struct LivingMapView: View {
             }
             .onEnded { _ in
                 scene.zoomTarget = max(1, min(2.2, scene.zoomTarget))         // settles back inside the limits
-                let lim = scene.panLimit(zoom: scene.zoomTarget)
-                scene.panTarget = simd_clamp(scene.panTarget, -lim, lim)
+                scene.panTarget = scene.clampPan(scene.panTarget, zoom: scene.zoomTarget)
                 pinchStart = nil
             }
     }
+
+    /// A soft edge between two limits (the map's top and bottom are not the same distance away).
+    private func band(_ v: Float, _ lo: Float, _ hi: Float) -> Float { let c = (lo + hi) / 2; return c + EdgeSafety.rubberBand(v - c, (hi - lo) / 2) }
 
     private func rubber(_ x: Float, _ lim: Float) -> Float {
         let over = abs(x) - lim

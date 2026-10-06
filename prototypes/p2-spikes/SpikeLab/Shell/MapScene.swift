@@ -92,6 +92,20 @@ final class MapScene {
     /// How far you may move from the center at a zoom: no edge of the map can ever come into view (EdgeSafety:
     /// each edge's nearness from the relief, the zoom bringing the camera closer, the rubber band and breathing).
     private var edgeDist: (l: Float, r: Float, b: Float, t: Float) = (1.2, 1.2, 1.2, 1.2)
+    /// Where the camera may go: sideways as panLimit, but upward far enough that the highest world (the Forge) can
+    /// sit comfortably below the header (Mathis: "I can hardly scroll up to the upper worlds"). Past the painting's
+    /// top a cloud bank and the soft backdrop show, never an edge.
+    func panRange(zoom z: Float) -> (lo: SIMD2<Float>, hi: SIMD2<Float>) {
+        let lim = panLimit(zoom: z)
+        let visH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180) / max(0.5, z)
+        let f = uv(RealmID.forge.mapPoint)
+        let top = spot(f.x, f.y).y - visH * 0.24                        // the Forge about a quarter down the screen
+        return ([-lim.x, -lim.y], [lim.x, max(lim.y, top)])
+    }
+    func clampPan(_ p: SIMD2<Float>, zoom z: Float, slack: Float = 0) -> SIMD2<Float> {
+        let r = panRange(zoom: z)
+        return simd_clamp(p, r.lo - slack, r.hi + slack)
+    }
     func panLimit(zoom z: Float) -> SIMD2<Float> {
         var lim = EdgeSafety.limit(planeW: planeW, planeH: planeH, restDistance: Self.distance, edges: edgeDist,
                                    camForward: Self.distance - Self.distance / max(0.5, z), fov: Self.fov, aspect: screenAspect,
@@ -323,6 +337,17 @@ final class MapScene {
             tiltSensor.startDeviceMotionUpdates()
         }
 
+        // Beyond the painting's top: a bank of warm clouds, so scrolling up to the highest worlds never finds an edge.
+        for k in 0..<14 {
+            let z = -Self.distance + 0.05 + Float(k % 3) * 0.02, kz = -z / Self.distance
+            let size = Float.random(in: 0.2...0.3, using: &rng) * kz
+            let x = (Float(k) / 13 - 0.5) * planeW * 1.1 * kz
+            let y = (planeH / 2 + Float.random(in: 0.0...0.05, using: &rng)) * kz
+            let e = card(cloudTex, [size, size * 0.6], tint: UIColor(red: 1, green: 0.93, blue: 0.9, alpha: 1))
+            e.position = [x, y, z]
+            root.addChild(e); borderClouds.append((e, Float(k) * 2.3, [x, y, z]))
+        }
+
         // The Hush: soft grey mist resting over the realms not opened yet (nothing destroyed, only quiet).
         // Every realm gets its mist and its beacon; which one shows follows what's open (updated on each visit).
         for r in roadOrder where r != .sanctuary {
@@ -380,7 +405,7 @@ final class MapScene {
     /// The pan that centers a realm (clamped to the map).
     func centerPan(on p: CGPoint, zoom z: Float) -> SIMD2<Float> {
         let s = spot(uv(p).x, uv(p).y)
-        return simd_clamp(SIMD2(s.x, s.y), -panLimit(zoom: z), panLimit(zoom: z))
+        return clampPan(SIMD2(s.x, s.y), zoom: z)
     }
     func startPan(for r: RealmID) -> SIMD2<Float> { centerPan(on: r.mapPoint, zoom: 1) }
 
@@ -410,7 +435,8 @@ final class MapScene {
             let d = CommandLine.arguments[i + 1]
             panTarget = [d == "left" ? -9 : d == "right" ? 9 : panTarget.x, d == "up" ? 9 : d == "down" ? -9 : panTarget.y]
         }
-        let pt = simd_clamp(panTarget, -lim - EdgeSafety.rubber, lim + EdgeSafety.rubber)
+        _ = lim
+        let pt = clampPan(panTarget, zoom: zoom, slack: EdgeSafety.rubber)
         if fingerDown {                       // 1:1 under the finger (no lag); its speed carries into the glide
             let v = (pt - pan) / max(dt, 0.001); panVel = panVel * 0.5 + v * 0.5; pan = pt
         } else {
@@ -432,7 +458,7 @@ final class MapScene {
             camXY = diveFrom + (diveTo - diveFrom) * min(1, ease * 1.4)
             camZ = camZ + ease * (Self.distance - 0.12 - camZ)                // down to just above the realm
             let effectiveZoom = Self.distance / max(0.05, Self.distance - camZ)
-            camXY = simd_clamp(camXY, -panLimit(zoom: effectiveZoom), panLimit(zoom: effectiveZoom))
+            camXY = clampPan(camXY, zoom: effectiveZoom)
         }
         let breathe = SIMD3<Float>(sin(time * 0.21) * 0.004, sin(time * 0.17) * 0.003, 0)
         let pos = SIMD3<Float>(camXY.x, camXY.y, -camZ) + breathe        // closer = toward the map (−z)
