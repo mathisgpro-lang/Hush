@@ -86,9 +86,15 @@ hsv = np.asarray(s.convert("HSV")).astype(float) / 255
 h_, sat, val = hsv[..., 0], hsv[..., 1], hsv[..., 2]
 sky2 = np.asarray(Image.fromarray(sky.astype(np.uint8) * 255).resize(s.size, Image.NEAREST)) > 0
 water2 = np.asarray(Image.fromarray(water.astype(np.uint8) * 255).resize(s.size, Image.NEAREST)) > 0
-green = (h_ > 0.13) & (h_ < 0.45) & (sat > 0.25) & (val > 0.12)
+rgb2 = np.asarray(s).astype(float)
+green = (h_ > 0.16) & (h_ < 0.45) & (sat > 0.25) & (val > 0.12) & (rgb2[..., 1] > rgb2[..., 0] * 0.97)   # real greens, not gold
 flowers = (h_ > 0.68) & (h_ < 0.92) & (sat > 0.18) & (val > 0.35)            # wisteria, lilac blossoms
-foliage = (green | flowers) & ~sky2 & ~water2
+if hints.get("grass"):                                                     # golden grass and autumn leaves
+    green |= (h_ > 0.09) & (h_ <= 0.16) & (sat > 0.3) & (val > 0.2) & (rgb2[..., 1] > rgb2[..., 0] * 0.8)
+if not hints.get("flowers"): flowers = np.zeros_like(flowers)        # only worlds that have blossoms (wisteria, lotus)
+depth2 = np.asarray(Image.open(f"{A}/{rid}-world-depth.png").convert("L").resize(s.size, Image.BILINEAR)).astype(float) / 255
+near = depth2 > np.percentile(depth2, 35)                                  # far hills and mountains stay still
+foliage = (green | flowers) & ~sky2 & ~water2 & near
 foliage = nd.binary_opening(foliage, iterations=1)
 blue = (h_ > 0.55) & (h_ < 0.7) & (sat > 0.35) & (val > 0.18) & (val < 0.75)
 red = ((h_ < 0.02) | (h_ > 0.95)) & (sat > 0.5) & (val > 0.25) & (val < 0.8)
