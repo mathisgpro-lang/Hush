@@ -33,6 +33,7 @@ final class MapScene {
     private var borderClouds: [(e: Entity, phase: Float, base: SIMD3<Float>)] = []
     private var pathLights: [(e: Entity, phase: Float)] = []
     private var shadows: [(e: Entity, speed: Float, span: Float)] = []
+    private var floaters: [(e: Entity, base: SIMD3<Float>, phase: Float, book: Bool)] = []
     private var nearClouds: [(e: Entity, base: SIMD3<Float>, phase: Float, depth: Float)] = []
     private var circlers: [(e: Entity, center: SIMD3<Float>, radius: Float, speed: Float, phase: Float)] = []
     /// The living parallax: the camera orbits a little around what you look at (leaning as you drag, following the
@@ -148,6 +149,7 @@ final class MapScene {
             m.custom.texture = .init(motion)
             m.custom.value = [1, 0.5, 0.5, 0]                        // full vitality, no Flame light on the map
             m.specular = .init(floatLiteral: -5)                     // no sun rays (the sun is beyond the map's top)
+            m.clearcoatRoughness = .init(floatLiteral: 1)            // its sea of clouds drifts (stoneLive)
             m.clearcoat = .init(floatLiteral: 0.4615 / (Self.mapPixels.x / Self.mapPixels.y))
             material = m
         }
@@ -230,6 +232,24 @@ final class MapScene {
                     e.position = start + off
                     root.addChild(e); birds.append((e, Float(b) * 1.3 + Float(f), start + off, vel, span))
                 }
+            }
+        }
+
+        // The islands and books floating around the Library, cut out of the map (tools/map_floaters.py): they bob,
+        // tilt and flap, each in its own rhythm, just in front of the painting.
+        if let url = Bundle.main.url(forResource: "map-floaters", withExtension: "json"), let data = try? Data(contentsOf: url),
+           let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+            for (k, f) in list.enumerated() {
+                guard let file = f["file"] as? String, let tex = try? await TextureResource(named: "\(file).png"),
+                      let u = f["u"] as? Double, let v = f["v"] as? Double, let fw = f["w"] as? Double, let fh = f["h"] as? Double else { continue }
+                let pos = spot(Float(u), Float(v), lift: 0.012 + Float(k % 3) * 0.006)
+                let ratio = -pos.z / Self.distance
+                var mat = UnlitMaterial(); mat.color = .init(tint: .white, texture: .init(tex))
+                mat.blending = .transparent(opacity: .init(floatLiteral: 1)); mat.writesDepth = false
+                let e = ModelEntity(mesh: .generatePlane(width: Float(fw) * planeW * ratio, height: Float(fh) * planeH * ratio), materials: [mat])
+                e.position = pos
+                root.addChild(e)
+                floaters.append((e, pos, Float(k) * 1.61, (f["kind"] as? String) == "book"))
             }
         }
 
@@ -466,6 +486,12 @@ final class MapScene {
             birds[i].e.position = b + SIMD3(0, 0.004 * sin(time * 0.8 + ph), 0)
             let flap = 0.55 + 0.45 * abs(sin(time * 7 + ph)) * (0.5 + 0.5 * max(0, sin(time * 0.6 + ph)))
             birds[i].e.scale = [birds[i].vel.x < 0 ? -1 : 1, flap, 1]
+        }
+        for f in floaters {            // floating islands and books: bob, tilt, books flap
+            let t = time + f.phase
+            f.e.position = f.base + SIMD3(sin(t * 0.27) * 0.0016, sin(t * 0.6) * 0.0022 + sin(t * 0.19) * 0.001, 0)
+            f.e.orientation = simd_quatf(angle: sin(t * 0.45) * 0.05, axis: [0, 0, 1])
+            if f.book { let flap = pow(0.5 + 0.5 * sin(t * 2.3), 3); f.e.scale = [1 - flap * 0.35, 1, 1] }
         }
         for c in nearClouds {          // near clouds drift slowly and breathe
             c.e.position = c.base + SIMD3(sin(time * 0.07 + c.phase) * 0.02 * c.depth, sin(time * 0.05 + c.phase) * 0.008, 0)

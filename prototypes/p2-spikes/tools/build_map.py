@@ -42,6 +42,11 @@ for i, o in enumerate(nd.find_objects(fl)):       # lanterns and the forge's fir
     keepf[i + 1] = sizes[i] <= 60 and max(hh, ww) <= 2.0 * min(hh, ww) + 2
 fire = keepf[fl]
 sky = (Y < 0.16) & (d < 0.03) & (L > 0.35)
+# The sea of clouds around the floating Library drifts too (pale, soft, unsaturated, in the upper half).
+softc = nd.uniform_filter(np.abs(nd.sobel(L, axis=1)) + np.abs(nd.sobel(L, axis=0)), 7) < 0.12
+cloudsea = (Y < 0.45) & (s < 0.32) & (v > 0.62) & softc & ~water
+cloudsea = nd.binary_opening(cloudsea, iterations=2)
+sky |= cloudsea
 
 def soft(m, grow, blur):
     im = Image.fromarray((m * 255).astype(np.uint8))

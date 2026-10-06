@@ -567,6 +567,15 @@ void stoneLive(realitykit::surface_parameters params)
         sway = float2(bend * 0.0022 * (0.35 + roll * 1.1 + wind), cos(t * 1.2 + ph) * 0.0006) * plant;
     }
     half4 col = params.textures().base_color().sample(s, tuv + ripple + flow + sway + cloud);
+    if (params.material_constants().clearcoat_roughness_scale() > 0.5 && skyM > 0.01) {
+        // (The map) its sea of clouds drifts without end: two readings sliding, crossfaded (decision 142).
+        float2 dir = float2(0.01, 0.0012);
+        float p1 = fract(t * 0.01), p2 = fract(t * 0.01 + 0.5);
+        half4 cA = params.textures().base_color().sample(s, tuv - dir * p1 + cloud);
+        half4 cB = params.textures().base_color().sample(s, tuv - dir * p2 + cloud);
+        float wA = 1.0 - abs(p1 * 2.0 - 1.0);
+        col = mix(col, cA * half(wA) + cB * half(1.0 - wA), half(skyM));
+    }
     float3 rgb = float3(col.rgb);
 
     // ---- Time of day (metallic_scale = hour / 24): night, morning, day, dusk (the painting is dusk). ----
