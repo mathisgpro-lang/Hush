@@ -78,7 +78,18 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-05, decisions 134–139)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-06, decisions 134–143)
+
+**Current work: P2.7, living worlds, Embers as money, the fantasy Flame screen** (`docs/plan-2.0/p27-living-worlds.md`, decisions 141–143). The corrections list (p26) is done; the intro is rebuilt (decision 140).
+- ✅ Embers: counter in every top bar, coins fly from quests, daily pouch, test purse (200), worlds locked with prices and a buying ceremony on the map (`-allopen` reopens).
+- ✅ Breathing (first pass): `tools/build_life.py <id>` (life map: foliage, cloth; floaters cut out in worlds with `"auto": true` in `tools/life/<id>.json`); realm shader sways plants with rolling gusts, ripples banners, drifts clouds, flickers every flame with its light pool; Library books float and flap; Sanctuary plants and wisteria have their own rhythms. Forge built (`tools/realms.sh`).
+- ✅ Your Flame = character sheet (Codex frame, hearth, sockets, wax seal, ribbon tabs, pillar medallions); World icon = folded map, Your Flame = lantern; painted coin.
+- **Next:** Mathis's verdict on the phone (aliveness above all). Then: more breathing per world (hanging lanterns swinging, the Library globe turning, windmill blades on the Highlands from `docs/design/p27/det-windmill.png`, falling leaves from `det-leaves.png`, the Grove's own life map), touch reactions, the Spark's real animation from `docs/design/p26/spark-body.png` + `spark-face-sheet.png` (P2.6 step 5), the Keepers in their realms (`docs/design/p26/keeper-*.png`). Later only when Mathis says: the Finch study and the shop.
+- Test flags: `-skipintro`, `-freshjourney`, `-introstep <beat>`, `-seedjourney`, `-allopen`, `-realm <id>`, `-map`, `-flamesheet`, `-friend`, `-hour N`, `-perf`.
+
+---
+
+## (older) Where we left off: RESUME HERE (updated 2026-10-05, decisions 134–139)
 
 **Current work: Mathis's corrections list** (`docs/plan-2.0/p26-corrections.md`): items 1–11 ✅ done (2026-10-05). Only the *later* items remain (12 Finch retention/payment study, 13 the shop), not to start before Mathis says so.
 - **Mathis to try on the iPhone** (installed 2026-10-05): the new intro (`-freshjourney`), Your Flame (friends), the map, time of day (`-hour 7 / 13 / 19 / 23`), **and whether new realms render** (black in the simulator only, pre-existing).
