@@ -217,19 +217,15 @@ struct FinchIntro: View {
             Spacer().frame(height: 80)
         case .hello:
             VStack(spacing: 14) {
-                // Your name, written in ink on a parchment plaque.
-                VStack(spacing: 4) {
-                    TextField("", text: $name, prompt: Text("Your name").foregroundColor(Theme.ink.opacity(0.35)))
-                        .font(.story(26, .medium)).multilineTextAlignment(.center).foregroundStyle(Theme.ink).tint(Theme.accent)
-                    HStack(spacing: 6) {
-                        Rectangle().fill(Theme.ink.opacity(0.35)).frame(height: 1)
-                        Image(systemName: "pencil.and.scribble").font(.system(size: 13)).foregroundStyle(Theme.accent.opacity(0.8))
-                    }
-                    .padding(.horizontal, 18)
+                // Your name, written on a single hairline (nothing else around it).
+                VStack(spacing: 6) {
+                    TextField("", text: $name, prompt: Text("Your name").italic().foregroundColor(cream.opacity(0.35)))
+                        .font(.story(32, .medium)).multilineTextAlignment(.center).foregroundStyle(cream).tint(Theme.champagne)
+                        .shadow(color: Theme.warmShadow.opacity(0.8), radius: 6)
+                    Rectangle().fill(LinearGradient(colors: [.clear, Theme.champagne.opacity(0.7), .clear], startPoint: .leading, endPoint: .trailing)).frame(height: 0.75)
+                        .padding(.horizontal, 40)
                 }
-                .padding(.vertical, 16).padding(.horizontal, 8)
-                .background(SheetPaper(corner: 18))
-                .shadow(color: .black.opacity(0.35), radius: 12, y: 5)
+                .padding(.bottom, 8)
                     .focused($typing).submitLabel(.done).onSubmit { if !name.isEmpty { go(.growing) } }
                 primary("That's me", disabled: name.trimmingCharacters(in: .whitespaces).isEmpty) { go(.growing) }
             }
@@ -301,24 +297,31 @@ struct FinchIntro: View {
     private var standCard: some View {
         VStack(spacing: 10) {
             Text("How is each part of your life lately?").font(.story(22, .medium)).multilineTextAlignment(.center).foregroundStyle(Theme.ink)
-            Text("Only you see this. It stays on your phone.").font(.ui(13)).foregroundStyle(Theme.ink.opacity(0.6))
+            Text("Only you see this. It stays on your phone.").font(.ui(13)).foregroundStyle(Theme.ink.opacity(0.55))
+            HStack(spacing: 22) {
+                Spacer(minLength: 0)
+                ForEach(["low", "okay", "good"], id: \.self) { t in Text(t).font(.story(13).italic()).foregroundStyle(Theme.ink.opacity(0.5)).frame(width: 36) }
+            }
+            .padding(.top, 6)
             ForEach(Pillar6.allCases, id: \.self) { p in
                 HStack(spacing: 8) {
                     Image(uiImage: UIImage(named: "pillar-\(p.rawValue.lowercased()).png") ?? UIImage()).resizable().scaledToFit().frame(width: 30, height: 30)
                     Text(p.rawValue).font(.story(15, .semibold)).foregroundStyle(Theme.ink).frame(width: 54, alignment: .leading)
-                    ForEach(0..<3, id: \.self) { v in
-                        Button {
-                            FeelHaptics.shared.nudge()
-                            withAnimation(.spring(duration: 0.25)) { rating[p] = v }
-                            scene.hero.react(v == 0 ? .giggle : .cheer)
-                        } label: {
-                            Text(["Low", "Okay", "Good"][v]).font(.story(14, rating[p] == v ? .semibold : .regular))
-                                .frame(maxWidth: .infinity).padding(.vertical, 8)
-                                .background(Capsule().fill(rating[p] == v ? Color(red: 0.98, green: 0.82, blue: 0.55) : Theme.paperTop))
-                                .overlay(Capsule().stroke(rating[p] == v ? Color(red: 0.85, green: 0.6, blue: 0.2) : Theme.paperEdge.opacity(0.5), lineWidth: rating[p] == v ? 1.8 : 1))
-                                .foregroundStyle(Theme.ink)
+                    Spacer(minLength: 0)
+                    HStack(spacing: 22) {                               // three quiet marks: low, okay, good
+                        ForEach(0..<3, id: \.self) { v in
+                            Button {
+                                FeelHaptics.shared.nudge()
+                                withAnimation(Motion.tap) { rating[p] = v }
+                                scene.hero.react(v == 0 ? .giggle : .cheer)
+                            } label: {
+                                ZStack {
+                                    Circle().stroke(Theme.paperEdge.opacity(0.5), lineWidth: 0.75).frame(width: 22, height: 22)
+                                    Circle().fill(Theme.champagneDeep).frame(width: rating[p] == v ? 14 : 0, height: rating[p] == v ? 14 : 0)
+                                }
+                                .frame(width: 36, height: 34).contentShape(Rectangle())
+                            }
                         }
-                        .buttonStyle(PressableStyle())
                     }
                 }
             }
@@ -457,7 +460,7 @@ struct FinchIntro: View {
             .disabled(disabled).opacity(disabled ? 0.5 : 1).saturation(disabled ? 0.4 : 1)
     }
     private func secondary(_ s: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Text(s).font(.ui(16)).foregroundStyle(cream.opacity(0.75)).padding(10) }
+        Button(action: action) { QuietLink(text: s) }.buttonStyle(PressableStyle())
     }
     private func choice(_ s: String, icon: UIImage? = nil, selected: Bool = false, action: @escaping () -> Void) -> some View {
         Button { FeelHaptics.shared.nudge(); action() } label: { ParchmentChoice(text: s, icon: icon, selected: selected) }
@@ -514,17 +517,18 @@ struct FinchIntro: View {
 
     private var progressBar: some View {
         let k = CGFloat(step.rawValue - IntroStep.why.rawValue + 1) / 3
-        return Capsule().fill(.white.opacity(0.15)).frame(height: 6)
-            .overlay(alignment: .leading) { GeometryReader { g in Capsule().fill(gold).frame(width: g.size.width * k) } }
-            .animation(.spring(duration: 0.5), value: k)
-            .padding(.horizontal, 30)
+        return Capsule().fill(.white.opacity(0.12)).frame(height: 2)
+            .overlay(alignment: .leading) { GeometryReader { g in Capsule().fill(Theme.champagne.opacity(0.85)).frame(width: g.size.width * k) } }
+            .animation(Motion.gentle, value: k)
+            .padding(.horizontal, 90)
     }
 
     private var emberRing: some View {
         GeometryReader { g in
             let c = CGPoint(x: g.size.width / 2, y: g.size.height / 2), r = min(g.size.width, g.size.height) * 0.38
             ZStack {
-                EmberOrb(color: ember?.color ?? gold.opacity(0.6), size: 110, warmth: ember == nil ? 0.1 : 0.45, cracks: 0)
+                EmberOrb(color: ember?.color ?? gold.opacity(0.6), size: 74, warmth: ember == nil ? 0.08 : 0.35, cracks: 0)
+                    .opacity(ember == nil ? 0.5 : 0.9)
                     .position(c).animation(.spring(duration: 0.5), value: ember)
                 ForEach(Array(emberChoices.enumerated()), id: \.element.id) { i, e in
                     let a = Double(i) / 6 * 2 * .pi - .pi / 2
@@ -534,7 +538,7 @@ struct FinchIntro: View {
                     } label: {
                         VStack(spacing: 6) {
                             EmberOrb(color: e.color, size: ember == e ? 54 : 44, warmth: ember == e ? 0.6 : 0.25, cracks: 0)
-                            Text(e.word).font(.ui(13, .bold)).foregroundStyle(ember == e ? e.color : cream.opacity(0.7))
+                            Text(e.word).font(.story(14, .medium).italic()).foregroundStyle(cream).opacity(ember == e ? 1 : 0)
                         }
                     }
                     .position(x: c.x + CGFloat(cos(a)) * r, y: c.y + CGFloat(sin(a)) * r)

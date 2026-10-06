@@ -4,23 +4,28 @@
 // warm the egg, embers spiralling in, then the burst: flash, shockwave, glowing shards, rays).
 import SwiftUI
 
-/// Codex's painted gold plate, stretched to any width (its rounded ends kept).
+/// The primary action: a slim champagne pill sized to its words, a hairline edge, a soft warm shadow (decision 146:
+/// quiet and precise, never a loud full-width slab).
 struct GoldButtonLabel: View {
     let text: String
-    /// The plate at a scale where its rounded ends are ~27 points (it's painted at ~4× a button's height).
-    private static let plate: UIImage? = UIImage(named: "button-gold.png").flatMap { $0.cgImage }.map { UIImage(cgImage: $0, scale: 4, orientation: .up) }
     var body: some View {
-        Text(text).font(.story(19, .semibold)).foregroundStyle(Color(red: 0.3, green: 0.14, blue: 0.04))
-            .shadow(color: .white.opacity(0.35), radius: 0, y: 1)
-            .frame(maxWidth: .infinity).padding(.vertical, 17)
-            .background {
-                if let img = Self.plate {
-                    Image(uiImage: img).resizable(capInsets: EdgeInsets(top: 0, leading: 27, bottom: 0, trailing: 27), resizingMode: .stretch)
-                } else {
-                    Capsule().fill(LinearGradient(colors: [Theme.gold, Color(red: 0.95, green: 0.58, blue: 0.28)], startPoint: .top, endPoint: .bottom))
-                }
-            }
-            .shadow(color: Color(red: 1, green: 0.55, blue: 0.2).opacity(0.45), radius: 14, y: 5)
+        Text(text).font(.story(18, .medium)).foregroundStyle(Color(red: 0.27, green: 0.15, blue: 0.06))
+            .padding(.horizontal, 34).frame(minWidth: 200).frame(height: 52)
+            .background(Capsule(style: .continuous).fill(LinearGradient(colors: [Color(red: 1, green: 0.93, blue: 0.78), Theme.champagne], startPoint: .top, endPoint: .bottom)))
+            .overlay(Capsule(style: .continuous).stroke(Theme.champagneDeep.opacity(0.9), lineWidth: 0.75))
+            .overlay(Capsule(style: .continuous).stroke(.white.opacity(0.7), lineWidth: 0.75).padding(1.5).mask(LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .center)))
+            .shadow(color: Theme.warmShadow.opacity(0.35), radius: 14, y: 6)
+            .shadow(color: Theme.champagne.opacity(0.25), radius: 20)
+    }
+}
+
+/// The quiet second action: words only, a hairline under them.
+struct QuietLink: View {
+    let text: String
+    var body: some View {
+        Text(text).font(.ui(15, .medium)).foregroundStyle(Theme.cream.opacity(0.72))
+            .padding(.vertical, 10).padding(.horizontal, 12)
+            .overlay(alignment: .bottom) { Rectangle().fill(Theme.cream.opacity(0.25)).frame(height: 0.5).padding(.horizontal, 12).offset(y: -6) }
     }
 }
 
@@ -32,21 +37,21 @@ struct ParchmentChoice: View {
     var compact = false
     var body: some View {
         HStack(spacing: 10) {
-            if let icon { Image(uiImage: icon).resizable().scaledToFit().frame(width: compact ? 26 : 34, height: compact ? 26 : 34) }
-            Text(text).font(.story(compact ? 15 : 17, selected ? .semibold : .regular)).foregroundStyle(Theme.ink)
-                .multilineTextAlignment(.leading).lineLimit(2).minimumScaleFactor(0.85)
-            Spacer(minLength: 0)
-            if selected {
-                Image(uiImage: UIImage(named: "wax-seal.png") ?? UIImage()).resizable().scaledToFit().frame(width: 22, height: 22)
-                    .transition(.scale(scale: 0.3).combined(with: .opacity))
+            if let icon { Image(uiImage: icon).resizable().scaledToFit().frame(width: compact ? 22 : 28, height: compact ? 22 : 28).opacity(selected ? 1 : 0.85) }
+            if compact {                                         // a short word: centred on one line
+                Text(text).font(.story(15, selected ? .medium : .regular)).foregroundStyle(Theme.ink.opacity(selected ? 1 : 0.82))
+                    .lineLimit(1).minimumScaleFactor(0.8).frame(maxWidth: .infinity)
+            } else {
+                Text(text).font(.story(16, selected ? .medium : .regular)).foregroundStyle(Theme.ink.opacity(selected ? 1 : 0.82))
+                    .multilineTextAlignment(.leading).lineLimit(2).minimumScaleFactor(0.85)
+                Spacer(minLength: 0)
+                Circle().fill(Theme.champagneDeep).frame(width: 7, height: 7).opacity(selected ? 1 : 0)  // a small gold mark
             }
         }
-        .padding(.horizontal, compact ? 10 : 14).padding(.vertical, compact ? 9 : 12)
-        .background(RoundedRectangle(cornerRadius: 14).fill(LinearGradient(colors: selected ? [Color(red: 1, green: 0.9, blue: 0.7), Color(red: 0.97, green: 0.8, blue: 0.55)] : [Theme.paperTop, Theme.paperBottom], startPoint: .top, endPoint: .bottom)))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(selected ? Color(red: 0.85, green: 0.6, blue: 0.2) : Theme.paperEdge.opacity(0.55), lineWidth: selected ? 2 : 1))
-        .shadow(color: .black.opacity(selected ? 0.3 : 0.18), radius: selected ? 8 : 4, y: 3)
-        .scaleEffect(selected ? 1.02 : 1)
-        .animation(.spring(response: 0.3, dampingFraction: 0.65), value: selected)
+        .padding(.horizontal, compact ? 12 : 14).padding(.vertical, compact ? 10 : 13)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(selected ? Color(red: 1, green: 0.92, blue: 0.76) : Color.white.opacity(0.35)))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(selected ? Theme.champagneDeep : Theme.paperEdge.opacity(0.28), lineWidth: selected ? 1 : 0.6))
+        .animation(Motion.tap, value: selected)
     }
 }
 
@@ -55,19 +60,12 @@ struct StoryBubble: View {
     let text: String
     @State private var shown = false
     var body: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                Text(text).font(.story(19)).foregroundStyle(Theme.ink).multilineTextAlignment(.center)
-                    .opacity(shown ? 1 : 0).blur(radius: shown ? 0 : 5)
-            }
-            .padding(.horizontal, 22).padding(.vertical, 15)
-            .background(SheetPaper(corner: 20))
-            .shadow(color: .black.opacity(0.35), radius: 14, y: 6)
-            Triangle().fill(Theme.paperBottom).frame(width: 22, height: 12)
-                .overlay(Triangle().stroke(Theme.paperEdge.opacity(0.6), lineWidth: 1))
-                .offset(y: -1)
-        }
-        .onAppear { withAnimation(.easeOut(duration: 0.45).delay(0.12)) { shown = true } }
+        Text(text).font(.story(20).italic()).foregroundStyle(Theme.cream).multilineTextAlignment(.center).lineSpacing(3)
+            .shadow(color: Theme.warmShadow.opacity(0.9), radius: 6)
+            .padding(.horizontal, 26).padding(.vertical, 18)
+            .background(Ellipse().fill(Color.black.opacity(0.32)).padding(.horizontal, -10).blur(radius: 26))   // a soft shade, no edge
+            .opacity(shown ? 1 : 0).blur(radius: shown ? 0 : 6).offset(y: shown ? 0 : 6)
+            .onAppear { withAnimation(.easeOut(duration: 0.6).delay(0.1)) { shown = true } }
     }
 }
 
@@ -123,13 +121,13 @@ struct HatchBurst: View {
                 guard t >= 0, t < 2.6 else { return }
                 // Flash.
                 let flash = max(0, 1 - t / 0.35)
-                if flash > 0 { ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.white.opacity(flash * 0.85))) }
+                if flash > 0 { ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(red: 1, green: 0.95, blue: 0.85).opacity(flash * 0.5))) }
                 // Shockwave ring.
                 let k = min(1, t / 1.1), r = 30 + 520 * (1 - pow(1 - k, 3))
                 ctx.stroke(Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r * 0.55, width: r * 2, height: r * 1.1)),
-                           with: .color(Color(red: 1, green: 0.85, blue: 0.55).opacity((1 - k) * 0.8)), lineWidth: 6 * (1 - k) + 1)
+                           with: .color(Color(red: 1, green: 0.88, blue: 0.62).opacity((1 - k) * 0.4)), lineWidth: 2.5 * (1 - k) + 0.5)
                 // Shards: dark shell with a glowing inner edge, thrown out and falling.
-                for i in 0..<14 {
+                for i in 0..<8 {
                     let s = Double(i) * 2.399
                     let speed = 260 + 160 * (0.5 + 0.5 * sin(s * 3.1))
                     let vx = cos(s) * speed, vy = -abs(sin(s)) * speed * 0.9 - 120
@@ -146,7 +144,7 @@ struct HatchBurst: View {
                     ctx.stroke(shard.applying(tr), with: .color(color.opacity(a)), lineWidth: 1.6)
                 }
                 // Embers rising.
-                for i in 0..<40 {
+                for i in 0..<24 {
                     let s = Double(i) * 12.9898
                     let life = min(1, max(0, (t - Double(i % 8) * 0.04) / 2.2))
                     guard life > 0, life < 1 else { continue }

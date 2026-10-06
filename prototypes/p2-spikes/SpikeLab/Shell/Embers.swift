@@ -128,3 +128,38 @@ struct DailyPouch: View {
         .onAppear { withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) { bob = true } }
     }
 }
+
+/// The top bar of every world (decision 146): one slim, quiet capsule. Your streak, the day of the arc, your Embers,
+/// separated by hairlines; nothing shouts.
+struct HUDBar: View {
+    let journey: Journey
+    let embers: Int
+    var body: some View {
+        let s = journey.streak(), lit = s.state == .livedToday
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
+                Image(systemName: "flame.fill").font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(lit ? AnyShapeStyle(LinearGradient(colors: [Color(red: 1, green: 0.88, blue: 0.55), Color(red: 1, green: 0.6, blue: 0.28)], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(Theme.cream.opacity(0.5)))
+                Text("\(s.current)").font(.num(14, .bold)).contentTransition(.numericText(value: Double(s.current)))
+                if s.shields > 0 {
+                    Image(systemName: "shield.fill").font(.system(size: 9)).foregroundStyle(Color(red: 0.7, green: 0.82, blue: 0.95).opacity(0.85))
+                }
+            }
+            Rectangle().fill(Theme.cream.opacity(0.18)).frame(width: 0.5, height: 14)
+            Text("Day \(min(journey.dayNumber(), Progression.arcLength)) / \(Progression.arcLength)").font(.ui(13, .semibold)).foregroundStyle(Theme.cream.opacity(0.85))
+            Rectangle().fill(Theme.cream.opacity(0.18)).frame(width: 0.5, height: 14)
+            HStack(spacing: 5) {
+                EmberCoin(size: 15)
+                    .background(GeometryReader { g in
+                        Color.clear.preference(key: EmberTargetKey.self, value: CGPoint(x: g.frame(in: .global).midX, y: g.frame(in: .global).midY))
+                    })
+                Text("\(embers)").font(.num(14, .bold)).contentTransition(.numericText(value: Double(embers)))
+            }
+        }
+        .foregroundStyle(Theme.cream)
+        .padding(.horizontal, 16).padding(.vertical, 8)
+        .background(Capsule(style: .continuous).fill(.black.opacity(0.32)))
+        .overlay(Capsule(style: .continuous).stroke(Theme.champagne.opacity(0.22), lineWidth: 0.5))
+        .animation(Motion.soft, value: embers)
+    }
+}

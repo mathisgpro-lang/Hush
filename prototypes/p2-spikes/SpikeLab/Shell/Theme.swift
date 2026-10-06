@@ -26,17 +26,30 @@ enum Theme {
     static let paperTop = Color(red: 0.98, green: 0.93, blue: 0.82)
     static let paperBottom = Color(red: 0.93, green: 0.85, blue: 0.7)
     static let paperEdge = Color(red: 0.75, green: 0.58, blue: 0.3)
+    /// The one accent, calm (decision 146, "minimalist and subtle"): a soft champagne gold, used sparingly.
+    static let champagne = Color(red: 0.95, green: 0.84, blue: 0.62)
+    static let champagneDeep = Color(red: 0.86, green: 0.7, blue: 0.45)
+    /// Shadows carry the world's warm hue, never pure black.
+    static let warmShadow = Color(red: 0.25, green: 0.12, blue: 0.04)
+}
+
+/// One motion language: soft springs, nothing snappy or bouncy-loud.
+enum Motion {
+    static let soft = Animation.spring(response: 0.45, dampingFraction: 0.9)
+    static let gentle = Animation.spring(response: 0.6, dampingFraction: 0.95)
+    static let tap = Animation.spring(response: 0.25, dampingFraction: 0.8)
 }
 
 /// The one material every sheet is made of (Satchel, Book, Your Flame, a quest's card): warm parchment with a
-/// thin gold double rule, so the whole app reads as one object.
+/// single hairline of gold and a soft warm shadow, so the whole app reads as one quiet object (decision 146).
 struct SheetPaper: View {
     var corner: CGFloat = 28
     var body: some View {
-        RoundedRectangle(cornerRadius: corner)
-            .fill(LinearGradient(colors: [Theme.paperTop, Theme.paperBottom], startPoint: .top, endPoint: .bottom))
-            .overlay(RoundedRectangle(cornerRadius: corner).stroke(Theme.paperEdge.opacity(0.7), lineWidth: 1.5))
-            .overlay(RoundedRectangle(cornerRadius: corner - 6).stroke(Theme.paperEdge.opacity(0.3), lineWidth: 1).padding(6))
+        RoundedRectangle(cornerRadius: corner, style: .continuous)
+            .fill(LinearGradient(colors: [Theme.paperTop, Theme.paperBottom.opacity(0.97)], startPoint: .top, endPoint: .bottom))
+            .overlay(RoundedRectangle(cornerRadius: corner, style: .continuous).stroke(Theme.paperEdge.opacity(0.45), lineWidth: 0.75))
+            .overlay(RoundedRectangle(cornerRadius: corner, style: .continuous).stroke(.white.opacity(0.5), lineWidth: 0.5).padding(1).mask(LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .center)))
+            .shadow(color: Theme.warmShadow.opacity(0.22), radius: 18, y: 8)
     }
 }
 

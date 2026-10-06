@@ -273,14 +273,11 @@ struct HomeView: View {
                     .font(.ui(12, .semibold)).foregroundStyle(world.color)
                     .padding(.horizontal, 10).padding(.vertical, 3).background(Capsule().fill(.black.opacity(0.45)))
             }
-            HStack(spacing: 8) {
-                StreakBar(journey: model.journey)                        // the streak at the core (decision 134)
-                EmbersBadge(value: shownEmbers ?? model.journey.embers)  // your Embers, always in sight (decision 141)
-            }
-            .padding(.top, 2)
+            HUDBar(journey: model.journey, embers: shownEmbers ?? model.journey.embers)   // streak, day, Embers (134, 141, 146)
+                .padding(.top, 4)
             Text(streakLine(model.journey, light: model.light))
-                .font(.ui(13)).foregroundStyle(.white.opacity(0.9))
-                .shadow(color: .black.opacity(0.5), radius: 4)
+                .font(.story(14).italic()).foregroundStyle(Theme.cream.opacity(0.8))
+                .shadow(color: Theme.warmShadow.opacity(0.9), radius: 5)
         }
         .padding(.top, 8)
     }
@@ -325,27 +322,25 @@ struct HomeView: View {
         } else if chosen.isEmpty && model.calls.contains(where: { !$0.done }) {
             Button { withAnimation(.sheet) { satchelOpen = true } } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "bag.fill").foregroundStyle(Color(red: 1, green: 0.78, blue: 0.42))
-                    Text("Choose today's quests from your satchel").font(.ui(14))
-                    Image(systemName: "chevron.up").font(.caption)
+                    Text("Choose today's quests from your satchel").font(.story(15).italic())
+                    Image(systemName: "chevron.up").font(.system(size: 10, weight: .semibold)).opacity(0.7)
                 }
-                .padding(.horizontal, 14).padding(.vertical, 9)
-                .background(Capsule().fill(.black.opacity(0.55)))
-                .overlay(Capsule().stroke(Color(red: 1, green: 0.78, blue: 0.42).opacity(0.7), lineWidth: 1))
-                .foregroundStyle(.white)
+                .padding(.horizontal, 16).padding(.vertical, 9)
+                .background(Capsule(style: .continuous).fill(.black.opacity(0.32)))
+                .overlay(Capsule(style: .continuous).stroke(Theme.champagne.opacity(0.35), lineWidth: 0.5))
+                .foregroundStyle(Theme.cream)
             }
             .padding(.bottom, 10)
         } else if focused == nil, let r = model.newHere.first(where: { $0 != world }) {
             Button { withAnimation(.screen) { model.go(.map) } } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "sparkles").foregroundStyle(r.color)
-                    Text("Something new waits in \(r.name)").font(.ui(14))
-                    Image(systemName: "chevron.right").font(.caption)
+                    Text("Something new in \(r.name.replacingOccurrences(of: "The ", with: "the "))").font(.story(15).italic()).lineLimit(1).minimumScaleFactor(0.8)
+                    Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).opacity(0.7)
                 }
-                .padding(.horizontal, 14).padding(.vertical, 9)
-                .background(Capsule().fill(.black.opacity(0.55)))
-                .overlay(Capsule().stroke(r.color.opacity(0.7), lineWidth: 1))
-                .foregroundStyle(.white)
+                .padding(.horizontal, 16).padding(.vertical, 9)
+                .background(Capsule(style: .continuous).fill(.black.opacity(0.32)))
+                .overlay(Capsule(style: .continuous).stroke(Theme.champagne.opacity(0.35), lineWidth: 0.5))
+                .foregroundStyle(Theme.cream)
             }
             .padding(.bottom, 10)
         }
@@ -367,8 +362,8 @@ struct HomeView: View {
             }
         }
         .padding(.vertical, 10)
-        .background(RoundedRectangle(cornerRadius: 24).fill(Theme.night.opacity(0.8)))
-        .overlay(RoundedRectangle(cornerRadius: 24).stroke(Theme.gold.opacity(0.35), lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(.black.opacity(0.34)))
+        .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Theme.champagne.opacity(0.2), lineWidth: 0.5))
         .padding(.bottom, 4)
     }
 
@@ -509,14 +504,15 @@ struct QuestObject: View {
         let _ = PerfProbe.body("QuestObject")
         VStack(spacing: 2) {
             ZStack {
-                Ellipse().fill(RadialGradient(colors: [call.realm.color.opacity(0.7), call.realm.color.opacity(0)], center: .center, startRadius: 2, endRadius: 40))
-                    .frame(width: 84, height: 70).scaleEffect(bob ? 1.12 : 0.9)
+                Ellipse().fill(RadialGradient(colors: [call.realm.color.opacity(0.45), call.realm.color.opacity(0)], center: .center, startRadius: 2, endRadius: 40))
+                    .frame(width: 84, height: 70).scaleEffect(bob ? 1.1 : 0.92).opacity(bob ? 1 : 0.7)
                 Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage()).resizable().scaledToFit()
                     .frame(width: 50, height: 52)
-                    .shadow(color: call.realm.color.opacity(0.8), radius: bob ? 10 : 5)
+                    .shadow(color: call.realm.color.opacity(0.6), radius: 7)
             }
-            Text(call.title).font(.ui(11, .bold)).foregroundStyle(.white)
-                .padding(.horizontal, 7).padding(.vertical, 2).background(Capsule().fill(.black.opacity(0.45)))
+            // Its name, quietly: italic, on a soft shade (no box).
+            Text(call.title).font(.story(13).italic()).foregroundStyle(Theme.cream)
+                .shadow(color: .black.opacity(0.85), radius: 4).shadow(color: .black.opacity(0.5), radius: 10)
         }
         .offset(y: bob ? -3 : 2)
         .animation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true), value: bob)
