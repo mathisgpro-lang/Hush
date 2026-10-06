@@ -11,27 +11,22 @@ struct TourBubble: View {
     let skip: () -> Void
     private let gold = Color(red: 1, green: 0.78, blue: 0.42)
     var body: some View {
+        // A parchment scroll in the Spark's voice, as in the introduction (one look for every dialogue).
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 10) {
                 Image(uiImage: SparkTint.image("spark-keyed.png", ember: ember) ?? UIImage()).resizable().scaledToFit().frame(width: 34, height: 44)
-                    .shadow(color: .orange.opacity(0.8), radius: 8)
-                Text(text).font(.ui(16)).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                    .shadow(color: .orange.opacity(0.6), radius: 6)
+                Text(text).font(.story(17)).foregroundStyle(Theme.ink).fixedSize(horizontal: false, vertical: true)
             }
             HStack {
-                Button("Skip the tour", action: skip).font(.ui(13)).foregroundStyle(.white.opacity(0.6))
+                Button("Skip the tour", action: skip).font(.ui(13, .semibold)).foregroundStyle(Theme.ink.opacity(0.55))
                 Spacer()
-                Button(action: next) {
-                    Text(button).font(.ui(15, .bold))
-                        .padding(.horizontal, 18).padding(.vertical, 9)
-                        .background(Capsule().fill(LinearGradient(colors: [gold, Color(red: 0.93, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
-                        .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
-                }
+                Button(action: next) { GoldButtonLabel(text: button).frame(width: 150) }.buttonStyle(PressableStyle())
             }
         }
-        .padding(16)
-        .background(RoundedRectangle(cornerRadius: 22).fill(Color(red: 0.12, green: 0.08, blue: 0.1).opacity(0.92)))
-        .overlay(RoundedRectangle(cornerRadius: 22).stroke(gold.opacity(0.5), lineWidth: 1))
-        .shadow(color: .black.opacity(0.4), radius: 16, y: 6)
+        .padding(18)
+        .background(SheetPaper(corner: 22))
+        .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
         .transition(.scale(scale: 0.9).combined(with: .opacity))
     }
 }

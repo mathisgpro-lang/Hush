@@ -360,7 +360,7 @@ struct HomeView: View {
             barButton(.book, "Book", badge: model.journey.newPages > 0, image: UIImage(named: "icon-book.png")) {
                 withAnimation(.sheet) { bookOpen = true }
             }
-            barButton(.flame, "Your Flame", badge: false, image: UIImage(named: "icon-flame.png")) {   // its gold frame stays gold
+            barButton(.flame, "Your Flame", badge: false, image: UIImage(named: "icon-flame-v2.png") ?? SparkTint.image("spark-keyed.png", ember: model.emberID)) {   // your Spark, free (no cage)
                 if PerfProbe.on { print("TAP flame button") }
                 director?.tapped()
                 withAnimation(.sheet) { flameOpen = true }

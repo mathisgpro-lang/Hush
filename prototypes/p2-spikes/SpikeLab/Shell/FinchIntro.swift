@@ -78,6 +78,8 @@ struct FinchIntro: View {
     @State private var morphFlash: Double = 0
     @State private var glimpseDone = false
     @State private var firstOutcome: DeedOutcome?
+    @State private var hatchStart: Date?
+    @State private var opened = false
     @State private var rating: [Pillar6: Int] = [:]      // where you stand (0 low, 1 okay, 2 good): the Day 1 rating
     @State private var meetWhen: String?
     @State private var meetFor: String?
@@ -101,12 +103,20 @@ struct FinchIntro: View {
                     ZStack {
                         if step == .warm || (step == .born && emberGone < 1) {
                             let w = warmAt(tl.date)
-                            EmberOrb(color: ember?.color ?? gold, size: max(60, f.height * 0.55), warmth: w, cracks: w)
+                            let eggSize = max(60, f.height * 0.55)
+                            if step == .warm {
+                                WarmRing(warmth: w, holding: holding, size: eggSize * 1.55)
+                                    .position(x: f.feet.x, y: f.feet.y - eggSize * 0.5)
+                            }
+                            EggView(color: ember?.color ?? gold, size: eggSize, warmth: w)
                                 .scaleEffect((holding ? 1.06 + w * 0.08 : 1) * (1 + emberGone * 0.6))
                                 .opacity(1 - emberGone)
                                 .offset(x: holding ? sin(tl.date.timeIntervalSinceReferenceDate * 47) * w * 2.5 : 0)   // a smooth tremble
                                 .position(x: f.feet.x, y: f.feet.y - max(60, f.height * 0.55) * 0.5)
                                 .gesture(DragGesture(minimumDistance: 0).onChanged { _ in if !holding { startWarming() } }.onEnded { _ in stopWarming() })
+                        }
+                        if let hs = hatchStart {
+                            HatchBurst(start: hs, center: CGPoint(x: f.feet.x, y: f.feet.y - max(60, f.height * 0.55) * 0.5), color: ember?.color ?? gold)
                         }
                         if let m = morph {
                             let h = f.height * Self.stageHeights[m] / Self.stageHeights[0] * 0.95
@@ -176,12 +186,20 @@ struct FinchIntro: View {
         case .welcome:
             VStack(spacing: 14) {
                 Spacer()
-                Text("Hush").font(.story(54, .semibold)).foregroundStyle(cream).shadow(color: .black.opacity(0.4), radius: 10)
+                // The title rises out of the haze, then the line, then the button: one breath each.
+                Text("Hush").font(.story(60, .semibold)).tracking(opened ? 4 : 18).foregroundStyle(cream)
+                    .shadow(color: Color(red: 1, green: 0.62, blue: 0.3).opacity(0.55), radius: 18).shadow(color: .black.opacity(0.4), radius: 10)
+                    .opacity(opened ? 1 : 0).blur(radius: opened ? 0 : 14).scaleEffect(opened ? 1 : 1.08)
+                    .animation(.easeOut(duration: 2.2), value: opened)
                 body2("The world went quiet. One ember still waits.")
+                    .opacity(opened ? 1 : 0).animation(.easeOut(duration: 1.2).delay(1.4), value: opened)
                 Spacer().frame(height: 26)
                 primary("Wake it") { go(.chooseEmber) }
+                    .opacity(opened ? 1 : 0).offset(y: opened ? 0 : 12).animation(.spring(duration: 0.8).delay(2.3), value: opened)
                 Text("Private test · for adults 18+").font(.caption2).foregroundStyle(cream.opacity(0.4)).padding(.top, 6)
+                    .opacity(opened ? 1 : 0).animation(.easeOut.delay(2.6), value: opened)
             }
+            .onAppear { opened = true }
         case .chooseEmber:
             VStack(spacing: 14) {
                 title("Which light calls you?")
@@ -199,10 +217,19 @@ struct FinchIntro: View {
             Spacer().frame(height: 80)
         case .hello:
             VStack(spacing: 14) {
-                TextField("", text: $name, prompt: Text("Your name").foregroundColor(cream.opacity(0.45)))
-                    .font(.story(22)).multilineTextAlignment(.center).foregroundStyle(cream)
-                    .padding(.vertical, 14).background(RoundedRectangle(cornerRadius: 18).fill(.white.opacity(0.10)))
-                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(gold.opacity(0.4), lineWidth: 1))
+                // Your name, written in ink on a parchment plaque.
+                VStack(spacing: 4) {
+                    TextField("", text: $name, prompt: Text("Your name").foregroundColor(Theme.ink.opacity(0.35)))
+                        .font(.story(26, .medium)).multilineTextAlignment(.center).foregroundStyle(Theme.ink).tint(Theme.accent)
+                    HStack(spacing: 6) {
+                        Rectangle().fill(Theme.ink.opacity(0.35)).frame(height: 1)
+                        Image(systemName: "pencil.and.scribble").font(.system(size: 13)).foregroundStyle(Theme.accent.opacity(0.8))
+                    }
+                    .padding(.horizontal, 18)
+                }
+                .padding(.vertical, 16).padding(.horizontal, 8)
+                .background(SheetPaper(corner: 18))
+                .shadow(color: .black.opacity(0.35), radius: 12, y: 5)
                     .focused($typing).submitLabel(.done).onSubmit { if !name.isEmpty { go(.growing) } }
                 primary("That's me", disabled: name.trimmingCharacters(in: .whitespaces).isEmpty) { go(.growing) }
             }
@@ -273,23 +300,23 @@ struct FinchIntro: View {
 
     private var standCard: some View {
         VStack(spacing: 10) {
-            Text("How is each part of your life lately?").font(.story(22)).multilineTextAlignment(.center).foregroundStyle(cream)
-            body2("Only you see this. It stays on your phone.")
+            Text("How is each part of your life lately?").font(.story(22, .medium)).multilineTextAlignment(.center).foregroundStyle(Theme.ink)
+            Text("Only you see this. It stays on your phone.").font(.ui(13)).foregroundStyle(Theme.ink.opacity(0.6))
             ForEach(Pillar6.allCases, id: \.self) { p in
                 HStack(spacing: 8) {
-                    Image(systemName: p.realm.symbol).font(.system(size: 13, weight: .semibold)).foregroundStyle(p.realm.color).frame(width: 22)
-                    Text(p.rawValue).font(.ui(15, .semibold)).foregroundStyle(cream).frame(width: 58, alignment: .leading)
+                    Image(uiImage: UIImage(named: "pillar-\(p.rawValue.lowercased()).png") ?? UIImage()).resizable().scaledToFit().frame(width: 30, height: 30)
+                    Text(p.rawValue).font(.story(15, .semibold)).foregroundStyle(Theme.ink).frame(width: 54, alignment: .leading)
                     ForEach(0..<3, id: \.self) { v in
                         Button {
                             FeelHaptics.shared.nudge()
                             withAnimation(.spring(duration: 0.25)) { rating[p] = v }
                             scene.hero.react(v == 0 ? .giggle : .cheer)
                         } label: {
-                            Text(["Low", "Okay", "Good"][v]).font(.ui(13, .bold))
+                            Text(["Low", "Okay", "Good"][v]).font(.story(14, rating[p] == v ? .semibold : .regular))
                                 .frame(maxWidth: .infinity).padding(.vertical, 8)
-                                .background(Capsule().fill(rating[p] == v ? Color(red: 0.42, green: 0.24, blue: 0.10) : Color(red: 0.20, green: 0.13, blue: 0.11)))
-                                .overlay(Capsule().stroke(rating[p] == v ? gold : gold.opacity(0.2), lineWidth: rating[p] == v ? 1.5 : 1))
-                                .foregroundStyle(cream)
+                                .background(Capsule().fill(rating[p] == v ? Color(red: 0.98, green: 0.82, blue: 0.55) : Theme.paperTop))
+                                .overlay(Capsule().stroke(rating[p] == v ? Color(red: 0.85, green: 0.6, blue: 0.2) : Theme.paperEdge.opacity(0.5), lineWidth: rating[p] == v ? 1.8 : 1))
+                                .foregroundStyle(Theme.ink)
                         }
                         .buttonStyle(PressableStyle())
                     }
@@ -298,21 +325,21 @@ struct FinchIntro: View {
             primary("Next", disabled: rating.count < 6) { go(.moment) }.padding(.top, 4)
         }
         .padding(18)
-        .background(RoundedRectangle(cornerRadius: 26).fill(Color(red: 0.11, green: 0.07, blue: 0.07).opacity(0.92)))
-        .overlay(RoundedRectangle(cornerRadius: 26).stroke(gold.opacity(0.35), lineWidth: 1))
+        .background(SheetPaper(corner: 26))
+        .shadow(color: .black.opacity(0.4), radius: 18, y: 8)
     }
 
     private var momentCard: some View {
         VStack(spacing: 12) {
-            Text("When can we meet each day?").font(.story(22)).multilineTextAlignment(.center).foregroundStyle(cream)
+            Text("When can we meet each day?").font(.story(22, .medium)).multilineTextAlignment(.center).foregroundStyle(Theme.ink)
             chips(["Morning", "Midday", "Evening"], selected: meetWhen) { meetWhen = $0 }
-            Text("And for how long?").font(.ui(15, .semibold)).foregroundStyle(cream.opacity(0.85)).padding(.top, 4)
+            Text("And for how long?").font(.story(16)).foregroundStyle(Theme.ink.opacity(0.8)).padding(.top, 4)
             chips(["5 min", "15 min", "30 min"], selected: meetFor) { meetFor = $0 }
             primary("Next", disabled: meetWhen == nil || meetFor == nil) { go(.preparing) }.padding(.top, 4)
         }
         .padding(18)
-        .background(RoundedRectangle(cornerRadius: 26).fill(Color(red: 0.11, green: 0.07, blue: 0.07).opacity(0.92)))
-        .overlay(RoundedRectangle(cornerRadius: 26).stroke(gold.opacity(0.35), lineWidth: 1))
+        .background(SheetPaper(corner: 26))
+        .shadow(color: .black.opacity(0.4), radius: 18, y: 8)
     }
 
     private func chips(_ options: [String], selected: String?, pick: @escaping (String) -> Void) -> some View {
@@ -322,10 +349,7 @@ struct FinchIntro: View {
                     FeelHaptics.shared.nudge(); withAnimation(.spring(duration: 0.25)) { pick(o) }
                     if let line = Self.replies[o] { say(line) } else { scene.hero.react(.giggle) }
                 } label: {
-                    Text(o).font(.ui(15, .bold)).frame(maxWidth: .infinity).padding(.vertical, 12)
-                        .background(RoundedRectangle(cornerRadius: 14).fill(selected == o ? Color(red: 0.42, green: 0.24, blue: 0.10) : Color(red: 0.20, green: 0.13, blue: 0.11)))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(selected == o ? gold : gold.opacity(0.22), lineWidth: selected == o ? 2 : 1))
-                        .foregroundStyle(cream)
+                    ParchmentChoice(text: o, selected: selected == o, compact: true)
                 }
                 .buttonStyle(PressableStyle())
             }
@@ -421,55 +445,42 @@ struct FinchIntro: View {
     // MARK: Pieces
 
     private func title(_ s: String) -> some View {
-        Text(s).font(.custom("Georgia", size: 27)).fontWeight(.regular).multilineTextAlignment(.center).foregroundStyle(cream)
-            .shadow(color: .black.opacity(0.2), radius: 4)
+        Text(s).font(.story(28, .medium)).multilineTextAlignment(.center).foregroundStyle(cream)
+            .shadow(color: .black.opacity(0.45), radius: 8).shadow(color: Color(red: 1, green: 0.6, blue: 0.25).opacity(0.25), radius: 16)
     }
     private func body2(_ s: String) -> some View {
         Text(s).font(.ui(16)).multilineTextAlignment(.center).foregroundStyle(cream.opacity(0.78))
     }
     private func primary(_ s: String, disabled: Bool = false, action: @escaping () -> Void) -> some View {
-        Button { FeelHaptics.shared.nudge(); action() } label: {
-            Text(s).font(.story(18, .semibold)).frame(maxWidth: .infinity).padding(.vertical, 16)
-                .background(Capsule().fill(LinearGradient(colors: [Color(red: 1, green: 0.8, blue: 0.45), Color(red: 0.95, green: 0.58, blue: 0.28)], startPoint: .top, endPoint: .bottom)))
-                .foregroundStyle(Color(red: 0.32, green: 0.16, blue: 0.06))
-                .shadow(color: Color(red: 1, green: 0.55, blue: 0.2).opacity(disabled ? 0 : 0.5), radius: 12, y: 4)
-        }
-        .disabled(disabled).opacity(disabled ? 0.45 : 1)
+        Button { FeelHaptics.shared.nudge(); action() } label: { GoldButtonLabel(text: s) }
+            .buttonStyle(PressableStyle())
+            .disabled(disabled).opacity(disabled ? 0.5 : 1).saturation(disabled ? 0.4 : 1)
     }
     private func secondary(_ s: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Text(s).font(.ui(16)).foregroundStyle(cream.opacity(0.75)).padding(10) }
     }
-    private func choice(_ s: String, selected: Bool = false, action: @escaping () -> Void) -> some View {
-        Button { FeelHaptics.shared.nudge(); action() } label: {
-            HStack {
-                Text(s).font(.ui(17)).multilineTextAlignment(.leading)
-                Spacer()
-                if selected { Image(systemName: "checkmark.circle.fill").foregroundStyle(gold) }
-            }
-            .padding(.horizontal, 16).padding(.vertical, 14)
-            .background(RoundedRectangle(cornerRadius: 16).fill(selected ? Color(red: 0.42, green: 0.24, blue: 0.10) : Color(red: 0.20, green: 0.13, blue: 0.11)))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(selected ? gold : gold.opacity(0.22), lineWidth: selected ? 2 : 1))
-            .foregroundStyle(cream)
-        }
+    private func choice(_ s: String, icon: UIImage? = nil, selected: Bool = false, action: @escaping () -> Void) -> some View {
+        Button { FeelHaptics.shared.nudge(); action() } label: { ParchmentChoice(text: s, icon: icon, selected: selected) }
+            .buttonStyle(PressableStyle())
     }
 
     private func question(_ q: String, sub: String?, options: [String], multi: Bool, key: Int, next: IntroStep) -> some View {
         questionBody(q, sub: sub, options: options, multi: multi, key: key, next: next)
             .padding(18)
-            .background(RoundedRectangle(cornerRadius: 26).fill(Color(red: 0.11, green: 0.07, blue: 0.07).opacity(0.92)))
-            .overlay(RoundedRectangle(cornerRadius: 26).stroke(gold.opacity(0.35), lineWidth: 1))
+            .background(SheetPaper(corner: 26))
             .shadow(color: .black.opacity(0.4), radius: 18, y: 8)
     }
 
     private func questionBody(_ q: String, sub: String?, options: [String], multi: Bool, key: Int, next: IntroStep) -> some View {
         VStack(spacing: 10) {
-            Text(q).font(.custom("Georgia", size: 22)).multilineTextAlignment(.center).foregroundStyle(cream)
-            if let sub { body2(sub) }
+            Text(q).font(.story(23, .medium)).multilineTextAlignment(.center).foregroundStyle(Theme.ink)
+            if let sub { Text(sub).font(.ui(14)).foregroundStyle(Theme.ink.opacity(0.6)) }
             Spacer().frame(height: 6)
             let columns = multi ? [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)] : [GridItem(.flexible())]
             LazyVGrid(columns: columns, spacing: 10) {
             ForEach(options, id: \.self) { o in
-                choice(multi ? shortLabel(o) : o, selected: answers[key, default: []].contains(o)) {
+                choice(multi ? shortLabel(o) : o, icon: emberChoices.first(where: { $0.interest == o }).flatMap { UIImage(named: "pillar-\($0.pillar.lowercased()).png") },
+                       selected: answers[key, default: []].contains(o)) {
                     var set = answers[key, default: []]
                     if multi { if set.contains(o) { set.remove(o) } else { set.insert(o) } } else { set = [o] }
                     answers[key] = set
@@ -565,11 +576,8 @@ struct FinchIntro: View {
 
     private func speech(_ s: String) -> some View {
         VStack {
-            EmberText(text: s)
-                .padding(.horizontal, 18).padding(.vertical, 14)
-                .background(RoundedRectangle(cornerRadius: 20).fill(Color(red: 0.12, green: 0.08, blue: 0.10).opacity(0.78)))
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(gold.opacity(0.45), lineWidth: 1))
-                .padding(.horizontal, 30)
+            StoryBubble(text: s)
+                .padding(.horizontal, 34)
                 .id(s)
                 .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity).animation(.spring(response: 0.3, dampingFraction: 0.8).delay(0.1)),
                                         removal: .opacity.animation(.easeOut(duration: 0.1))))
@@ -669,6 +677,8 @@ struct FinchIntro: View {
         FeelHaptics.shared.stopCharge(); FeelSound.shared.stopCharge()
         FeelHaptics.shared.ignite(); FeelSound.shared.ignite(pitch: 2)
         withAnimation(.easeOut(duration: 0.4)) { rays = true }
+        hatchStart = Date()                                         // the burst: flash, shockwave, shards, embers
+        Task { try? await Task.sleep(for: .seconds(2.7)); hatchStart = nil }
         withAnimation(.easeOut(duration: 0.7)) { emberGone = 1 }
         if let e = ember { model.setEmber(e.id); scene.hero.tint = SparkTint.shift(e.id) }   // born in your ember's color
         go(.born)
@@ -929,5 +939,25 @@ struct RepCounter: View {
             }
         }
         .buttonStyle(PressableStyle())
+    }
+}
+
+/// The egg: Codex's painted ember egg (three stages of cracks, tools/p28 art) when it's in the app, the drawn ember
+/// until then. It glows brighter and cracks further as you warm it.
+struct EggView: View {
+    let color: Color
+    let size: CGFloat
+    let warmth: CGFloat
+    var body: some View {
+        if let img = UIImage(named: warmth < 0.4 ? "egg-0.png" : warmth < 0.8 ? "egg-1.png" : "egg-2.png") {
+            ZStack {
+                Circle().fill(RadialGradient(colors: [color.opacity(0.35 + warmth * 0.45), .clear], center: .center, startRadius: 0, endRadius: size * (0.8 + warmth * 0.6)))
+                    .frame(width: size * 2.4, height: size * 2.4)
+                Image(uiImage: img).resizable().scaledToFit().frame(height: size)
+                    .shadow(color: color.opacity(0.4 + warmth * 0.5), radius: 8 + warmth * 16)
+            }
+        } else {
+            EmberOrb(color: color, size: size, warmth: warmth, cracks: warmth)
+        }
     }
 }
