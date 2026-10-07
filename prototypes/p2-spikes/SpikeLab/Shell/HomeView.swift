@@ -92,15 +92,24 @@ struct HomeView: View {
                     Spacer()
                     if let toast { Text(toast).font(.ui(14)).padding(.horizontal, 14).padding(.vertical, 8)
                         .background(Capsule().fill(.black.opacity(0.6))).foregroundStyle(.white).transition(.opacity).padding(.bottom, 8) }
-                    if model.tour == nil && focused == nil {
-                        QuestBoard(calls: today, streakLine: streakLine(model.journey, light: model.light),
-                                   add: { withAnimation(.sheet) { satchelOpen = true } },
-                                   open: { c in withAnimation(.sheet) { open = c } },
-                                   tick: { c, p in finish(c, size: geo.size, from: p) })
-                            .padding(.bottom, 8)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    } else { hint }
-                    cockpitBar
+                    // One panel at the bottom (Mathis: "the icons incorporated with the missions, not two different
+                    // things, and less space"): your quests, then the four doors (World, Satchel, Book, Your Flame).
+                    if model.tour != nil || focused != nil { hint }
+                    VStack(spacing: 6) {
+                        if model.tour == nil && focused == nil {
+                            QuestBoard(calls: today, streakLine: streakLine(model.journey, light: model.light),
+                                       add: { withAnimation(.sheet) { satchelOpen = true } },
+                                       open: { c in withAnimation(.sheet) { open = c } },
+                                       tick: { c, p in finish(c, size: geo.size, from: p) })
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                            Rectangle().fill(Theme.champagne.opacity(0.25)).frame(height: 0.75).padding(.horizontal, 12).padding(.top, 2)
+                        }
+                        cockpitBar
+                    }
+                    .padding(.horizontal, 10).padding(.top, 10).padding(.bottom, 4)
+                    .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(.black.opacity(0.6)))
+                    .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Theme.champagne.opacity(0.2), lineWidth: 0.5))
+                    .padding(.bottom, 2)
                 }
                 .padding(.horizontal, 16)
                 .opacity(flameOpen ? 0 : 1)                      // Your Flame is its own quiet page
@@ -378,10 +387,7 @@ struct HomeView: View {
                 withAnimation(.sheet) { flameOpen = true }
             }
         }
-        .padding(.vertical, 10)
-        .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(.black.opacity(0.58)))
-        .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Theme.champagne.opacity(0.2), lineWidth: 0.5))
-        .padding(.bottom, 4)
+        .padding(.vertical, 2)
     }
 
     /// One of the bar's four: a live painted icon (LiveIcon) that hops when tapped, its name below.
@@ -390,12 +396,12 @@ struct HomeView: View {
             barTaps[label, default: 0] += 1
             action()
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: 5) {
                 ZStack(alignment: .topTrailing) {
                     LiveIcon(kind: kind, image: image, calling: badge, taps: barTaps[label, default: 0])
                     if badge { Circle().fill(Theme.ember).frame(width: 9, height: 9).offset(x: 4, y: -2) }
                 }
-                Text(label).font(.ui(12, .semibold))
+                Text(label).font(.ui(10.5, .semibold)).opacity(0.85)
             }
             .frame(maxWidth: .infinity).padding(.vertical, 4).foregroundStyle(Theme.cream)
             .contentShape(Rectangle())                        // the whole slot answers a tap, not only its word

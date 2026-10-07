@@ -16,24 +16,33 @@ struct QuestBoard: View {
     @GestureState private var drag: CGFloat = 0
 
     private var left: Int { calls.filter { !$0.done }.count }
-    private static let rowH: CGFloat = 64, gap: CGFloat = 8, peek: CGFloat = 9
+    private static let rowH: CGFloat = 56, gap: CGFloat = 8, peek: CGFloat = 9
 
     var body: some View {
         let n = calls.count
         let stackH = n == 0 ? Self.rowH : expanded ? CGFloat(n) * Self.rowH + CGFloat(max(0, n - 1)) * Self.gap
                                               : Self.rowH + CGFloat(min(2, max(0, n - 1))) * Self.peek
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(left == 0 ? (calls.isEmpty ? "Your day is ready" : "All done today") : left == 1 ? "1 quest left today" : "\(left) quests left today")
-                        .font(.story(17, .medium)).foregroundStyle(Theme.cream)
-                    Text(streakLine).font(.story(13).italic()).foregroundStyle(Theme.cream.opacity(0.8)).lineLimit(1)
-                }
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .center, spacing: 8) {
+                Text(left == 0 ? (calls.isEmpty ? "Your day is ready" : "All done today") : left == 1 ? "1 quest left" : "\(left) quests left")
+                    .font(.story(16, .medium)).foregroundStyle(Theme.cream)
                 Spacer()
+                if n > 1 {
+                    Button { withAnimation(Motion.soft) { expanded.toggle() } } label: {
+                        HStack(spacing: 4) {
+                            Text(expanded ? "Less" : "\(n - 1) more").font(.ui(12, .semibold))
+                            Image(systemName: expanded ? "chevron.down" : "chevron.up").font(.system(size: 9, weight: .bold))
+                        }
+                        .foregroundStyle(Theme.cream.opacity(0.85))
+                        .padding(.horizontal, 10).frame(height: 28)
+                        .background(Capsule().fill(.white.opacity(0.1)))
+                        .contentShape(Capsule())
+                    }
+                    .buttonStyle(PressableStyle())
+                }
                 Button(action: add) {
-                    Image(systemName: "plus").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.cream)
-                        .frame(width: 32, height: 32).background(Circle().fill(.white.opacity(0.1)))
-                        .overlay(Circle().stroke(Theme.champagne.opacity(0.3), lineWidth: 0.5))
+                    Image(systemName: "plus").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.cream)
+                        .frame(width: 28, height: 28).background(Circle().fill(.white.opacity(0.1)))
                         .contentShape(Circle())
                 }
                 .buttonStyle(PressableStyle())
@@ -65,22 +74,9 @@ struct QuestBoard: View {
                             .onTapGesture { withAnimation(Motion.soft) { expanded = true } }
                     }
                 }
-                // A small hint: how many more, and which way to swipe.
-                if n > 1 {
-                    Button { withAnimation(Motion.soft) { expanded.toggle() } } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: expanded ? "chevron.down" : "chevron.up").font(.system(size: 10, weight: .bold))
-                            Text(expanded ? "Show less" : "\(n - 1) more").font(.ui(12, .semibold))
-                        }
-                        .foregroundStyle(Theme.cream.opacity(0.85)).frame(maxWidth: .infinity).padding(.top, 2)
-                    }
-                    .buttonStyle(.plain)
-                }
             }
         }
-        .padding(12)
-        .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.black.opacity(0.6)))
-        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Theme.champagne.opacity(0.2), lineWidth: 0.5))
+        .padding(.horizontal, 2)
         .contentShape(Rectangle())
         .highPriorityGesture(DragGesture(minimumDistance: 14)
             .updating($drag) { v, st, _ in st = v.translation.height }
@@ -106,7 +102,7 @@ struct QuestRow: View {
             Button(action: open) {
                 HStack(spacing: 12) {
                     ZStack {
-                        Circle().fill(call.realm.color.opacity(0.22)).frame(width: 42, height: 42)
+                        Circle().fill(call.realm.color.opacity(0.22)).frame(width: 38, height: 38)
                         Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage()).resizable().scaledToFit().frame(width: 28, height: 28)
                     }
                     VStack(alignment: .leading, spacing: 2) {
@@ -137,14 +133,14 @@ struct QuestRow: View {
                         .foregroundStyle(call.done ? .white : Color(red: 0.42, green: 0.62, blue: 0.3))
                         .scaleEffect(call.done ? 1.1 : 1)
                 }
-                .frame(width: 50, height: 46)
+                .frame(width: 46, height: 40)
                 .background(GeometryReader { g in Color.clear.onAppear { tickCenter = CGPoint(x: g.frame(in: .global).midX, y: g.frame(in: .global).midY) }
                     .onChange(of: g.frame(in: .global)) { _, f in tickCenter = CGPoint(x: f.midX, y: f.midY) } })
             }
             .buttonStyle(PressableStyle())
             .disabled(call.done)
         }
-        .padding(.horizontal, 10).frame(height: 64)
+        .padding(.horizontal, 8).frame(height: 56)
         .background(RoundedRectangle(cornerRadius: 18, style: .continuous)
             .fill(LinearGradient(colors: [Color(red: 1, green: 0.98, blue: 0.93), Theme.paperTop], startPoint: .top, endPoint: .bottom))
             .opacity(call.done ? 0.82 : 1))
