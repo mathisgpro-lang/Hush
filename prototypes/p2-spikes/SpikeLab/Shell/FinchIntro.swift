@@ -203,14 +203,14 @@ struct FinchIntro: View {
         case .chooseEmber:
             VStack(spacing: 14) {
                 title("Which light calls you?")
-                body2("Your Flame will carry its colour. Every light can grow later.")
+                body2("Your Flame will carry its color. Every light can grow later.")
                 emberRing.frame(height: 380)
                 primary("Warm this ember", disabled: ember == nil) { go(.warm) }
             }
         case .warm:
             VStack(spacing: 16) {
-                title(warmth > 0.66 ? "Almost…" : "Hold it close. Keep it warm.")
-                body2("Touch and hold the ember on the stone circle.")
+                title(warmth > 0.66 ? "Almost…" : "Keep it warm")
+                body2("Touch and hold the egg until it wakes.")
                 Spacer().frame(height: 20)
             }
         case .born:
@@ -440,7 +440,7 @@ struct FinchIntro: View {
             : model.journey.did("Three slow breaths", detail: "Your very first light.", realm: .stillwater, minutes: 1)
         FeelHaptics.shared.ignite(); FeelSound.shared.catchLight()
         scene.hero.react(.cheer)
-        say("You did it. That's my first light!")
+        say("You did it. That's my first light.")
         withAnimation(.spring(duration: 0.4)) { firstOutcome = o }
         scene.fadeVitality(to: 1, over: 2.4)               // and the Sanctuary wakes, all its colour back
     }

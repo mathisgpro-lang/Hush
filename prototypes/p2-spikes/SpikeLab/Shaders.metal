@@ -283,7 +283,13 @@ void groveRestore(realitykit::surface_parameters params)
         sway = float2(0.0);
         green = 0.0;
     }
-    half4 col = params.textures().base_color().sample(s, tuv + ripple * (1.0 - paleW) + sway + flow + breeze + cloud);
+    // Painted flames move (Mathis: "the fire isn't moving"): inside each lantern's core the paint wobbles and licks
+    // upward, every flame in its own rhythm.
+    half4 lm = params.textures().custom().sample(s, tuv);          // the lanterns map, read once for everything
+    float core0 = float(lm.g);
+    float2 lick = float2(sin(uv.y * 520.0 - t * 11.0 + uv.x * 90.0) * 0.0007 + sin(uv.y * 210.0 - t * 6.3) * 0.0004,
+                         -(0.5 + 0.5 * sin(t * 8.0 + uv.x * 400.0 + uv.y * 60.0)) * 0.0011) * core0;
+    half4 col = params.textures().base_color().sample(s, tuv + ripple * (1.0 - paleW) + sway + flow + breeze + cloud + lick);
     if (hasLife && skyM > 0.01) {
         // Clouds drift without end: two readings sliding the same way, crossfaded (no jump, no visible loop).
         float2 dir = float2(0.012, 0.0015);
@@ -311,7 +317,6 @@ void groveRestore(realitykit::surface_parameters params)
     // Lanterns (custom texture: R = order of the nearest lantern, G = the lantern itself, B = its pool of light).
     // R (order) must not be interpolated between lanterns or at its edge, so it's read with nearest filtering.
     constexpr sampler sn(address::clamp_to_edge, filter::nearest);
-    half4 lm = params.textures().custom().sample(s, tuv);
     float order = float(params.textures().custom().sample(sn, tuv).r), core = float(lm.g), pool = float(lm.b);
     float lit = step(0.001, order) * smoothstep(order - 0.004, order, r);
     float lum = dot(rgb, float3(0.299, 0.587, 0.114));
@@ -320,8 +325,10 @@ void groveRestore(realitykit::surface_parameters params)
         // Every flame alive on its own: an uneven flicker, and its pool of light swaying with it, so the light and
         // the shadows on the floor, walls and books breathe with the fire.
         flicker = 0.78 + 0.22 * s2noise(float2(t * 5.5 + order * 53.0, order * 17.0)) + 0.05 * sin(t * 19.0 + order * 80.0);
-        float2 jit = float2(sin(t * 6.1 + order * 41.0), cos(t * 4.7 + order * 23.0)) * 0.003;
-        pool = float(params.textures().custom().sample(s, tuv + jit).b);
+        if (pool > 0.004) {                                         // only where there is light to sway
+            float2 jit = float2(sin(t * 6.1 + order * 41.0), cos(t * 4.7 + order * 23.0)) * 0.003;
+            pool = float(params.textures().custom().sample(s, tuv + jit).b);
+        }
     }
     float flare = (1.0 - smoothstep(0.0, 0.006, abs(order - c.z))) * exp(-c.w * 2.5);
 
@@ -566,7 +573,9 @@ void stoneLive(realitykit::surface_parameters params)
         float bend = sin(t * 1.5 + ph + uv.y * 10.0) * 0.6 + sin(t * 2.7 + ph * 1.7) * 0.4;
         sway = float2(bend * 0.0022 * (0.35 + roll * 1.1 + wind), cos(t * 1.2 + ph) * 0.0006) * plant;
     }
-    half4 col = params.textures().base_color().sample(s, tuv + ripple + flow + sway + cloud);
+    float2 lick = float2(sin(uv.y * 520.0 - t * 11.0 + uv.x * 90.0) * 0.0007 + sin(uv.y * 210.0 - t * 6.3) * 0.0004,
+                         -(0.5 + 0.5 * sin(t * 8.0 + uv.x * 400.0 + uv.y * 60.0)) * 0.0011) * saturate(fire * 1.5);   // flames lick upward
+    half4 col = params.textures().base_color().sample(s, tuv + ripple + flow + sway + cloud + lick);
     if (params.material_constants().clearcoat_roughness_scale() > 0.5 && skyM > 0.01) {
         // (The map) its sea of clouds drifts without end: two readings sliding, crossfaded (decision 142).
         float2 dir = float2(0.01, 0.0012);

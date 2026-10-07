@@ -39,6 +39,21 @@ final class RealmScene {
     @ObservationIgnored private var flies: Entity?
     /// Things that float in the sky, cut out of the painting (tools/build_life.py): books drift and flap their pages,
     /// islands bob, each in its own rhythm (decision 142).
+    @ObservationIgnored private var flames: [(e: Entity, order: Float)] = []
+    @ObservationIgnored private var lastMatKey = SIMD4<Float>(-1, -1, -1, -1)
+    @ObservationIgnored private var flamesCheckedAt: Float = -1
+    static func flame(size s: Float) -> ParticleEmitterComponent {
+        var p = ParticleEmitterComponent()
+        p.emitterShape = .sphere; p.emitterShapeSize = [0.0025 * s, 0.0015 * s, 0.0025 * s]
+        p.emissionDirection = [0, 1, 0]; p.speed = 0.014 * s; p.speedVariation = 0.005 * s
+        p.mainEmitter.birthRate = 26; p.mainEmitter.lifeSpan = 0.42; p.mainEmitter.lifeSpanVariation = 0.14
+        p.mainEmitter.size = 0.0048 * s; p.mainEmitter.sizeMultiplierAtEndOfLifespan = 0.15
+        p.mainEmitter.blendMode = .additive
+        p.mainEmitter.color = .evolving(start: .single(UIColor(red: 1, green: 0.9, blue: 0.6, alpha: 0.9)),
+                                        end: .single(UIColor(red: 1, green: 0.38, blue: 0.1, alpha: 0.5)))
+        p.mainEmitter.noiseStrength = 0.003; p.mainEmitter.noiseScale = 2; p.mainEmitter.noiseAnimationSpeed = 2
+        return p
+    }
     @ObservationIgnored private var floaters: [(e: Entity, base: SIMD3<Float>, phase: Float, book: Bool, scale: Float)] = []
     @ObservationIgnored private var strand: ModelEntity?
     @ObservationIgnored private var lanterns: [(pos: SIMD3<Float>, order: Float)] = []
@@ -206,9 +221,23 @@ final class RealmScene {
             let n = list.count
             lanterns = list.enumerated().map { k, l in
                 let order = Float(1 + Int(254 * Double(k) / Double(max(1, n - 1)))) / 255
-                return (point(hx(Float(l["u"]!)), Float(l["v"]!), nearer: 0.01), order)
+                let lu = Float(l["u"]!)                     // new realms store the wide painting's u; the Grove the home view's
+                return (point(hasWater ? lu : hx(lu), Float(l["v"]!), nearer: 0.01), order)
             }
             lanternTotal = lanterns.count
+            // Living flames on the bigger lanterns (the 16 largest), each lit only once its lantern is relit.
+            let big = list.enumerated().sorted { ($0.element["size"] ?? 0) > ($1.element["size"] ?? 0) }.prefix(16)
+            for (k, l) in big {
+                guard l["size"] != nil else { continue }
+                let lu = Float(l["u"]!), sz = Float(l["size"] ?? 20)
+                let sc = max(0.45, min(1.3, sqrt(sz) / 5.5))
+                let e = Entity()
+                e.components.set(Self.flame(size: sc))
+                e.position = point(hasWater ? lu : hx(lu), Float(l["v"]!) + 0.004, nearer: 0.014)
+                e.isEnabled = false
+                root.addChild(e)
+                flames.append((e, lanterns[k].order))
+            }
         }
 
         // Fireflies: they come back as the Grove restores.
@@ -295,6 +324,11 @@ final class RealmScene {
     }
 
     func update(dt: Float) {
+        if time - flamesCheckedAt > 0.5 {             // flames show on relit lanterns (checked twice a second)
+            flamesCheckedAt = time
+            let r = Restoration.amount(depth: heartDepth)
+            for f in flames where f.e.isEnabled != (f.order <= r) { f.e.isEnabled = f.order <= r }
+        }
         for f in floaters {             // drift, bob, tilt; books open and close their pages like wings
             let t = time + f.phase
             f.e.position = f.base + SIMD3(sin(t * 0.31) * 0.004, sin(t * 0.73) * 0.005 + sin(t * 0.21) * 0.002, 0)
@@ -333,7 +367,11 @@ final class RealmScene {
         }
 
         let r = Restoration.amount(depth: heartDepth)
-        if let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
+        // Re-sending the painting's material to the graphics chip is costly (the books stuttered): only when something
+        // visible changed (a relight flare is running, the wind, the hour, restoration).
+        let key = SIMD4<Float>(r, abs(life.wind), hero.hour / 24, flareAge < 3 ? flareAge : 3)
+        if simd_reduce_max(simd_abs(key - lastMatKey)) > 0.01, let painting, var comp = painting.model, var m = comp.materials.first as? CustomMaterial {
+            lastMatKey = key
             m.custom.value = [r, vitality, flareOrder, flareAge]
             m.roughness = .init(floatLiteral: abs(life.wind))
             m.clearcoat = .init(floatLiteral: max(0.0001, hero.hour / 24))   // the light of the hour (new realms)

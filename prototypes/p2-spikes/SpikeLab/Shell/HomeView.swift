@@ -93,6 +93,8 @@ struct HomeView: View {
                     cockpitBar
                 }
                 .padding(.horizontal, 16)
+                .opacity(flameOpen ? 0 : 1)                      // Your Flame is its own quiet page
+                .animation(Motion.soft, value: flameOpen)
 
                 if let s = focused { VStack { Spacer(); spotCard(s).padding(.horizontal, 16) } }
                 if let call = open { card(call, size: geo.size) }
@@ -434,7 +436,7 @@ struct HomeView: View {
                 }
                 .padding(.top, 4)
                 Button { withAnimation(.sheet) { model.skip(call.id); open = nil } } label: {
-                    Text("Not today (skip, no penalty)").font(.ui(14)).foregroundStyle(ink.opacity(0.6))
+                    Text("Not today").font(.ui(14)).foregroundStyle(ink.opacity(0.6))
                 }
             }
             .padding(20)

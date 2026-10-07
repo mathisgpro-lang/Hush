@@ -19,49 +19,68 @@ struct FlameSheet: View {
 
     @State private var friend: Friend?
     @State private var tab = 0                       // Character · Journey · Friends
-    private static let sockets: [(String, CGFloat, CGFloat)] = [("Crown", 0.501, 0.097), ("Aura", 0.342, 0.221), ("Cloak", 0.660, 0.221),
-                                                                ("Trinket", 0.288, 0.51), ("Companion", 0.718, 0.51)]
-    private let wood = Color(red: 0.13, green: 0.08, blue: 0.05)
+    @Namespace private var tabLine
 
-    // A fantasy character sheet (decision 143, Mathis: "like a Witcher inventory"): Codex's carved frame fills the
-    // screen, your Spark alive on the hearth, five equipment sockets (filled from the shop, later), your level and
-    // streak on the two parchment panels; below, ribbon tabs: your character, your journey, your friends.
+    // Your Flame, quiet (decision 147, Mathis: "laggy… you can see the edge… too much information… too much in your
+    // face, should be more subtle, more minimalist"): one screen, no scrolling. Your Spark breathing at the centre,
+    // five fine rings for what it will wear (the shop, later), three quiet numbers, and one small panel at a time.
     var body: some View {
         let _ = PerfProbe.body("FlameSheet")
-        GeometryReader { g in
-            let w = g.size.width, heroH = w * 1730 / 909
-            ZStack(alignment: .topTrailing) {
-                wood.ignoresSafeArea()
-                ScrollViewReader { proxy in
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        Color.clear.frame(height: 0).id("top")
-                        hero(w: w, h: heroH)
-                        ribbons.padding(.top, -18)
-                        Group {
-                            switch tab {
-                            case 0: characterTab
-                            case 1: journeyTab
-                            default: card { FriendsStrip(friends: Friend.samples) { f in withAnimation(.sheet) { friend = f } } }
-                            }
-                        }
-                        .padding(.horizontal, 16).padding(.top, 12)
-                        Spacer().frame(height: 40).id("bottom")
+        let l = Progression.level(xp: j.totalXP), s = j.streak()
+        ZStack(alignment: .topTrailing) {
+            LinearGradient(colors: [Color(red: 0.06, green: 0.04, blue: 0.035).opacity(0.9), Color(red: 0.09, green: 0.055, blue: 0.04).opacity(0.97)], startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea()
+                .onTapGesture { }
+            VStack(spacing: 0) {
+                Spacer(minLength: 24)
+                spark
+                VStack(spacing: 4) {
+                    Text(j.name.isEmpty ? "Your Spark" : "\(j.name)'s Spark").font(.story(26, .medium).italic()).foregroundStyle(Theme.cream)
+                    Text("SPARK · DAY \(j.dayNumber())").font(.ui(11, .semibold)).tracking(2).foregroundStyle(Theme.champagne.opacity(0.8))
+                }
+                .padding(.top, 6)
+                Spacer(minLength: 22)
+                // Three quiet numbers.
+                HStack(spacing: 0) {
+                    figure("\(l.level)", "level")
+                    Rectangle().fill(Theme.cream.opacity(0.15)).frame(width: 0.5, height: 34)
+                    figure("\(s.current)", s.current == 1 ? "day in a row" : "days in a row")
+                    Rectangle().fill(Theme.cream.opacity(0.15)).frame(width: 0.5, height: 34)
+                    figure("\(j.embers)", "Embers")
+                }
+                // XP: one hairline, filling.
+                VStack(spacing: 6) {
+                    GeometryReader { g in
+                        Capsule().fill(Theme.cream.opacity(0.12))
+                        Capsule().fill(Theme.champagne.opacity(0.85)).frame(width: g.size.width * CGFloat(l.into) / CGFloat(max(1, l.span)))
+                    }
+                    .frame(height: 2)
+                    Text("\(l.span - l.into) XP to level \(l.level + 1)").font(.story(13).italic()).foregroundStyle(Theme.cream.opacity(0.55))
+                }
+                .padding(.horizontal, 60).padding(.top, 14)
+                Spacer(minLength: 22)
+                tabsRow
+                Group {
+                    switch tab {
+                    case 0: characterPanel
+                    case 1: journeyPanel
+                    default: FriendsStrip(friends: Friend.samples, onDark: true) { f in withAnimation(Motion.soft) { friend = f } }
                     }
                 }
-                .onReceive(NotificationCenter.default.publisher(for: .perfScroll)) { n in
-                    withAnimation(.easeInOut(duration: 1.2)) { proxy.scrollTo(n.object as? String ?? "top") }
-                }
-                }
-                .ignoresSafeArea(edges: .top)
-                Button { close() } label: {
-                    Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.cream)
-                        .frame(width: 36, height: 36).background(Circle().fill(.black.opacity(0.5)))
-                        .overlay(Circle().stroke(Theme.gold.opacity(0.5), lineWidth: 1))
-                }
-                .padding(.trailing, 16).padding(.top, 4)
-                if let f = friend { FriendProfile(friend: f) { withAnimation(.sheet) { friend = nil } }.transition(.move(edge: .bottom)) }
+                .frame(height: 150)
+                .padding(.horizontal, 24).padding(.top, 14)
+                .transition(.opacity)
+                .id(tab)
+                Spacer(minLength: 18)
             }
+            Button { close() } label: {
+                Image(systemName: "xmark").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.cream.opacity(0.8))
+                    .frame(width: 34, height: 34).background(Circle().fill(.white.opacity(0.08)))
+                    .overlay(Circle().stroke(Theme.champagne.opacity(0.2), lineWidth: 0.5))
+            }
+            .buttonStyle(PressableStyle())
+            .padding(.trailing, 18).padding(.top, 6)
+            if let f = friend { FriendProfile(friend: f) { withAnimation(Motion.soft) { friend = nil } }.transition(.move(edge: .bottom)) }
         }
         .onAppear {
             bob = true
@@ -69,123 +88,89 @@ struct FlameSheet: View {
         }
     }
 
-    // MARK: The hero: the frame, your Spark on the hearth, the sockets, the two parchment panels
-
-    private func hero(w: CGFloat, h: CGFloat) -> some View {
-        let l = Progression.level(xp: j.totalXP), s = j.streak()
-        return ZStack(alignment: .topLeading) {
-            Image(uiImage: UIImage(named: "sheet-frame.jpg") ?? UIImage()).resizable().frame(width: w, height: h)
-            // Your Spark, alive on the hearth (breathing, its glow pulsing).
-            ZStack {
-                Circle().fill(RadialGradient(colors: [Color.orange.opacity(0.55), .clear], center: .center, startRadius: 4, endRadius: w * 0.26))
-                    .frame(width: w * 0.52, height: w * 0.52).scaleEffect(bob ? 1.06 : 0.94)
-                Image(uiImage: SparkTint.image("spark-keyed.png", ember: model.emberID) ?? UIImage()).resizable().scaledToFit()
-                    .frame(height: w * 0.3).offset(y: bob ? -5 : 3)
+    /// Your Spark, breathing in its glow, ringed by five fine sockets (empty for now: the shop fills them later).
+    private var spark: some View {
+        ZStack {
+            Circle().fill(RadialGradient(colors: [Color(red: 1, green: 0.6, blue: 0.25).opacity(0.35), .clear], center: .center, startRadius: 6, endRadius: 120))
+                .frame(width: 240, height: 240).scaleEffect(bob ? 1.05 : 0.95)
+            Circle().stroke(Theme.champagne.opacity(0.12), lineWidth: 0.5).frame(width: 210, height: 210)
+            ForEach(0..<5, id: \.self) { i in
+                let a = (Double(i) / 5) * 2 * .pi - .pi / 2
+                Circle().stroke(Theme.champagne.opacity(0.35), lineWidth: 0.75).frame(width: 26, height: 26)
+                    .background(Circle().fill(Color.black.opacity(0.25)))
+                    .offset(x: cos(a) * 105, y: sin(a) * 105)
             }
-            .animation(.easeInOut(duration: 2.1).repeatForever(autoreverses: true), value: bob)
-            .position(x: w * 0.5, y: h * 0.6)
-            // Name and stage on a banner over the carpet.
-            VStack(spacing: 1) {
-                Text(j.name.isEmpty ? "Your Spark" : "\(j.name)'s Spark").font(.story(24, .semibold)).foregroundStyle(Theme.cream)
-                Text("Spark · day \(j.dayNumber())").font(.ui(13, .semibold)).foregroundStyle(Theme.gold)
-            }
-            .padding(.horizontal, 18).padding(.vertical, 6)
-            .background(Capsule().fill(.black.opacity(0.45)))
-            .position(x: w * 0.5, y: h * 0.84)
-            // The sockets: locked until the shop.
-            ForEach(Self.sockets, id: \.0) { name, x, y in
-                VStack(spacing: 2) {
-                    Image(systemName: "lock.fill").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.gold.opacity(0.75))
-                    Text(name).font(.ui(9, .bold)).foregroundStyle(Theme.cream.opacity(0.75))
-                }
-                .position(x: w * x, y: h * y)
-            }
-            // Left parchment: your level.
-            VStack(spacing: 6) {
-                Text("LEVEL").font(.ui(10, .heavy)).tracking(1.5).foregroundStyle(Theme.ink.opacity(0.7))
-                ZStack {
-                    Image(uiImage: UIImage(named: "wax-seal.png") ?? UIImage()).resizable().scaledToFit().frame(width: w * 0.17)
-                    Text("\(l.level)").font(.num(24, .heavy)).foregroundStyle(Theme.cream).shadow(color: .black.opacity(0.4), radius: 2)
-                }
-                Text("\(j.totalXP)").font(.num(20, .heavy)).foregroundStyle(Theme.ink)
-                Text("XP").font(.ui(10, .bold)).foregroundStyle(Theme.ink.opacity(0.6))
-                Capsule().fill(Theme.ink.opacity(0.15)).frame(width: w * 0.16, height: 5)
-                    .overlay(alignment: .leading) { Capsule().fill(Theme.accent).frame(width: w * 0.16 * CGFloat(l.into) / CGFloat(max(1, l.span)), height: 5) }
-                Text("\(l.span - l.into) to \(l.level + 1)").font(.ui(10)).foregroundStyle(Theme.ink.opacity(0.6))
-                Text("Day \(min(j.dayNumber(), Progression.arcLength)) of \(Progression.arcLength)").font(.ui(11, .bold)).foregroundStyle(Theme.accent).padding(.top, 4)
-            }
-            .frame(width: w * 0.22)
-            .position(x: w * 0.148, y: h * 0.29)
-            // Right parchment: your streak and your Embers.
-            VStack(spacing: 6) {
-                Image(systemName: "flame.fill").font(.system(size: 26)).foregroundStyle(LinearGradient(colors: [Color(red: 1, green: 0.85, blue: 0.4), .orange], startPoint: .top, endPoint: .bottom))
-                Text("\(s.current)").font(.num(28, .heavy)).foregroundStyle(Theme.ink)
-                Text("days in a row").font(.ui(10, .bold)).foregroundStyle(Theme.ink.opacity(0.65)).multilineTextAlignment(.center)
-                HStack(spacing: 2) {
-                    ForEach(0..<2, id: \.self) { i in Image(systemName: i < s.shields ? "shield.fill" : "shield").font(.system(size: 11)) }
-                }
-                .foregroundStyle(Color(red: 0.25, green: 0.45, blue: 0.7))
-                Text("best \(s.best)").font(.ui(10)).foregroundStyle(Theme.ink.opacity(0.6))
-                EmberCoin(size: 24).padding(.top, 6)
-                Text("\(j.embers)").font(.num(18, .heavy)).foregroundStyle(Theme.ink)
-                Text("Embers").font(.ui(10, .bold)).foregroundStyle(Theme.ink.opacity(0.6))
-            }
-            .frame(width: w * 0.22)
-            .position(x: w * 0.852, y: h * 0.29)
+            Image(uiImage: SparkTint.image("spark-keyed.png", ember: model.emberID) ?? UIImage()).resizable().scaledToFit()
+                .frame(height: 120).offset(y: bob ? -4 : 3)
         }
-        .frame(width: w, height: h)
+        .frame(height: 240)
+        .animation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true), value: bob)
     }
 
-    // MARK: Ribbons and tabs
+    private func figure(_ big: String, _ label: String) -> some View {
+        VStack(spacing: 3) {
+            Text(big).font(.num(26, .bold)).foregroundStyle(Theme.cream).monospacedDigit()
+            Text(label).font(.story(13).italic()).foregroundStyle(Theme.cream.opacity(0.55))
+        }
+        .frame(maxWidth: .infinity)
+    }
 
-    private var ribbons: some View {
-        HStack(spacing: 8) {
+    private var tabsRow: some View {
+        HStack(spacing: 26) {
             ForEach(Array(["Character", "Journey", "Friends"].enumerated()), id: \.offset) { i, t in
-                Button { withAnimation(.spring(duration: 0.3)) { tab = i } } label: {
-                    Text(t).font(.story(15, .semibold))
-                        .padding(.horizontal, 14).padding(.vertical, 9)
-                        .background(RibbonShape().fill(tab == i ? LinearGradient(colors: [Color(red: 0.42, green: 0.14, blue: 0.11), Color(red: 0.3, green: 0.09, blue: 0.08)], startPoint: .top, endPoint: .bottom)
-                                                        : LinearGradient(colors: [Color(red: 0.22, green: 0.15, blue: 0.11), Color(red: 0.16, green: 0.11, blue: 0.08)], startPoint: .top, endPoint: .bottom)))
-                        .overlay(RibbonShape().stroke(Theme.champagne.opacity(tab == i ? 0.5 : 0.18), lineWidth: 0.6))
-                        .foregroundStyle(Theme.cream.opacity(tab == i ? 1 : 0.7))
+                Button { withAnimation(Motion.soft) { tab = i } } label: {
+                    VStack(spacing: 5) {
+                        Text(t).font(.story(15, tab == i ? .medium : .regular)).foregroundStyle(Theme.cream.opacity(tab == i ? 1 : 0.45))
+                        ZStack {
+                            if tab == i { Capsule().fill(Theme.champagne).frame(height: 1.5).matchedGeometryEffect(id: "t", in: tabLine) }
+                            else { Color.clear.frame(height: 1.5) }
+                        }
+                    }
+                    .fixedSize()
                 }
                 .buttonStyle(PressableStyle())
             }
         }
     }
 
-    private var characterTab: some View {
-        VStack(spacing: 12) {
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                ForEach(Pillar6.allCases, id: \.self) { p in
-                    let v = j.attribute(p)
-                    VStack(spacing: 4) {
-                        Image(uiImage: UIImage(named: "pillar-\(p.rawValue.lowercased()).png") ?? UIImage()).resizable().scaledToFit().frame(width: 58, height: 58)
-                        Text(p.attribute.uppercased()).font(.ui(10, .heavy)).tracking(1.2).foregroundStyle(Theme.ink.opacity(0.8))
-                        Text("\(v)").font(.num(24, .heavy)).foregroundStyle(v > 0 ? Theme.ink : Theme.ink.opacity(0.35)).monospacedDigit()
-                        if let d = j.dayOne[p.rawValue] {
-                            Text("Day 1: \(["low", "okay", "good"][max(0, min(2, d))])").font(.ui(9)).foregroundStyle(Theme.ink.opacity(0.5))
-                        }
-                    }
-                    .padding(.vertical, 10).frame(maxWidth: .infinity).paperCard(14)
+    /// Six emblems, each with its number (Day 1 → today in a quiet line under it).
+    private var characterPanel: some View {
+        HStack(spacing: 0) {
+            ForEach(Pillar6.allCases, id: \.self) { p in
+                let v = j.attribute(p)
+                VStack(spacing: 5) {
+                    Image(uiImage: UIImage(named: "pillar-\(p.rawValue.lowercased()).png") ?? UIImage()).resizable().scaledToFit()
+                        .frame(width: 40, height: 40).opacity(v > 0 ? 1 : 0.55)
+                    Text("\(v)").font(.num(16, .bold)).foregroundStyle(Theme.cream.opacity(v > 0 ? 1 : 0.45)).monospacedDigit()
+                    Text(p.attribute).font(.story(10).italic()).foregroundStyle(Theme.cream.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.8)
                 }
+                .frame(maxWidth: .infinity)
             }
-            .padding(14).background(SheetPaper(corner: 20))
-            card { stat("\(j.daysLived)", "days lived", "Every day you live counts, forever.") }
         }
     }
 
-    private var journeyTab: some View {
-        VStack(spacing: 12) {
-            card { week }
-            card { arcCard }
-            card { stageStrip }
-            card {
-                HStack(spacing: 10) {
-                    Image(systemName: "sparkles").foregroundStyle(gold)
-                    Text(nextLine).font(.ui(15)).foregroundStyle(cream)
-                    Spacer()
+    /// This week's seven flames, and the 66-day line.
+    private var journeyPanel: some View {
+        let d = min(j.dayNumber(), Progression.arcLength)
+        return VStack(spacing: 18) {
+            HStack(spacing: 0) {
+                ForEach(Array(zip(["M", "T", "W", "T", "F", "S", "S"], j.thisWeek).enumerated()), id: \.offset) { _, day in
+                    VStack(spacing: 5) {
+                        Image(systemName: "flame.fill").font(.system(size: 16))
+                            .foregroundStyle(day.1 ? AnyShapeStyle(LinearGradient(colors: [Color(red: 1, green: 0.88, blue: 0.55), Color(red: 1, green: 0.6, blue: 0.28)], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(Theme.cream.opacity(0.15)))
+                        Text(day.0).font(.ui(10, .semibold)).foregroundStyle(Theme.cream.opacity(0.45))
+                    }
+                    .frame(maxWidth: .infinity)
                 }
+            }
+            VStack(spacing: 6) {
+                GeometryReader { g in
+                    Capsule().fill(Theme.cream.opacity(0.12))
+                    Capsule().fill(Theme.champagne.opacity(0.85)).frame(width: g.size.width * CGFloat(d) / CGFloat(Progression.arcLength))
+                }
+                .frame(height: 2)
+                Text(d >= Progression.arcLength ? "You graduated. A new arc begins." : "Day \(d) of \(Progression.arcLength) · at 66 days, your habits become you")
+                    .font(.story(13).italic()).foregroundStyle(Theme.cream.opacity(0.55)).multilineTextAlignment(.center)
             }
         }
     }

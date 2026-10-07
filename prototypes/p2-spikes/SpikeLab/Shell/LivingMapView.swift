@@ -250,7 +250,7 @@ struct LivingMapView: View {
                 Text(have >= r.price ? "You have \(have) Embers, all earned by living." : "You have \(have) of \(r.price) Embers. Every quest, every day kept adds more.")
                     .font(.ui(12)).foregroundStyle(ink.opacity(0.6))
             } else {
-                Label("Still in the Hush. It wakes with \(r.opensWhen).", systemImage: "moon.zzz.fill")
+                Label("Still asleep in the Hush. It wakes with \(r.opensWhen).", systemImage: "moon.zzz.fill")
                     .font(.ui(14)).foregroundStyle(ink.opacity(0.7))
             }
         }

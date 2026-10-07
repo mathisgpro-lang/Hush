@@ -52,13 +52,16 @@ struct Friend: Identifiable {
 /// The row of friends in Your Flame: their Sparks and streaks; tap one to open their profile.
 struct FriendsStrip: View {
     let friends: [Friend]
+    var onDark = false
     let open: (Friend) -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Friends").font(.ui(15, .bold)).foregroundStyle(Theme.ink)
-                Spacer()
-                Text("sample friends until sharing arrives").font(.ui(10)).foregroundStyle(Theme.ink.opacity(0.45))
+            if !onDark {
+                HStack {
+                    Text("Friends").font(.ui(15, .bold)).foregroundStyle(Theme.ink)
+                    Spacer()
+                    Text("sample friends until sharing arrives").font(.ui(10)).foregroundStyle(Theme.ink.opacity(0.45))
+                }
             }
             HStack(spacing: 0) {
                 ForEach(friends) { f in
@@ -66,12 +69,12 @@ struct FriendsStrip: View {
                         VStack(spacing: 3) {
                             Image(uiImage: SparkTint.image("spark-keyed.png", ember: f.ember) ?? UIImage()).resizable().scaledToFit()
                                 .frame(height: 44).opacity(f.streak > 0 ? 1 : 0.55)
-                            Text(f.name).font(.ui(12, .bold)).foregroundStyle(Theme.ink)
+                            Text(f.name).font(.story(13, .medium)).foregroundStyle(onDark ? Theme.cream : Theme.ink)
                             HStack(spacing: 2) {
                                 Image(systemName: "flame.fill").font(.system(size: 9))
                                 Text("\(f.streak)").font(.num(11, .bold))
                             }
-                            .foregroundStyle(f.streak > 0 ? Theme.accent : Theme.ink.opacity(0.35))
+                            .foregroundStyle(f.streak > 0 ? (onDark ? Theme.champagne : Theme.accent) : (onDark ? Theme.cream : Theme.ink).opacity(0.35))
                         }
                         .frame(maxWidth: .infinity)
                     }
