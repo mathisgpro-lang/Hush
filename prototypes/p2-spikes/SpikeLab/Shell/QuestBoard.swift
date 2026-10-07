@@ -16,7 +16,7 @@ struct QuestBoard: View {
     @GestureState private var drag: CGFloat = 0
 
     private var left: Int { calls.filter { !$0.done }.count }
-    private static let rowH: CGFloat = 60, gap: CGFloat = 8, peek: CGFloat = 9
+    private static let rowH: CGFloat = 64, gap: CGFloat = 8, peek: CGFloat = 9
 
     var body: some View {
         let n = calls.count
@@ -27,7 +27,7 @@ struct QuestBoard: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(left == 0 ? (calls.isEmpty ? "Your day is ready" : "All done today") : left == 1 ? "1 quest left today" : "\(left) quests left today")
                         .font(.story(17, .medium)).foregroundStyle(Theme.cream)
-                    Text(streakLine).font(.story(13).italic()).foregroundStyle(Theme.cream.opacity(0.6)).lineLimit(1)
+                    Text(streakLine).font(.story(13).italic()).foregroundStyle(Theme.cream.opacity(0.8)).lineLimit(1)
                 }
                 Spacer()
                 Button(action: add) {
@@ -50,7 +50,7 @@ struct QuestBoard: View {
                     ForEach(Array(calls.enumerated()), id: \.element.id) { i, c in
                         let behind = !expanded && i > 0
                         QuestRow(call: c, open: { open(c) }, tick: { p in tick(c, p) })
-                            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(red: 0.1, green: 0.075, blue: 0.065).opacity(behind ? 0.95 : 0)))
+                            .brightness(behind ? -0.06 * Double(min(i, 2)) : 0)
                             .scaleEffect(x: behind ? 1 - CGFloat(min(i, 2)) * 0.05 : 1, y: 1)
                             .offset(y: expanded ? CGFloat(i) * (Self.rowH + Self.gap) : CGFloat(min(i, 2)) * Self.peek)
                             .opacity(behind ? (i <= 2 ? 1 - Double(i) * 0.25 : 0) : 1)
@@ -72,14 +72,14 @@ struct QuestBoard: View {
                             Image(systemName: expanded ? "chevron.down" : "chevron.up").font(.system(size: 10, weight: .bold))
                             Text(expanded ? "Show less" : "\(n - 1) more").font(.ui(12, .semibold))
                         }
-                        .foregroundStyle(Theme.cream.opacity(0.55)).frame(maxWidth: .infinity).padding(.top, 2)
+                        .foregroundStyle(Theme.cream.opacity(0.85)).frame(maxWidth: .infinity).padding(.top, 2)
                     }
                     .buttonStyle(.plain)
                 }
             }
         }
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.black.opacity(0.58)))
+        .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.black.opacity(0.6)))
         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Theme.champagne.opacity(0.2), lineWidth: 0.5))
         .contentShape(Rectangle())
         .highPriorityGesture(DragGesture(minimumDistance: 14)
@@ -106,18 +106,18 @@ struct QuestRow: View {
             Button(action: open) {
                 HStack(spacing: 12) {
                     ZStack {
-                        Circle().fill(call.realm.color.opacity(0.18)).frame(width: 40, height: 40)
+                        Circle().fill(call.realm.color.opacity(0.22)).frame(width: 42, height: 42)
                         Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage()).resizable().scaledToFit().frame(width: 28, height: 28)
                     }
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(call.title).font(.story(16, .medium)).foregroundStyle(Theme.cream.opacity(call.done ? 0.45 : 1))
-                            .strikethrough(call.done, color: Theme.cream.opacity(0.4)).lineLimit(1)
+                        Text(call.title).font(.story(17, .semibold)).foregroundStyle(Theme.ink.opacity(call.done ? 0.4 : 1))
+                            .strikethrough(call.done, color: Theme.ink.opacity(0.4)).lineLimit(1)
                         HStack(spacing: 6) {
                             Text(call.counted && !call.done ? "\(call.progress)/\(call.target) \(call.unit)" : "\(call.minutes) min")
                             Text("·")
                             HStack(spacing: 3) { EmberCoin(size: 11); Text("+10") }
                         }
-                        .font(.ui(12, .semibold)).foregroundStyle(Theme.cream.opacity(call.done ? 0.35 : 0.6))
+                        .font(.ui(13, .semibold)).foregroundStyle(Theme.ink.opacity(call.done ? 0.35 : 0.65))
                     }
                     Spacer(minLength: 0)
                 }
@@ -131,10 +131,10 @@ struct QuestRow: View {
             } label: {
                 ZStack {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(call.done ? AnyShapeStyle(LinearGradient(colors: [Color(red: 1, green: 0.92, blue: 0.72), Theme.champagne], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(Color.white.opacity(0.08)))
-                    RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Theme.champagne.opacity(call.done ? 0 : 0.45), lineWidth: 1)
-                    Image(systemName: "checkmark").font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(call.done ? Color(red: 0.35, green: 0.2, blue: 0.06) : Theme.champagne.opacity(0.7))
+                        .fill(call.done ? AnyShapeStyle(LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.4), Color(red: 0.93, green: 0.55, blue: 0.22)], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(Color.white))
+                    RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(call.done ? .clear : Theme.paperEdge.opacity(0.55), lineWidth: 1.2)
+                    Image(systemName: "checkmark").font(.system(size: 19, weight: .heavy))
+                        .foregroundStyle(call.done ? .white : Color(red: 0.42, green: 0.62, blue: 0.3))
                         .scaleEffect(call.done ? 1.1 : 1)
                 }
                 .frame(width: 50, height: 46)
@@ -144,9 +144,12 @@ struct QuestRow: View {
             .buttonStyle(PressableStyle())
             .disabled(call.done)
         }
-        .padding(.horizontal, 10).frame(height: 60)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(red: 0.16, green: 0.12, blue: 0.1).opacity(call.done ? 0.97 : 1)))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.champagne.opacity(0.12), lineWidth: 0.5))
+        .padding(.horizontal, 10).frame(height: 64)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(LinearGradient(colors: [Color(red: 1, green: 0.98, blue: 0.93), Theme.paperTop], startPoint: .top, endPoint: .bottom))
+            .opacity(call.done ? 0.82 : 1))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Theme.paperEdge.opacity(0.35), lineWidth: 0.75))
+        .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
         .animation(.spring(response: 0.35, dampingFraction: 0.6), value: call.done)
     }
 }
