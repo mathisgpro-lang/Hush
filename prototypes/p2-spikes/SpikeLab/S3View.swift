@@ -33,7 +33,7 @@ final class RealmScene {
     @ObservationIgnored let root = Entity()
     @ObservationIgnored let camera = PerspectiveCamera()
     /// The Spark (decision 125), hovering over the Grove's stone circle.
-    @ObservationIgnored let hero = HeroRig(base: "spark", footInset: 0.045, reflection: false, glows: true, wander: 0.004, spirit: true)
+    @ObservationIgnored let hero = HeroRig(base: PixelMode.sparkBase, footInset: 0.045, reflection: false, glows: true, wander: 0.004, spirit: true)
     @ObservationIgnored let life = SanctuaryLife()
     @ObservationIgnored private var painting: ModelEntity?
     @ObservationIgnored private var flies: Entity?

@@ -34,7 +34,7 @@ enum SparkTint {
     /// Prepares every picture of your Spark in your ember's color in the background, at launch, so no screen ever
     /// waits for it (the first tint took ~45 ms on the main thread).
     nonisolated static func warmUp(ember: String) {
-        let names = ["spark-keyed.png", "stage-spark.png", "stage-flame.png", "stage-blaze.png", "stage-kindled.png", "stage-beyond.png"]
+        let names = [PixelMode.sparkImage, "spark-keyed.png", "stage-spark.png", "stage-flame.png", "stage-blaze.png", "stage-kindled.png", "stage-beyond.png"]
         DispatchQueue.global(qos: .utility).async {
             for n in names { _ = tinted(n, ember: ember, key: n + "|" + ember) }
         }

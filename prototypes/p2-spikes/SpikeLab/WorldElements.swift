@@ -16,19 +16,19 @@ final class WorldElements {
     private var lastFireflyRate: Float = -9, lastLean: Float = -9
 
     /// Painting uv → a point on the relief (from the scene).
-    func build(spot: (Float, Float) -> SIMD3<Float>, paintingW: Float, withClouds: Bool = true) async throws {
+    func build(spot: (Float, Float) -> SIMD3<Float>, paintingW: Float, withClouds: Bool = true, painted: Bool = true) async throws {
         // Brazier flames (uv of each flame's base, and its size).
         for (u, v, s) in [(0.139, 0.573, 1.0), (0.397, 0.579, 0.8), (0.737, 0.575, 1.0), (0.816, 0.548, 1.1), (0.308, 0.431, 1.1), (0.109, 0.378, 1.6)] as [(Float, Float, Float)] {
             let e = Entity()
             e.components.set(flame(size: s))
             e.position = spot(u, v) + SIMD3(0, 0, 0.004)
-            if !CommandLine.arguments.contains("-noflames") { root.addChild(e); flames.append(e) }
+            if painted && !CommandLine.arguments.contains("-noflames") { root.addChild(e); flames.append(e) }   // (placed for the painting)
         }
         // Waterfall feet: spray and rolling mist.
         for (u, v, s) in [(0.587, 0.155, 1.6), (0.865, 0.28, 1.4), (0.962, 0.427, 1.0), (0.03, 0.38, 0.8)] as [(Float, Float, Float)] {
             let spray = Entity(); spray.components.set(sprayEmitter(size: s))
             spray.position = spot(u, v) + SIMD3(0, 0.004, 0.004)
-            if !CommandLine.arguments.contains("-nospray") { root.addChild(spray) }            // (the rolling mist lives in the painting and the land shader: one emitter less each)
+            if painted && !CommandLine.arguments.contains("-nospray") { root.addChild(spray) }            // (the rolling mist lives in the painting and the land shader: one emitter less each)
         }
         // Fish glints on the open sea (lower right).
         let glints = Entity()

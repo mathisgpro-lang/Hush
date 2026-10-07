@@ -67,7 +67,7 @@ struct FriendsStrip: View {
                 ForEach(friends) { f in
                     Button { open(f) } label: {
                         VStack(spacing: 3) {
-                            Image(uiImage: SparkTint.image("spark-keyed.png", ember: f.ember) ?? UIImage()).resizable().scaledToFit()
+                            Image(uiImage: SparkTint.image(PixelMode.sparkImage, ember: f.ember) ?? UIImage()).resizable().scaledToFit()
                                 .frame(height: 44).opacity(f.streak > 0 ? 1 : 0.55)
                             Text(f.name).font(.story(13, .medium)).foregroundStyle(onDark ? Theme.cream : Theme.ink)
                             HStack(spacing: 2) {
@@ -100,7 +100,7 @@ struct FriendProfile: View {
                 Capsule().fill(ink.opacity(0.3)).frame(width: 40, height: 5).padding(.top, 10)
                 ZStack {
                     Circle().fill(RadialGradient(colors: [Color.orange.opacity(0.4), .clear], center: .center, startRadius: 4, endRadius: 64)).frame(width: 130, height: 130)
-                    Image(uiImage: SparkTint.image("spark-keyed.png", ember: friend.ember) ?? UIImage()).resizable().scaledToFit().frame(height: 92)
+                    Image(uiImage: SparkTint.image(PixelMode.sparkImage, ember: friend.ember) ?? UIImage()).resizable().scaledToFit().frame(height: 92)
                 }
                 .frame(height: 104)
                 VStack(spacing: 2) {

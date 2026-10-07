@@ -384,7 +384,7 @@ final class MapScene {
         }
 
         // Your Spark, hovering where you are.
-        let sparkTex: TextureResource = if let cg = SparkTint.image("spark-keyed.png", ember: ember)?.cgImage {
+        let sparkTex: TextureResource = if let cg = SparkTint.image(PixelMode.sparkImage, ember: ember)?.cgImage {
             try await TextureResource(image: cg, options: .init(semantic: .color))
         } else { try await TextureResource(named: "spark-keyed.png") }
         var su = UnlitMaterial(); su.color = .init(tint: .white, texture: .init(sparkTex))

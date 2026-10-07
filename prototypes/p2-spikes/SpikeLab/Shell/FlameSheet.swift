@@ -115,7 +115,7 @@ struct FlameSheet: View {
                     .background(Circle().fill(Color.black.opacity(0.25)))
                     .offset(x: cos(a) * 105, y: sin(a) * 105)
             }
-            Image(uiImage: SparkTint.image("spark-keyed.png", ember: model.emberID) ?? UIImage()).resizable().scaledToFit()
+            Image(uiImage: SparkTint.image(PixelMode.sparkImage, ember: model.emberID) ?? UIImage()).resizable().scaledToFit()
                 .frame(height: 120).offset(y: bob ? -4 : 3)
         }
         .frame(height: 240)

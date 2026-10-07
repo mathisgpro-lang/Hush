@@ -5,11 +5,22 @@ import RealityKit
 import UIKit
 
 enum PixelMode {
-    static let key = "look.pixel"
-    static var on: Bool {
+    nonisolated static let key = "look.pixel"
+    nonisolated static var on: Bool {
         get { UserDefaults.standard.object(forKey: key) as? Bool ?? !CommandLine.arguments.contains("-painted") }
         set { UserDefaults.standard.set(newValue, forKey: key) }
     }
+    /// The native pixel art is in the app (decision 149): the Sanctuary and the Spark are drawn as pixel art, not
+    /// filtered paintings (the other worlds still use the filter until Codex repaints them).
+    nonisolated static let world: Bool = on && Bundle.main.url(forResource: "px-home-paint", withExtension: "png") != nil
+    nonisolated static let sparkBase = world ? "px-spark" : "spark"
+    nonisolated static let sparkImage = sparkBase + "-keyed.png"
+    /// The pixel world's native grid (art pixels), from tools/build_pixel_world.py.
+    static let worldGrid: SIMD2<Float>? = {
+        guard world, let u = Bundle.main.url(forResource: "px-home-features", withExtension: "json"), let d = try? Data(contentsOf: u),
+              let j = try? JSONSerialization.jsonObject(with: d) as? [String: Double], let w = j["gridW"], let h = j["gridH"] else { return nil }
+        return [Float(w), Float(h)]
+    }()
     /// Art pixels down the height of the screen: chunky enough to read as pixel art, fine enough for the details.
     static let rowsPerScreen: Float = 480
 
@@ -24,7 +35,8 @@ enum PixelMode {
                 let texH = Float(m.baseColor.texture?.resource.height ?? 1024)
                 let texW = Float(m.baseColor.texture?.resource.width ?? 1024)
                 let isSpark = texW < 1200                         // your Spark (the worlds' paintings are all wider)
-                let k = isSpark ? max(2, texH / 80) : max(1.5, texH / rowsPerScreen)   // texels per art pixel
+                var k = isSpark ? max(2, texH / (world ? 73 : 80)) : max(1.5, texH / rowsPerScreen)   // texels per art pixel
+                if let g = worldGrid, abs(texH - g.y * 4) < 2 { k = 4 }              // the native pixel world: its own grid
                 // The grid travels in the emissive tint, which the renderer linearises: pre-encode it (sRGB).
                 func enc(_ v: Float) -> CGFloat {
                     let l = min(1, max(0, v)); return CGFloat(l <= 0.0031308 ? l * 12.92 : 1.055 * pow(l, 1 / 2.4) - 0.055)

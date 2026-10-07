@@ -17,6 +17,7 @@ final class SanctuaryScene {
     /// The swipeable world (decision 120): when the stitched world exists, the home image is a window in its middle.
     private struct WorldLayout: Decodable { let total: Float; let height: Float; let homeX0: Float; let homeW: Float; let backdropW: Float; let backdropH: Float }
     private lazy var layout: WorldLayout? = {
+        guard !PixelMode.world else { return nil }                 // the pixel Sanctuary is a single picture
         guard let url = Bundle.main.url(forResource: "world-layout", withExtension: "json"),
               let data = try? Data(contentsOf: url) else { return nil }
         return try? JSONDecoder().decode(WorldLayout.self, from: data)
@@ -42,10 +43,14 @@ final class SanctuaryScene {
     var homeRatio: Float { layout.map { $0.homeW / $0.total } ?? 1 }
     private let heroScale: Float = 0.62     // small and cute on the circle, like the First Words frame
     /// The stone circle's center in the painting (uv, v up): the Flame's stage.
-    private let circle = SIMD2<Float>(0.493, 0.501)   // the true center of the rune circle (measured on the painting)
+    private lazy var circle: SIMD2<Float> = {                     // the true center of the rune circle (measured on the painting)
+        if PixelMode.world, let u = Bundle.main.url(forResource: "px-home-features", withExtension: "json"), let d = try? Data(contentsOf: u),
+           let j = try? JSONSerialization.jsonObject(with: d) as? [String: Double], let cu = j["circleU"], let cv = j["circleV"] { return [Float(cu), Float(cv)] }
+        return [0.493, 0.501]
+    }()
     private var mists: [ModelEntity] = []
     /// The Spark (decision 125): the first Flame, a pure spirit hovering over the stone circle.
-    let hero = HeroRig(base: "spark", footInset: 0.045, reflection: false, glows: true, wander: 0.004, spirit: true)
+    let hero = HeroRig(base: PixelMode.sparkBase, footInset: 0.045, reflection: false, glows: true, wander: 0.004, spirit: true)
     let life = SanctuaryLife()
     let elements = WorldElements()
     private var currentHour: Float = 18
@@ -113,7 +118,7 @@ final class SanctuaryScene {
 
     func build() async throws {
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
-        let prefix = layout == nil ? "home" : "world"
+        let prefix = PixelMode.world ? "px-home" : layout == nil ? "home" : "world"
         let tex = try await TextureResource(named: layers == nil ? "\(prefix)-paint.png" : "world-land.png")
         let motion = try await TextureResource(named: "\(prefix)-motion.png", options: .init(semantic: .raw))
         loadDepth("\(prefix)-depth.png")
@@ -284,7 +289,7 @@ final class SanctuaryScene {
         try await life.build()
         root.addChild(life.root)
         if !CommandLine.arguments.contains("-noelements") {      // (test flag: the world without particles)
-            try await elements.build(spot: { [unowned self] u, v in self.spot(self.hx(u), v) }, paintingW: w, withClouds: layers == nil)
+            try await elements.build(spot: { [unowned self] u, v in self.spot(self.hx(u), v) }, paintingW: w, withClouds: layers == nil && !PixelMode.world, painted: !PixelMode.world)
             root.addChild(elements.root)
         }
 
