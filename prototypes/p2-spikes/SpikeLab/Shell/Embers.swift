@@ -41,7 +41,7 @@ struct EmbersBadge: View {
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(Capsule(style: .continuous).fill(.black.opacity(0.32)))
+        .background(Capsule(style: .continuous).fill(.black.opacity(0.5)))
         .overlay(Capsule(style: .continuous).stroke(Theme.champagne.opacity(0.22), lineWidth: 0.5))
         .scaleEffect(1)
         .animation(.spring(response: 0.25, dampingFraction: 0.5), value: value)
@@ -155,7 +155,7 @@ struct HUDBar: View {
         }
         .foregroundStyle(Theme.cream)
         .padding(.horizontal, 16).padding(.vertical, 8)
-        .background(Capsule(style: .continuous).fill(.black.opacity(0.32)))
+        .background(Capsule(style: .continuous).fill(.black.opacity(0.5)))
         .overlay(Capsule(style: .continuous).stroke(Theme.champagne.opacity(0.22), lineWidth: 0.5))
         .animation(Motion.soft, value: embers)
     }

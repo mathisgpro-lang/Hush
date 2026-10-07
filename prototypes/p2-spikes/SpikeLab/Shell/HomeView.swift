@@ -331,7 +331,7 @@ struct HomeView: View {
                     Image(systemName: "chevron.up").font(.system(size: 10, weight: .semibold)).opacity(0.7)
                 }
                 .padding(.horizontal, 16).padding(.vertical, 9)
-                .background(Capsule(style: .continuous).fill(.black.opacity(0.32)))
+                .background(Capsule(style: .continuous).fill(.black.opacity(0.52)))
                 .overlay(Capsule(style: .continuous).stroke(Theme.champagne.opacity(0.35), lineWidth: 0.5))
                 .foregroundStyle(Theme.cream)
             }
@@ -343,7 +343,7 @@ struct HomeView: View {
                     Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).opacity(0.7)
                 }
                 .padding(.horizontal, 16).padding(.vertical, 9)
-                .background(Capsule(style: .continuous).fill(.black.opacity(0.32)))
+                .background(Capsule(style: .continuous).fill(.black.opacity(0.52)))
                 .overlay(Capsule(style: .continuous).stroke(Theme.champagne.opacity(0.35), lineWidth: 0.5))
                 .foregroundStyle(Theme.cream)
             }
@@ -367,7 +367,7 @@ struct HomeView: View {
             }
         }
         .padding(.vertical, 10)
-        .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(.black.opacity(0.34)))
+        .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(.black.opacity(0.58)))
         .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Theme.champagne.opacity(0.2), lineWidth: 0.5))
         .padding(.bottom, 4)
     }
