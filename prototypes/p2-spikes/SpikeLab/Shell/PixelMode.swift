@@ -22,7 +22,7 @@ enum PixelMode {
         return [Float(w), Float(h)]
     }()
     /// Art pixels down the height of the screen: chunky enough to read as pixel art, fine enough for the details.
-    static let rowsPerScreen: Float = 480
+    static let rowsPerScreen: Float = 640
 
     /// Marks every custom material under `root` for (or out of) pixel mode. `screens` = how many screen heights the
     /// textures span (so an art pixel is the same size everywhere); `sprite` = a small character (its own scale).
@@ -35,7 +35,7 @@ enum PixelMode {
                 let texH = Float(m.baseColor.texture?.resource.height ?? 1024)
                 let texW = Float(m.baseColor.texture?.resource.width ?? 1024)
                 let isSpark = texW < 1200                         // your Spark (the worlds' paintings are all wider)
-                var k = isSpark ? max(2, texH / (world ? 73 : 80)) : max(1.5, texH / rowsPerScreen)   // texels per art pixel
+                var k = isSpark ? (world ? 12 : max(2, texH / 80)) : max(1.5, texH / rowsPerScreen)   // (the pixel Spark is drawn 12 texels per pixel)   // texels per art pixel
                 if let g = worldGrid, abs(texH - g.y * 4) < 2 { k = 4 }              // the native pixel world: its own grid
                 // The grid travels in the emissive tint, which the renderer linearises: pre-encode it (sRGB).
                 func enc(_ v: Float) -> CGFloat {

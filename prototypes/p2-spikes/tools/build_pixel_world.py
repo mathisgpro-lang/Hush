@@ -13,7 +13,7 @@ from PIL import Image
 from scipy import ndimage as nd
 
 A = "SpikeLab/Assets"; D = "../../docs/design/p29"
-SRC_PX = 3.5                     # source pixels per art pixel in Codex's image
+SRC_PX = 2.2                     # source pixels per art pixel (finer than Codex's ~3.5: clearer, Mathis 2026-10-07)
 UP = 4                           # the texture holds each art pixel as UP×UP texels (crisp under filtering)
 
 def clean(img, px, colors):
@@ -28,7 +28,7 @@ def clean(img, px, colors):
 
 # ---- The world ----
 src = Image.open(f"{D}/px-sanctuary.png").convert("RGB")
-art = clean(src, SRC_PX, 56)
+art = clean(src, SRC_PX, 72)
 W, H = art.size
 art.resize((W * UP, H * UP), Image.NEAREST).save(f"{A}/px-home-paint.png")
 print("pixel world", W, "x", H, "art pixels")
@@ -59,7 +59,7 @@ warm = (h > 0.06) & (h < 0.15) & (s > 0.35) & (v > 0.75) & (Y > 0.35) & (Y < 0.7
 lab, n = nd.label(nd.binary_closing(warm, iterations=2))
 sizes = nd.sum(warm, lab, range(1, n + 1))
 cy, cx = nd.center_of_mass(lab == (int(np.argmax(sizes)) + 1)) if n else (H / 2, W / 2)
-json.dump({"circleU": cx / W, "circleV": 1 - cy / H, "gridW": W, "gridH": H}, open(f"{A}/px-home-features.json", "w"))
+json.dump({"circleU": 0.52, "circleV": 0.488, "gridW": W, "gridH": H}, open(f"{A}/px-home-features.json", "w"))
 print("circle", round(cx / W, 3), round(1 - cy / H, 3), "water", round(water.mean(), 3), "fall", round(fall.mean(), 4), "fire", round(fire.mean(), 4), "sky", round(sky.mean(), 3))
 
 # ---- The Spark ----
@@ -68,7 +68,7 @@ a = np.asarray(sp).astype(float)
 mag = (a[..., 0] > 200) & (a[..., 1] < 80) & (a[..., 2] > 200)
 rgba = Image.fromarray(np.dstack([a.astype(np.uint8), np.where(mag, 0, 255).astype(np.uint8)]), "RGBA")
 rgba = rgba.crop(rgba.getbbox())
-spark = clean(rgba, 14.5, 20)
+spark = clean(rgba, 9.0, 28)
 sw, sh = spark.size
 big = spark.resize((sw * 12, sh * 12), Image.NEAREST)
 big.save(f"{A}/px-spark-keyed.png")
