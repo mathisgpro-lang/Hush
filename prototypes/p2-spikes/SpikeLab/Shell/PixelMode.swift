@@ -36,7 +36,9 @@ enum PixelMode {
                 let texW = Float(m.baseColor.texture?.resource.width ?? 1024)
                 let isSpark = texW < 1200                         // your Spark (the worlds' paintings are all wider)
                 var k = isSpark ? (world ? 12 : max(2, texH / 80)) : max(1.5, texH / rowsPerScreen)   // (the pixel Spark is drawn 12 texels per pixel)   // texels per art pixel
-                if let g = worldGrid, abs(texH - g.y * 4) < 2 { k = 4 }              // the native pixel world: its own grid
+                // Native pixel art (the Sanctuary, every realm, the map: tools built them 4× hard-edged): exactly its
+                // own grid, as in the Sanctuary. Only paintings not yet repainted fall back to the filter's grid.
+                if world && !isSpark && Int(texW) % 4 == 0 && Int(texH) % 4 == 0 && texH > 2000 { k = 4 }
                 // The grid travels in the emissive tint, which the renderer linearises: pre-encode it (sRGB).
                 func enc(_ v: Float) -> CGFloat {
                     let l = min(1, max(0, v)); return CGFloat(l <= 0.0031308 ? l * 12.92 : 1.055 * pow(l, 1 / 2.4) - 0.055)

@@ -9,9 +9,17 @@ import numpy as np
 from PIL import Image
 
 A = "SpikeLab/Assets"; D = "../../docs/design/iter2"
-main = Image.open(f"{A}/world-map.png").convert("RGB"); W, H = main.size
-left = Image.open(f"{D}/map-left.png").convert("RGB").resize((W, H), Image.LANCZOS)
-right = Image.open(f"{D}/map-right.png").convert("RGB").resize((W, H), Image.LANCZOS)
+import sys
+PIXEL = "--pixel" in sys.argv                         # decision 149: Codex's pixel map in the middle
+main = Image.open("../../docs/design/p29/px-map.png" if PIXEL else f"{A}/world-map.png").convert("RGB").resize((803, 1958), Image.LANCZOS); W, H = main.size
+if PIXEL:
+    import os
+    pl, pr = "../../docs/design/p29/px-map-left.png", "../../docs/design/p29/px-map-right.png"
+    if os.path.exists(pl) and os.path.exists(pr): D = "../../docs/design/p29"; LEFT, RIGHT = "px-map-left", "px-map-right"
+    else: LEFT, RIGHT = "map-left", "map-right"
+else: LEFT, RIGHT = "map-left", "map-right"
+left = Image.open(f"{D}/{LEFT}.png").convert("RGB").resize((W, H), Image.LANCZOS)
+right = Image.open(f"{D}/{RIGHT}.png").convert("RGB").resize((W, H), Image.LANCZOS)
 KEEP = 0.62                                         # how much of each panel's inner side is kept
 
 def best_overlap(a_img, b_img, max_ov=int(W * 0.2)):

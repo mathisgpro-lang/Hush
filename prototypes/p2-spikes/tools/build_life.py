@@ -17,7 +17,7 @@ rid = sys.argv[1]
 A = "SpikeLab/Assets"
 os.makedirs("tools/originals", exist_ok=True)
 orig = f"tools/originals/{rid}-world-paint.png"
-if not os.path.exists(orig): shutil.copy(f"{A}/{rid}-world-paint.png", orig)
+if "--fresh" in sys.argv or not os.path.exists(orig): shutil.copy(f"{A}/{rid}-world-paint.png", orig)   # (--fresh: a new painting)
 paint = Image.open(orig).convert("RGB"); W, H = paint.size
 P = np.asarray(paint).astype(float)
 L = np.asarray(Image.open(f"{A}/{rid}-world-lights.png").convert("RGBA").resize((W, H), Image.NEAREST)).astype(float) / 255

@@ -16,7 +16,8 @@ gen $D/px-library.png "Redraw the attached magical floating library scene (same 
 gen $D/px-stage-flame.png "Redraw the first attached character (the second evolution of the fire spirit: an older, taller, more confident flame) in EXACTLY the same pixel-art style as the second attached image (same pixel size relative to the body, same palette approach, dark outline, same cute face style), as a game sprite shown large and centred, on a perfectly flat pure magenta #FF00FF background." prototypes/p2-spikes/SpikeLab/Assets/stage-flame.png docs/design/p29/px-spark.png
 REF=docs/design/p29/px-sanctuary.png
 STYLE2="in EXACTLY the same pixel-art style as the second attached image (same pixel size, palette approach, outlines, light): $PX"
-for r in grove stillwater highlands library wilds forge; do
+gen $D/px-grove.png "Redraw the first attached scene (same composition and places) $STYLE2. Portrait phone format." prototypes/p2-spikes/SpikeLab/Assets/grove-paint.png $REF
+for r in stillwater highlands library wilds forge; do
   gen $D/px-$r.png "Redraw the first attached scene (same composition and places) $STYLE2. Portrait phone format." docs/design/realms/$r.png $REF
 done
 gen $D/px-map.png "Redraw the first attached fantasy world map (same composition: every realm in the same place, the winding road, the sea of clouds, the floating library) $STYLE2. Tall portrait format." prototypes/p2-spikes/SpikeLab/Assets/world-map.png $REF
@@ -24,3 +25,6 @@ SPK=docs/design/p29/px-spark.png
 gen $D/px-spark-blink.png "Redraw the attached pixel-art fire spirit EXACTLY (same pixels, size, position, colours, magenta background) but with its eyes closed in a gentle blink (two small curved lines). No other change." $SPK
 gen $D/px-spark-happy.png "Redraw the attached pixel-art fire spirit EXACTLY (same pixels, size, position, colours, magenta background) but very happy: eyes closed in happy upside-down arcs (^ ^) and a bigger open smile. No other change." $SPK
 gen $D/px-props.png "Four small pixel-art game objects in a row with space between them $STYLE2: a glowing lantern, a rolled scroll with a red ribbon, a glowing crystal, a golden flower bud. On a perfectly flat pure magenta #FF00FF background." $REF $REF
+# The map's side panels in pixel art, so the whole map is one pixel painting.
+gen $D/px-map-left.png "Paint the land that continues to the LEFT of the first attached pixel-art fantasy map (same pixel style, scale, palette and light; its right edge must continue seamlessly into the first image's left edge): more islands, sea, clouds and small details, no new realms or buildings. Same size and portrait format." $D/px-map.png $REF
+gen $D/px-map-right.png "Paint the land that continues to the RIGHT of the first attached pixel-art fantasy map (same pixel style, scale, palette and light; its left edge must continue seamlessly into the first image's right edge): more islands, sea, clouds and small details, no new realms or buildings. Same size and portrait format." $D/px-map.png $REF

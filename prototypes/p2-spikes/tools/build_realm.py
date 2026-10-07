@@ -19,10 +19,22 @@ opts = sys.argv[4:]
 def opt(name, default=None):
     return opts[opts.index(name) + 1] if name in opts else default
 A = "SpikeLab/Assets"; D = "../../docs/design/realms"
-main = Image.open(f"{D}/{rid}.png").convert("RGB")
-W, H = 852, 1846
-main = main.resize((W, H), Image.LANCZOS)
-panels = [f"{D}/{rid}-left.png", f"{D}/{rid}-right.png"]
+PIXEL = "--pixel" in opts       # decision 149: the realm as native pixel art (Codex's docs/design/p29/px-<id>.png)
+if PIXEL:
+    # Snap to its true grid (~2.2 source px per art pixel, like the Sanctuary), a fixed palette, then 4× with hard
+    # edges so it stays crisp on screen. One single view (no side panels).
+    src = Image.open(f"../../docs/design/p29/px-{rid}.png").convert("RGB")
+    gw, gh = round(src.width / 2.2), round(src.height / 2.2)
+    art = src.resize((gw, gh), Image.BOX).quantize(colors=72, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
+    W, H = gw * 4, gh * 4
+    main = art.resize((W, H), Image.NEAREST)
+    panels = ["/nonexistent-left", "/nonexistent-right"]
+    print("pixel grid", gw, "x", gh)
+else:
+    main = Image.open(f"{D}/{rid}.png").convert("RGB")
+    W, H = 852, 1846
+    main = main.resize((W, H), Image.LANCZOS)
+    panels = [f"{D}/{rid}-left.png", f"{D}/{rid}-right.png"]
 
 # ---- 1. Stitch ----
 def best_overlap(a_img, b_img, max_ov=int(W * 0.18)):
@@ -82,7 +94,7 @@ sizes = nd.sum(warm, lab, range(1, n + 1))
 cx_home = (x0 + cu * W) / 2; cy_home = (1 - cv) * H / 2
 blobs = []
 for i, o in enumerate(nd.find_objects(lab)):
-    if not (int(opt("--min-light", "4")) <= sizes[i] <= 220): continue     # specks out; the sun (huge) out
+    if not (int(opt("--min-light", "4")) <= sizes[i] <= (900 if PIXEL else 220)): continue     # specks out; the sun (huge) out
     ys, xs = np.where(lab[o] == i + 1)
     by, bx = ys.mean() + o[0].start, xs.mean() + o[1].start
     if by < h2 * 0.08: continue                              # the sky's top edge

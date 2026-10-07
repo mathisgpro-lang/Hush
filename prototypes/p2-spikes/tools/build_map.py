@@ -12,7 +12,14 @@ WIDE = "--wide" in sys.argv          # the map with Codex's side panels (tools/s
 src = Image.open(f"{A}/world-map-wide.png" if WIDE else f"{A}/world-map.png").convert("RGB")
 W, H = src.size
 K = 1.6 if WIDE else 2               # (the wide map at 1.6x keeps its texture within memory)
-big = src.resize((int(W * K), int(H * K)), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=1.6, percent=70, threshold=2))
+PIXEL = "--pixel" in sys.argv        # decision 149: snapped to a true pixel grid like the Sanctuary, 4× hard-edged
+if PIXEL:
+    src = src.resize((round(W / 2.2), round(H / 2.2)), Image.BOX).quantize(colors=72, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
+    W, H = src.size
+    big = src.resize((W * 4, H * 4), Image.NEAREST)
+    print("pixel map grid", W, "x", H)
+else:
+    big = src.resize((int(W * K), int(H * K)), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=1.6, percent=70, threshold=2))
 big.save(f"{A}/map-paint.png")
 
 px = np.asarray(src).astype(float) / 255

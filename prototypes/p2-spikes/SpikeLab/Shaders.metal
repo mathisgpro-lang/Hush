@@ -390,7 +390,11 @@ void groveRestore(realitykit::surface_parameters params)
         graded = s2hourLight(graded, uv, skyM, water, hourNow, params.material_constants().specular_scale(), 0.37, t, params.textures().emissive_color(), core * lit + pool * lit * 0.5);
     }
     params.surface().set_base_color(half3(0));
-    graded = s2pixelColor(graded, uv, pxTint, pxSize);
+    if (s2isPixel(pxTint)) {
+        // Pixel art (decision 149, Mathis: "exactly these colors"): the art's own colours, untouched (no grading,
+        // no hour look, no palette); only its lights breathe, and only by brightness.
+        graded = rgbRaw * (1.0 + pool * (flicker - 0.9) * 0.6 + core * max(0.0, flicker - 0.9) * 0.5);
+    }
     params.surface().set_emissive_color(half3(graded));
     params.surface().set_opacity(1.0);
 }
@@ -692,7 +696,12 @@ void stoneLive(realitykit::surface_parameters params)
     rgb = s2hush(rgb, uv, c.x, t);
 
     params.surface().set_base_color(half3(0));
-    rgb = s2pixelColor(rgb, uv, pxTint, pxSize);
+    if (s2isPixel(pxTint)) {
+        // Pixel art: the art's own colours exactly (decision 149); fires flicker by brightness only.
+        float fl = 0.92 + 0.08 * (s2noise(float2(t * 6.0 + uv.x * 50.0, uv.y * 40.0)) * 2.0 - 1.0);
+        rgb = float3(col.rgb) * (1.0 + saturate(fire * 1.5) * (fl - 0.92) * 2.0);
+    }
+
     params.surface().set_emissive_color(half3(rgb));
     if (s2isPixel(pxTint)) col.a = col.a > 0.5h ? 1.0h : 0.0h;          // crisp edges in pixel mode
     params.surface().set_opacity(col.a);      // the land layer is cut out where the sky and the sea show
@@ -738,7 +747,7 @@ void skyLive(realitykit::surface_parameters params)
     rgb = s2hourLight(rgb, uv, 1.0, 0.0, hour, sunU, ratio, t, params.textures().emissive_color(), 0.0);
     rgb = s2hush(rgb, uv, c.x, t);
     params.surface().set_base_color(half3(0));
-    rgb = s2pixelColor(rgb, uv, pxTint, pxSize);
+    if (s2isPixel(pxTint)) rgb = float3(params.textures().base_color().sample(s, tuv).rgb);   // pixel art: its own colours
     params.surface().set_emissive_color(half3(rgb));
     params.surface().set_opacity(1.0);
 }
@@ -796,7 +805,7 @@ void seaLive(realitykit::surface_parameters params)
     rgb = s2hourLight(rgb, uv, 0.0, 1.0, hour, sunU, ratio, t, params.textures().emissive_color(), 0.0);
     rgb = s2hush(rgb, uv, c.x, t);
     params.surface().set_base_color(half3(0));
-    rgb = s2pixelColor(rgb, uv, pxTint, pxSize);
+    if (s2isPixel(pxTint)) rgb = float3(col.rgb);           // pixel art: its own colours
     params.surface().set_emissive_color(half3(rgb));
     if (s2isPixel(pxTint)) col.a = col.a > 0.5h ? 1.0h : 0.0h;      // crisp edges
     params.surface().set_opacity(col.a);
@@ -887,7 +896,7 @@ void sparkFire(realitykit::surface_parameters params)
     rgb += float3(0.35, 0.45, 0.8) * saturate((float(col.a) - aMoon) * 1.6) * night * 0.35;
     rgb *= 1.0 + night * 0.08;
     params.surface().set_base_color(half3(0));
-    rgb = s2pixelColor(rgb * c.y, uv, pxTint, pxSize) / max(c.y, 0.001);
+    // (pixel art: its own colours; no palette cut)
     if (s2isPixel(pxTint)) a = a > 0.5 ? 1.0 : 0.0;                   // crisp outline
     params.surface().set_emissive_color(half3(rgb * c.y));
     params.surface().set_opacity(half(a));

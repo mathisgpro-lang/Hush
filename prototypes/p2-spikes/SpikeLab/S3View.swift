@@ -270,7 +270,7 @@ final class RealmScene {
         let circle = point(hx(circleUV.x), circleUV.y, nearer: 0.012)
         try await hero.build()
         let k = -circle.z / Self.distance
-        heroScale = 0.105 * h * k / 0.27                            // the Spark's size, as in the Sanctuary
+        heroScale = (PixelMode.world ? 0.07 : 0.105) * h * k / 0.27                            // the Spark's size, as in the Sanctuary
         hero.leanPivot.scale = .init(repeating: heroScale)
         hero.leanPivot.position = circle + SIMD3(0, 0.09 * heroScale, 0)
         hero.stationary = true
