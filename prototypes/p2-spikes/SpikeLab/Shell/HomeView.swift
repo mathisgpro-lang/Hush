@@ -353,14 +353,14 @@ struct HomeView: View {
 
     private var cockpitBar: some View {
         HStack(spacing: 0) {
-            barButton(.world, "World", badge: !model.newHere.isEmpty, image: UIImage(named: "icon-world.png")) { withAnimation(.screen) { model.go(.map) } }
-            barButton(.satchel, "Satchel", badge: chosen.isEmpty && model.calls.contains(where: { !$0.done }), image: UIImage(named: "satchel.png")) {
+            barButton(.world, "World", badge: !model.newHere.isEmpty, image: UIImage(named: PixelMode.world ? "px-icon-world.png" : "icon-world.png")) { withAnimation(.screen) { model.go(.map) } }
+            barButton(.satchel, "Satchel", badge: chosen.isEmpty && model.calls.contains(where: { !$0.done }), image: UIImage(named: PixelMode.world ? "px-icon-satchel.png" : "satchel.png")) {
                 withAnimation(.sheet) { satchelOpen = true }
             }
-            barButton(.book, "Book", badge: model.journey.newPages > 0, image: UIImage(named: "icon-book.png")) {
+            barButton(.book, "Book", badge: model.journey.newPages > 0, image: UIImage(named: PixelMode.world ? "px-icon-book.png" : "icon-book.png")) {
                 withAnimation(.sheet) { bookOpen = true }
             }
-            barButton(.flame, "Your Flame", badge: false, image: UIImage(named: "icon-flame-v2.png") ?? SparkTint.image(PixelMode.sparkImage, ember: model.emberID)) {   // your Spark, free (no cage)
+            barButton(.flame, "Your Flame", badge: false, image: UIImage(named: PixelMode.world ? "px-icon-flame.png" : "icon-flame-v2.png") ?? SparkTint.image(PixelMode.sparkImage, ember: model.emberID)) {   // your Spark, free (no cage)
                 if PerfProbe.on { print("TAP flame button") }
                 director?.tapped()
                 withAnimation(.sheet) { flameOpen = true }

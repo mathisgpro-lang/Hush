@@ -12,11 +12,12 @@ PX="as genuine high-quality pixel art (like Eastward, Sea of Stars, Stardew Vall
 gen $D/px-sanctuary.png "Redraw the attached island sanctuary scene (same composition: the stone circle in the centre, ruined arches, waterfalls, the sea, the sunset sky) $PX. Portrait phone format." prototypes/p2-spikes/SpikeLab/Assets/world-paint.png
 gen $D/px-spark.png "Redraw the attached cute fire spirit character $PX, as a small game sprite about 48 pixels tall shown large and centred, on a perfectly flat pure magenta #FF00FF background." docs/design/spark-v3/spark-a-teardrop.png
 gen $D/px-library.png "Redraw the attached magical floating library scene (same composition) $PX. Portrait phone format." prototypes/p2-spikes/tools/originals/library-world-paint.png
-# The whole game in pixel art (decision 149): every realm, the map, the Spark's frames, the props.
+# The whole game in pixel art (decision 149): the second evolution first, then every realm, the map, the frames, props.
+gen $D/px-stage-flame.png "Redraw the first attached character (the second evolution of the fire spirit: an older, taller, more confident flame) in EXACTLY the same pixel-art style as the second attached image (same pixel size relative to the body, same palette approach, dark outline, same cute face style), as a game sprite shown large and centred, on a perfectly flat pure magenta #FF00FF background." prototypes/p2-spikes/SpikeLab/Assets/stage-flame.png docs/design/p29/px-spark.png
 REF=docs/design/p29/px-sanctuary.png
 STYLE2="in EXACTLY the same pixel-art style as the second attached image (same pixel size, palette approach, outlines, light): $PX"
 for r in grove stillwater highlands library wilds forge; do
-  gen $D/px-$r.png "Redraw the first attached scene (same composition and places) $STYLE2. Portrait phone format." ../../docs/design/realms/$r.png $REF
+  gen $D/px-$r.png "Redraw the first attached scene (same composition and places) $STYLE2. Portrait phone format." docs/design/realms/$r.png $REF
 done
 gen $D/px-map.png "Redraw the first attached fantasy world map (same composition: every realm in the same place, the winding road, the sea of clouds, the floating library) $STYLE2. Tall portrait format." prototypes/p2-spikes/SpikeLab/Assets/world-map.png $REF
 SPK=docs/design/p29/px-spark.png

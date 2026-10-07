@@ -17,7 +17,7 @@ struct LiveIcon: View {
     var body: some View {
         ZStack {
             glow
-            Image(uiImage: image ?? UIImage()).resizable().scaledToFit()
+            Image(uiImage: image ?? UIImage()).resizable().interpolation(PixelMode.world ? .none : .high).scaledToFit()   // pixel icons stay crisp
                 .scaleEffect(x: kind == .flame ? (flicker ? 0.97 : 1.02) : 1,
                              y: kind == .flame ? (flicker ? 1.06 : 0.98) : (kind == .satchel && idle ? 1.035 : 1), anchor: .bottom)
                 .rotationEffect(.degrees(rotation), anchor: .bottom)
