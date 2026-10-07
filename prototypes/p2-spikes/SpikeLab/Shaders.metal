@@ -150,9 +150,9 @@ inline float3 s2pixelColor(float3 rgb, float2 uv, half3 tint, float2 unused)
     int2 cell = int2(floor(uv * s2grid(tint)));
     const float bayer[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
     float d = bayer[(cell.x & 3) + (cell.y & 3) * 4] / 16.0 - 0.47;
-    float levels = 16.0;
+    float levels = 22.0;
     float3 g = sqrt(max(rgb, 0.0));                                  // in a perceptual space: even steps
-    g = floor(g * levels + 0.5 + d * 0.5) / levels;
+    g = floor(g * levels + 0.5 + d * 0.35) / levels;
     return g * g;
 }
 
