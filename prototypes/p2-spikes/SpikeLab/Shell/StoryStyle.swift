@@ -36,19 +36,22 @@ struct ParchmentChoice: View {
     let selected: Bool
     var compact = false
     var body: some View {
-        HStack(spacing: 10) {
-            if let icon { Image(uiImage: icon).resizable().scaledToFit().frame(width: compact ? 22 : 28, height: compact ? 22 : 28).opacity(selected ? 1 : 0.85) }
+        HStack(spacing: 9) {
+            if let icon { Image(uiImage: icon).resizable().scaledToFit().frame(width: compact ? 22 : 26, height: compact ? 22 : 26).opacity(selected ? 1 : 0.85) }
             if compact {                                         // a short word: centred on one line
                 Text(text).font(.story(15, selected ? .medium : .regular)).foregroundStyle(Theme.ink.opacity(selected ? 1 : 0.82))
                     .lineLimit(1).minimumScaleFactor(0.8).frame(maxWidth: .infinity)
             } else {
-                Text(text).font(.story(16, selected ? .medium : .regular)).foregroundStyle(Theme.ink.opacity(selected ? 1 : 0.82))
-                    .multilineTextAlignment(.leading).lineLimit(2).minimumScaleFactor(0.85)
+                Text(text).font(.story(16)).fontWeight(selected ? .medium : .regular).foregroundStyle(Theme.ink.opacity(selected ? 1 : 0.82))
+                    .lineLimit(1).fixedSize().layoutPriority(1)   // one line, one size, never cut, in every card
                 Spacer(minLength: 0)
-                Circle().fill(Theme.champagneDeep).frame(width: 7, height: 7).opacity(selected ? 1 : 0)  // a small gold mark
             }
         }
-        .padding(.horizontal, compact ? 12 : 14).padding(.vertical, compact ? 10 : 13)
+        .padding(.horizontal, compact ? 12 : 14)
+        .frame(height: compact ? 42 : 52)                     // every card the same height
+        .overlay(alignment: .topTrailing) {                   // chosen: a small gold mark in the corner
+            if !compact { Circle().fill(Theme.champagneDeep).frame(width: 6, height: 6).padding(8).opacity(selected ? 1 : 0) }
+        }
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(selected ? Color(red: 1, green: 0.92, blue: 0.76) : Color.white.opacity(0.35)))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(selected ? Theme.champagneDeep : Theme.paperEdge.opacity(0.28), lineWidth: selected ? 1 : 0.6))
         .animation(Motion.tap, value: selected)

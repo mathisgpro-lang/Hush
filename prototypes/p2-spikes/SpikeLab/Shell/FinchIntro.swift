@@ -511,8 +511,9 @@ struct FinchIntro: View {
     ]
 
     private func shortLabel(_ o: String) -> String {
-        ["Be closer to people I love": "People I love", "Read again": "Reading", "Find calm": "Calm",
-         "Move a little every day": "Moving", "Make something / focus": "Making & focus", "Spend time in nature": "Nature"][o] ?? o
+        // One word each, so every card holds the same space (Mathis: the labels must match in size and alignment).
+        ["Be closer to people I love": "Loved ones", "Read again": "Reading", "Find calm": "Calm",
+         "Move a little every day": "Movement", "Make something / focus": "Focus", "Spend time in nature": "Nature"][o] ?? o
     }
 
     private var progressBar: some View {

@@ -291,13 +291,9 @@ void groveRestore(realitykit::surface_parameters params)
                          -(0.5 + 0.5 * sin(t * 8.0 + uv.x * 400.0 + uv.y * 60.0)) * 0.0011) * core0;
     half4 col = params.textures().base_color().sample(s, tuv + ripple * (1.0 - paleW) + sway + flow + breeze + cloud + lick);
     if (hasLife && skyM > 0.01) {
-        // Clouds drift without end: two readings sliding the same way, crossfaded (no jump, no visible loop).
-        float2 dir = float2(0.012, 0.0015);
-        float p1 = fract(t * 0.012), p2 = fract(t * 0.012 + 0.5);
-        half4 cA = params.textures().base_color().sample(s, tuv - dir * p1 + cloud);
-        half4 cB = params.textures().base_color().sample(s, tuv - dir * p2 + cloud);
-        float wA = 1.0 - abs(p1 * 2.0 - 1.0);
-        col = mix(col, cA * half(wA) + cB * half(1.0 - wA), half(skyM));
+        // The sky drifts gently, one sharp reading (blending two shifted copies smeared the distant castles).
+        float2 drift = float2(sin(t * 0.045) * 0.005 + sin(t * 0.017) * 0.003, sin(t * 0.03) * 0.0012);
+        col = mix(col, params.textures().base_color().sample(s, tuv + drift + cloud), half(skyM));
     }
     float3 rgb = float3(col.rgb);
     float3 rgbRaw = rgb;                              // (its lanterns keep their own fire, whatever the hour)
@@ -577,13 +573,9 @@ void stoneLive(realitykit::surface_parameters params)
                          -(0.5 + 0.5 * sin(t * 8.0 + uv.x * 400.0 + uv.y * 60.0)) * 0.0011) * saturate(fire * 1.5);   // flames lick upward
     half4 col = params.textures().base_color().sample(s, tuv + ripple + flow + sway + cloud + lick);
     if (params.material_constants().clearcoat_roughness_scale() > 0.5 && skyM > 0.01) {
-        // (The map) its sea of clouds drifts without end: two readings sliding, crossfaded (decision 142).
-        float2 dir = float2(0.01, 0.0012);
-        float p1 = fract(t * 0.01), p2 = fract(t * 0.01 + 0.5);
-        half4 cA = params.textures().base_color().sample(s, tuv - dir * p1 + cloud);
-        half4 cB = params.textures().base_color().sample(s, tuv - dir * p2 + cloud);
-        float wA = 1.0 - abs(p1 * 2.0 - 1.0);
-        col = mix(col, cA * half(wA) + cB * half(1.0 - wA), half(skyM));
+        // (The map) its sea of clouds drifts gently, one sharp reading (decision 142).
+        float2 drift = float2(sin(t * 0.04) * 0.004 + sin(t * 0.015) * 0.0025, sin(t * 0.028) * 0.001);
+        col = mix(col, params.textures().base_color().sample(s, tuv + drift + cloud), half(skyM));
     }
     float3 rgb = float3(col.rgb);
 
