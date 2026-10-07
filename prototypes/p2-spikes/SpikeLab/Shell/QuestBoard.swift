@@ -10,14 +10,25 @@ struct QuestBoard: View {
     let add: () -> Void
     let open: (Call) -> Void
     let tick: (Call, CGPoint) -> Void
+    /// Like notifications on the lock screen (Mathis): one quest in front, the others stacked behind it; swipe up to
+    /// fan them out into the full list, swipe down to gather them again.
+    @State private var expanded = false
+    @GestureState private var drag: CGFloat = 0
 
     private var left: Int { calls.filter { !$0.done }.count }
+    private static let rowH: CGFloat = 60, gap: CGFloat = 8, peek: CGFloat = 9
 
     var body: some View {
+        let n = calls.count
+        let stackH = n == 0 ? Self.rowH : expanded ? CGFloat(n) * Self.rowH + CGFloat(max(0, n - 1)) * Self.gap
+                                              : Self.rowH + CGFloat(min(2, max(0, n - 1))) * Self.peek
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(left == 0 ? (calls.isEmpty ? "Your day is ready" : "All done today") : left == 1 ? "1 quest left today" : "\(left) quests left today")
-                    .font(.story(17, .medium)).foregroundStyle(Theme.cream)
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(left == 0 ? (calls.isEmpty ? "Your day is ready" : "All done today") : left == 1 ? "1 quest left today" : "\(left) quests left today")
+                        .font(.story(17, .medium)).foregroundStyle(Theme.cream)
+                    Text(streakLine).font(.story(13).italic()).foregroundStyle(Theme.cream.opacity(0.6)).lineLimit(1)
+                }
                 Spacer()
                 Button(action: add) {
                     Image(systemName: "plus").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.cream)
@@ -28,20 +39,58 @@ struct QuestBoard: View {
                 .buttonStyle(PressableStyle())
             }
             .padding(.horizontal, 4)
-            Text(streakLine).font(.story(13).italic()).foregroundStyle(Theme.cream.opacity(0.6)).padding(.horizontal, 4).padding(.top, -6)
             if calls.isEmpty {
                 Button(action: add) {
                     Text("Choose today's quests").font(.story(16)).foregroundStyle(Theme.cream.opacity(0.85))
-                        .frame(maxWidth: .infinity).frame(height: 56)
+                        .frame(maxWidth: .infinity).frame(height: Self.rowH)
                         .background(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.champagne.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
                 }
+            } else {
+                ZStack(alignment: .top) {
+                    ForEach(Array(calls.enumerated()), id: \.element.id) { i, c in
+                        let behind = !expanded && i > 0
+                        QuestRow(call: c, open: { open(c) }, tick: { p in tick(c, p) })
+                            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(red: 0.1, green: 0.075, blue: 0.065).opacity(behind ? 0.95 : 0)))
+                            .scaleEffect(x: behind ? 1 - CGFloat(min(i, 2)) * 0.05 : 1, y: 1)
+                            .offset(y: expanded ? CGFloat(i) * (Self.rowH + Self.gap) : CGFloat(min(i, 2)) * Self.peek)
+                            .opacity(behind ? (i <= 2 ? 1 - Double(i) * 0.25 : 0) : 1)
+                            .zIndex(Double(-i))
+                            .allowsHitTesting(!behind)
+                    }
+                }
+                .frame(height: stackH + (expanded ? 0 : max(0, -drag) * 0.25), alignment: .top)
+                .overlay(alignment: .bottom) {
+                    if !expanded && n > 1 {                          // tap the stack to open it too
+                        Color.clear.frame(height: 22).contentShape(Rectangle())
+                            .onTapGesture { withAnimation(Motion.soft) { expanded = true } }
+                    }
+                }
+                // A small hint: how many more, and which way to swipe.
+                if n > 1 {
+                    Button { withAnimation(Motion.soft) { expanded.toggle() } } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: expanded ? "chevron.down" : "chevron.up").font(.system(size: 10, weight: .bold))
+                            Text(expanded ? "Show less" : "\(n - 1) more").font(.ui(12, .semibold))
+                        }
+                        .foregroundStyle(Theme.cream.opacity(0.55)).frame(maxWidth: .infinity).padding(.top, 2)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            ForEach(calls) { c in QuestRow(call: c, open: { open(c) }, tick: { p in tick(c, p) }) }
         }
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.black.opacity(0.58)))
         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Theme.champagne.opacity(0.2), lineWidth: 0.5))
+        .contentShape(Rectangle())
+        .highPriorityGesture(DragGesture(minimumDistance: 14)
+            .updating($drag) { v, st, _ in st = v.translation.height }
+            .onEnded { v in
+                let dy = v.translation.height + (v.predictedEndTranslation.height - v.translation.height) * 0.3
+                if dy < -30, !expanded { UIImpactFeedbackGenerator(style: .soft).impactOccurred(); withAnimation(Motion.soft) { expanded = true } }
+                else if dy > 30, expanded { withAnimation(Motion.soft) { expanded = false } }
+            })
         .animation(Motion.soft, value: calls.map(\.done))
+        .animation(.interactiveSpring, value: drag)
     }
 }
 
@@ -96,7 +145,8 @@ struct QuestRow: View {
             .disabled(call.done)
         }
         .padding(.horizontal, 10).frame(height: 60)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(call.done ? 0.03 : 0.07)))
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(red: 0.16, green: 0.12, blue: 0.1).opacity(call.done ? 0.97 : 1)))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.champagne.opacity(0.12), lineWidth: 0.5))
         .animation(.spring(response: 0.35, dampingFraction: 0.6), value: call.done)
     }
 }
