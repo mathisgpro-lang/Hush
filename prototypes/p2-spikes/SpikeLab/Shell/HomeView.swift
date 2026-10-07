@@ -32,6 +32,9 @@ struct HomeView: View {
     @State private var fullSize: CGSize = .zero
 
     private var questSpots: [SIMD2<Float>] { scene.questSpots }
+    /// Quests now live in the list on home (QuestBoard); the objects in the world are off.
+    static let questObjects = false
+    private var today: [Call] { model.calls.filter { $0.chosen && !$0.skipped }.sorted { !$0.done && $1.done } }
     private var chosen: [Call] { model.calls.filter { $0.chosen && !$0.done } }
     /// Each quest keeps its spot for the day (finishing one never moves the others).
     private func spotFor(_ call: Call) -> SIMD2<Float> {
@@ -59,7 +62,7 @@ struct HomeView: View {
                     // Redrawn every frame only while quests are out and nothing covers them.
                     TimelineView(.animation(minimumInterval: nil, paused: (chosen.isEmpty && world == .sanctuary) || model.overlayOpen || !built)) { _ in
                         ZStack {
-                            ForEach(chosen) { call in
+                            ForEach(Self.questObjects ? chosen : []) { call in
                                 Button { withAnimation(.sheet) { open = call } } label: { QuestObject(call: call) }
                                     .position(scene.screenPoint(world: spotFor(call), in: full.size))
                                     .transition(.scale(scale: 0.2).combined(with: .opacity))
@@ -89,7 +92,14 @@ struct HomeView: View {
                     Spacer()
                     if let toast { Text(toast).font(.ui(14)).padding(.horizontal, 14).padding(.vertical, 8)
                         .background(Capsule().fill(.black.opacity(0.6))).foregroundStyle(.white).transition(.opacity).padding(.bottom, 8) }
-                    hint
+                    if model.tour == nil && focused == nil {
+                        QuestBoard(calls: today, streakLine: streakLine(model.journey, light: model.light),
+                                   add: { withAnimation(.sheet) { satchelOpen = true } },
+                                   open: { c in withAnimation(.sheet) { open = c } },
+                                   tick: { c, p in finish(c, size: geo.size, from: p) })
+                            .padding(.bottom, 8)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    } else { hint }
                     cockpitBar
                 }
                 .padding(.horizontal, 16)
@@ -280,9 +290,11 @@ struct HomeView: View {
             }
             HUDBar(journey: model.journey, embers: shownEmbers ?? model.journey.embers)   // streak, day, Embers (134, 141, 146)
                 .padding(.top, 4)
-            Text(streakLine(model.journey, light: model.light))
-                .font(.story(14).italic()).foregroundStyle(Theme.cream.opacity(0.8))
-                .shadow(color: Theme.warmShadow.opacity(0.9), radius: 5)
+            if model.tour != nil {
+                Text(streakLine(model.journey, light: model.light))
+                    .font(.story(14).italic()).foregroundStyle(Theme.cream.opacity(0.8))
+                    .shadow(color: Theme.warmShadow.opacity(0.9), radius: 5)
+            }
         }
         .padding(.top, 8)
     }
@@ -448,8 +460,8 @@ struct HomeView: View {
         }
     }
 
-    private func finish(_ call: Call, size: CGSize) {
-        let from = scene.screenPoint(world: spotFor(call), in: fullSize)
+    private func finish(_ call: Call, size: CGSize, from given: CGPoint? = nil) {
+        let from = given ?? scene.screenPoint(world: spotFor(call), in: fullSize)
         withAnimation { open = nil }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         let outcome = withAnimation(.sheet) { model.complete(call.id) }

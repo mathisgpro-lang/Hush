@@ -328,11 +328,18 @@ final class ShellModel {
         if journey.checkIn() && journey.bornOn != nil { dailyGift = Journey.dailyGift }   // the daily pouch (decision 141)
         journey.grant(200, id: "beta-purse")              // the test's starter purse: enough to buy a world right away
         if CommandLine.arguments.contains("-quests") { for id in ["a", "c", "d"] { toggleChosen(id) } }   // (test: three taken)
+        planDay()
     }
 
     func chose(_ interest: String) {
         self.interest = interest
         makeCalls()
+        planDay()
+    }
+    /// Your day is never empty (the list on home): three quests are taken for you; swap any in the satchel.
+    func planDay() {
+        guard !calls.contains(where: { $0.chosen || $0.done }) else { return }
+        for c in calls.prefix(4) where chosenCount < Self.maxChosen && c.id != "b" { toggleChosen(c.id) }
     }
 
     func makeCalls() {
