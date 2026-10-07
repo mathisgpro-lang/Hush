@@ -4,6 +4,7 @@
 import SwiftUI
 
 struct BookView: View {
+    @Namespace private var chapterLine
     let model: ShellModel
     @Binding var isOpen: Bool
     let openOn: String                                   // the world you're in (RealmID raw value or "emberlands")
@@ -81,13 +82,17 @@ struct BookView: View {
             HStack(spacing: 8) {
                 ForEach(chapters, id: \.self) { w in
                     Button {
-                        withAnimation(.spring(duration: 0.35)) { chapter = w; page = max(0, pages.count - 1) }
+                        withAnimation(Motion.soft) { chapter = w; page = max(0, pages.count - 1) }
                     } label: {
-                        Text(worldName(w)).font(.ui(13, .bold))
-                            .padding(.horizontal, 12).padding(.vertical, 6)
-                            .background(Capsule().fill(chapter == w ? Color(red: 0.45, green: 0.32, blue: 0.15) : .clear))
-                            .overlay(Capsule().stroke(Color(red: 0.45, green: 0.32, blue: 0.15).opacity(0.6), lineWidth: 1))
-                            .foregroundStyle(chapter == w ? Color(red: 1, green: 0.93, blue: 0.8) : ink)
+                        // Chapters as words, one slim gold line under the open one (decision 146).
+                        VStack(spacing: 5) {
+                            Text(worldName(w)).font(.story(15, chapter == w ? .medium : .regular)).foregroundStyle(ink.opacity(chapter == w ? 1 : 0.45))
+                            ZStack {
+                                if chapter == w { Capsule().fill(Theme.champagneDeep).frame(height: 1.5).matchedGeometryEffect(id: "ch", in: chapterLine) }
+                                else { Color.clear.frame(height: 1.5) }
+                            }
+                        }
+                        .fixedSize().padding(.horizontal, 4)
                     }
                 }
             }

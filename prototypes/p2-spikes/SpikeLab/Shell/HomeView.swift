@@ -131,7 +131,10 @@ struct HomeView: View {
             }
             .simultaneousGesture(lookAround(geo.size), including: satchelOpen || bookOpen || flameOpen || open != nil ? .subviews : .all)
         }
-        .onAppear { meter.start(); setUpWorld() }
+        .onAppear {
+            meter.start(); setUpWorld()
+            if CommandLine.arguments.contains("-satchel") { satchelOpen = true }      // (test)
+        }
         .onPreferenceChange(EmberTargetKey.self) { p in if let p { coinTarget = p } }
         .onReceive(NotificationCenter.default.publisher(for: .perfCommand)) { n in       // (-uitest)
             switch n.object as? String {
@@ -427,9 +430,7 @@ struct HomeView: View {
                     .padding(.top, 4)
                 }
                 Button { finish(call, size: size) } label: {
-                    Text(live.counted && live.progress < live.target ? "Done, all of it" : "I did it").font(.story(18, .semibold)).frame(maxWidth: .infinity).padding(.vertical, 13)
-                        .background(Capsule().fill(LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.42), Color(red: 0.93, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
-                        .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
+                    GoldButtonLabel(text: live.counted && live.progress < live.target ? "Done, all of it" : "I did it")
                 }
                 .padding(.top, 4)
                 Button { withAnimation(.sheet) { model.skip(call.id); open = nil } } label: {
@@ -527,6 +528,7 @@ struct QuestJournal: View {
     let model: ShellModel
     @Binding var isOpen: Bool
     @State private var tab = 0                      // To do · Done · Skipped (Life Reset-style, decision 134)
+    @Namespace private var tabLine
     private let ink = Color(red: 0.27, green: 0.17, blue: 0.1)
     private var todo: [Call] { model.calls.filter { !$0.done && !$0.skipped } }
     private var done: [Call] { model.calls.filter { $0.done } }
@@ -572,10 +574,7 @@ struct QuestJournal: View {
                 }
                 .frame(maxHeight: 470)
                 Button { close() } label: {
-                    Text(model.chosenCount == 0 ? "Close" : "Into the world").font(.ui(17, .bold))
-                        .frame(maxWidth: .infinity).padding(.vertical, 13)
-                        .background(Capsule().fill(LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.42), Color(red: 0.93, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
-                        .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
+                    GoldButtonLabel(text: model.chosenCount == 0 ? "Close" : "Into the world")
                 }
                 .padding(.horizontal, 18).padding(.bottom, 18)
             }
@@ -589,12 +588,17 @@ struct QuestJournal: View {
     private var tabs: some View {
         HStack(spacing: 8) {
             ForEach(Array(["To do \(todo.count)", "Done \(done.count)", "Skipped \(skipped.count)"].enumerated()), id: \.offset) { i, t in
-                Button { withAnimation(.snappy(duration: 0.25)) { tab = i } } label: {
-                    Text(t).font(.ui(14, .bold))
-                        .padding(.horizontal, 14).padding(.vertical, 7)
-                        .background(RoundedRectangle(cornerRadius: 9).fill(tab == i ? ink : .clear))
-                        .overlay(RoundedRectangle(cornerRadius: 9).stroke(ink.opacity(0.5), lineWidth: 1))
-                        .foregroundStyle(tab == i ? Color(red: 0.98, green: 0.93, blue: 0.82) : ink)
+                Button { withAnimation(Motion.soft) { tab = i } } label: {
+                    // Words, and one slim gold line sliding under the one you're on (decision 146).
+                    VStack(spacing: 5) {
+                        Text(t).font(.story(15, tab == i ? .medium : .regular)).foregroundStyle(ink.opacity(tab == i ? 1 : 0.45))
+                        ZStack {
+                            if tab == i { Capsule().fill(Theme.champagneDeep).frame(height: 1.5).matchedGeometryEffect(id: "tab", in: tabLine) }
+                            else { Color.clear.frame(height: 1.5) }
+                        }
+                    }
+                    .fixedSize()
+                    .padding(.horizontal, 6)
                 }
             }
             Spacer()

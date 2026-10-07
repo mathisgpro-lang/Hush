@@ -171,28 +171,28 @@ struct LivingMapView: View {
     /// A realm's label, floating over it (visual only: taps on the map pick the nearest realm).
     private func marker(_ r: RealmID) -> some View {
         let isOpen = model.open.contains(r), isNew = model.newHere.contains(r), isSelected = selected == r
-        return VStack(spacing: 3) {
-            Text(r.name).font(.ui(isSelected ? 14 : 12, .bold))
-                .padding(.horizontal, 9).padding(.vertical, 4)
-                .background(Capsule().fill(.black.opacity(isSelected ? 0.7 : 0.45)))
-                .overlay(Capsule().stroke((isOpen ? r.color : .white).opacity(isSelected ? 0.9 : 0.35), lineWidth: 1))
-                .foregroundStyle(.white.opacity(isOpen ? 1 : 0.75))
+        // Quiet labels (decision 146): the realm's name in italic on a soft shade, a small price or a small mark below.
+        return VStack(spacing: 2) {
+            Text(r.name).font(.story(isSelected ? 16 : 14, isSelected ? .medium : .regular).italic())
+                .foregroundStyle(Theme.cream.opacity(isOpen ? 1 : 0.7))
+                .shadow(color: .black.opacity(0.9), radius: 4).shadow(color: .black.opacity(0.5), radius: 12)
             if !isOpen && r == model.journey.nextToBuy(among: ShellModel.builtRealms) {   // the next world: its price
                 HStack(spacing: 3) {
-                    Image(systemName: "lock.fill").font(.system(size: 9, weight: .bold))
-                    EmberCoin(size: 12)
-                    Text("\(r.price)").font(.num(11, .heavy))
+                    EmberCoin(size: 11)
+                    Text("\(r.price)").font(.num(11, .bold))
                 }
-                .padding(.horizontal, 7).padding(.vertical, 2)
-                .background(Capsule().fill(.black.opacity(0.6))).overlay(Capsule().stroke(Theme.gold.opacity(0.6), lineWidth: 1))
-                .foregroundStyle(model.journey.embers >= r.price ? Theme.gold : .white.opacity(0.8))
+                .foregroundStyle(model.journey.embers >= r.price ? Theme.champagne : Theme.cream.opacity(0.7))
+                .shadow(color: .black.opacity(0.9), radius: 4)
+            } else if !isOpen {
+                Image(systemName: "lock.fill").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.cream.opacity(0.5))
+                    .shadow(color: .black.opacity(0.9), radius: 3)
             }
             if isNew {
-                Text("Something new").font(.ui(10, .bold))
-                    .padding(.horizontal, 7).padding(.vertical, 2)
-                    .background(Capsule().fill(Color(red: 1, green: 0.55, blue: 0.25).opacity(0.9))).foregroundStyle(.white)
+                Text("something new").font(.story(11).italic()).foregroundStyle(Theme.champagne)
+                    .shadow(color: .black.opacity(0.9), radius: 4)
             }
         }
+        .animation(Motion.soft, value: isSelected)
         .offset(y: -34)
     }
 
@@ -281,21 +281,26 @@ struct LivingMapView: View {
     }
 
     private func goldLabel(_ t: String) -> some View {
-        Text(t).font(.ui(17, .bold))
-            .frame(maxWidth: .infinity).padding(.vertical, 13)
-            .background(Capsule().fill(LinearGradient(colors: [Theme.gold, Color(red: 0.95, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
-            .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
+        GoldButtonLabel(text: t).frame(maxWidth: .infinity)
     }
 
     private var header: some View {
+        // One quiet line: back home, the land's name, your Embers.
         HStack {
             Button { withAnimation(.screen) { model.go(.home) } } label: {
-                Label("Home", systemImage: "house.fill").font(.ui(15))
-                    .padding(.horizontal, 14).padding(.vertical, 9).background(Capsule().fill(.black.opacity(0.55))).foregroundStyle(.white)
+                HStack(spacing: 5) {
+                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
+                    Text("Home").font(.ui(15, .medium))
+                }
+                .foregroundStyle(Theme.cream).padding(.horizontal, 14).padding(.vertical, 9)
+                .background(Capsule(style: .continuous).fill(.black.opacity(0.32)))
+                .overlay(Capsule(style: .continuous).stroke(Theme.champagne.opacity(0.22), lineWidth: 0.5))
+                .contentShape(Capsule())
             }
+            .buttonStyle(PressableStyle())
             Spacer()
-            Text("The Emberlands").font(.story(20)).foregroundStyle(.white)
-                .padding(.horizontal, 14).padding(.vertical, 8).background(Capsule().fill(.black.opacity(0.45)))
+            Text("The Emberlands").font(.story(21, .medium).italic()).foregroundStyle(Theme.cream)
+                .shadow(color: .black.opacity(0.8), radius: 6)
             Spacer()
             EmbersBadge(value: shownEmbers ?? model.journey.embers)       // your Embers (decision 141)
         }

@@ -131,10 +131,7 @@ struct FriendProfile: View {
                     UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { cheered = true }
                 } label: {
-                    Label(cheered ? "Cheer sent" : "Send a cheer", systemImage: cheered ? "heart.fill" : "hands.clap.fill").font(.ui(16, .bold))
-                        .frame(maxWidth: .infinity).padding(.vertical, 12)
-                        .background(Capsule().fill(LinearGradient(colors: [Theme.gold, Color(red: 0.95, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
-                        .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
+                    GoldButtonLabel(text: cheered ? "Cheer sent" : "Send a cheer")
                 }
                 .disabled(cheered)
                 .buttonStyle(PressableStyle())

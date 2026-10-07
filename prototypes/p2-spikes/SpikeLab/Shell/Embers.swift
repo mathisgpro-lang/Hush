@@ -40,9 +40,9 @@ struct EmbersBadge: View {
             Text("\(value)").font(.num(15, .bold)).monospacedDigit().contentTransition(.numericText(value: Double(value)))
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 10).padding(.vertical, 5)
-        .background(Capsule().fill(.black.opacity(0.45)))
-        .overlay(Capsule().stroke(Theme.gold.opacity(0.45), lineWidth: 1))
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(Capsule(style: .continuous).fill(.black.opacity(0.32)))
+        .overlay(Capsule(style: .continuous).stroke(Theme.champagne.opacity(0.22), lineWidth: 0.5))
         .scaleEffect(1)
         .animation(.spring(response: 0.25, dampingFraction: 0.5), value: value)
     }
@@ -112,10 +112,7 @@ struct DailyPouch: View {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     collect(CGPoint(x: g.frame(in: .global).midX, y: g.frame(in: .global).midY - 40))
                 } label: {
-                    HStack(spacing: 6) { Text("Collect").font(.ui(17, .bold)); EmberCoin(size: 18); Text("+\(amount)").font(.num(17, .heavy)) }
-                        .padding(.horizontal, 30).padding(.vertical, 12)
-                        .background(Capsule().fill(LinearGradient(colors: [Theme.gold, Color(red: 0.95, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
-                        .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
+                    GoldButtonLabel(text: "Collect +\(amount)")
                 }
                 .buttonStyle(PressableStyle())
             }

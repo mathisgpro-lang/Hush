@@ -118,9 +118,7 @@ struct RewardBurst: View {
                         .multilineTextAlignment(.center).padding(.horizontal, 30)
                 }
                 Button { finish() } label: {
-                    Text("Keep going").font(.ui(17, .bold)).padding(.horizontal, 34).padding(.vertical, 12)
-                        .background(Capsule().fill(LinearGradient(colors: [gold, Color(red: 0.93, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom)))
-                        .foregroundStyle(Color(red: 0.25, green: 0.12, blue: 0.05))
+                    GoldButtonLabel(text: "Keep going")
                 }
                 .padding(.top, 6)
             }
