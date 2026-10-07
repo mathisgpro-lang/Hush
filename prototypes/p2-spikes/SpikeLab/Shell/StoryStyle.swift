@@ -111,6 +111,7 @@ struct WarmRing: View {
 /// The burst: a flash, a shockwave rolling out over the world, glowing shell shards thrown out (spinning, falling),
 /// embers. Plays once from `start`.
 struct HatchBurst: View {
+    static let shards: [UIImage] = (0..<8).compactMap { UIImage(named: "shard-\($0).png") }
     let start: Date
     let center: CGPoint
     let color: Color
@@ -139,9 +140,19 @@ struct HatchBurst: View {
                     let w = 10 + Double(i % 4) * 5, h = 7 + Double(i % 3) * 5
                     shard.move(to: CGPoint(x: -w / 2, y: -h / 2)); shard.addLine(to: CGPoint(x: w / 2, y: -h / 3))
                     shard.addLine(to: CGPoint(x: w / 3, y: h / 2)); shard.addLine(to: CGPoint(x: -w / 2.5, y: h / 2.2)); shard.closeSubpath()
-                    let tr = CGAffineTransform(translationX: x, y: y).rotated(by: rot.radians)
-                    ctx.fill(shard.applying(tr), with: .color(Color(red: 0.2, green: 0.12, blue: 0.1).opacity(a)))
-                    ctx.stroke(shard.applying(tr), with: .color(color.opacity(a)), lineWidth: 1.6)
+                    if !Self.shards.isEmpty {                           // Codex's painted shell shards
+                        let img = ctx.resolve(Image(uiImage: Self.shards[i % Self.shards.count]))
+                        ctx.drawLayer { l in
+                            l.opacity = a
+                            l.translateBy(x: x, y: y); l.rotate(by: rot)
+                            let k = 0.55 + Double(i % 3) * 0.15
+                            l.draw(img, in: CGRect(x: -22 * k, y: -22 * k, width: 44 * k, height: 44 * k))
+                        }
+                    } else {
+                        let tr = CGAffineTransform(translationX: x, y: y).rotated(by: rot.radians)
+                        ctx.fill(shard.applying(tr), with: .color(Color(red: 0.2, green: 0.12, blue: 0.1).opacity(a)))
+                        ctx.stroke(shard.applying(tr), with: .color(color.opacity(a)), lineWidth: 1.6)
+                    }
                 }
                 // Embers rising.
                 for i in 0..<24 {

@@ -537,7 +537,13 @@ struct FinchIntro: View {
                         FeelHaptics.shared.nudge(); FeelSound.shared.chime(i)
                     } label: {
                         VStack(spacing: 6) {
-                            EmberOrb(color: e.color, size: ember == e ? 54 : 44, warmth: ember == e ? 0.6 : 0.25, cracks: 0)
+                            if let img = UIImage(named: "ember-\(e.id).png") {       // Codex's painted ember
+                                Image(uiImage: img).resizable().scaledToFit().frame(width: ember == e ? 58 : 42, height: ember == e ? 58 : 42)
+                                    .shadow(color: e.color.opacity(ember == e ? 0.8 : 0.35), radius: ember == e ? 14 : 6)
+                                    .opacity(ember == nil || ember == e ? 1 : 0.6)
+                            } else {
+                                EmberOrb(color: e.color, size: ember == e ? 54 : 44, warmth: ember == e ? 0.6 : 0.25, cracks: 0)
+                            }
                             Text(e.word).font(.story(14, .medium).italic()).foregroundStyle(cream).opacity(ember == e ? 1 : 0)
                         }
                     }
@@ -953,7 +959,8 @@ struct EggView: View {
     let size: CGFloat
     let warmth: CGFloat
     var body: some View {
-        if let img = UIImage(named: warmth < 0.4 ? "egg-0.png" : warmth < 0.8 ? "egg-1.png" : "egg-2.png") {
+        let stage = warmth < 0.4 ? 0 : warmth < 0.8 ? 1 : 2
+        if let img = (0...stage).reversed().lazy.compactMap({ UIImage(named: "egg-\($0).png") }).first {   // the nearest painted stage
             ZStack {
                 Circle().fill(RadialGradient(colors: [color.opacity(0.35 + warmth * 0.45), .clear], center: .center, startRadius: 0, endRadius: size * (0.8 + warmth * 0.6)))
                     .frame(width: size * 2.4, height: size * 2.4)

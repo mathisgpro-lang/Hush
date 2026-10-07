@@ -64,29 +64,24 @@ struct RewardBurst: View {
     var body: some View {
         ZStack {
             if stage == 0 {
-                VStack(spacing: 10) {
-                    Text("+\(outcome.xp) XP").font(.num(34, .heavy)).foregroundStyle(gold)
-                        .shadow(color: ember.opacity(0.8), radius: 12)
-                        .offset(y: shown ? -30 : 20).opacity(shown ? 1 : 0)
+                // Quiet (decision 146): a few words of light, no boxes; the number climbs, then it all fades.
+                VStack(spacing: 8) {
+                    Text("+\(outcome.xp) XP").font(.story(30, .medium)).foregroundStyle(Theme.champagne)
+                        .shadow(color: Color(red: 1, green: 0.6, blue: 0.25).opacity(0.6), radius: 10).shadow(color: .black.opacity(0.6), radius: 6)
+                        .offset(y: shown ? -20 : 10).opacity(shown ? 1 : 0)
                     HStack(spacing: 8) {
-                        Image(systemName: outcome.pillar.realm.symbol).foregroundStyle(outcome.pillar.realm.color)
-                        Text(outcome.pillar.attribute).font(.ui(15, .bold))
-                        Text("\(counted)").font(.num(22, .bold)).monospacedDigit()
+                        Image(uiImage: UIImage(named: "pillar-\(outcome.pillar.rawValue.lowercased()).png") ?? UIImage()).resizable().scaledToFit().frame(width: 26, height: 26)
+                        Text(outcome.pillar.attribute).font(.story(16).italic())
+                        Text("\(counted)").font(.num(19, .bold)).monospacedDigit()
                             .contentTransition(.numericText(value: Double(counted)))
-                        Image(systemName: "arrowtriangle.up.fill").font(.system(size: 10)).foregroundStyle(Color(red: 0.5, green: 0.9, blue: 0.5))
                     }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16).padding(.vertical, 9)
-                    .background(Capsule().fill(.black.opacity(0.6))).overlay(Capsule().stroke(outcome.pillar.realm.color.opacity(0.6), lineWidth: 1))
-                    .opacity(shown ? 1 : 0).scaleEffect(shown ? 1 : 0.8)
+                    .foregroundStyle(Theme.cream)
+                    .shadow(color: .black.opacity(0.85), radius: 5)
+                    .opacity(shown ? 1 : 0).offset(y: shown ? 0 : 6)
                     if outcome.streakAfter > outcome.streakBefore {
-                        HStack(spacing: 6) {
-                            Image(systemName: "flame.fill").foregroundStyle(ember)
-                            Text(outcome.streakAfter == 1 ? "Your flame is lit" : "\(outcome.streakAfter) days in a row").font(.ui(14, .bold))
-                        }
-                        .foregroundStyle(.white).padding(.horizontal, 14).padding(.vertical, 7)
-                        .background(Capsule().fill(.black.opacity(0.55)))
-                        .opacity(shown ? 1 : 0)
+                        Text(outcome.streakAfter == 1 ? "Your flame is lit" : "\(outcome.streakAfter) days in a row").font(.story(15).italic())
+                            .foregroundStyle(Theme.cream.opacity(0.85)).shadow(color: .black.opacity(0.85), radius: 5)
+                            .opacity(shown ? 1 : 0)
                     }
                 }
                 .offset(y: -190)                    // in the sky above your Spark, never over it
@@ -103,25 +98,28 @@ struct RewardBurst: View {
         let title: String = outcome.milestone.map { "\($0) days in a row" } ?? "Level \(outcome.levelAfter)"
         let line: String = outcome.milestone.map { m in m >= 66 ? "Sixty-six days. This is who you are now." : "Your flame burns steadier every day." } ?? "Every quest makes you a little more you."
         ZStack {
-            Color.black.opacity(0.45).ignoresSafeArea().onTapGesture { finish() }
-            VStack(spacing: 14) {
+            Color.black.opacity(0.3).ignoresSafeArea().onTapGesture { finish() }
+            VStack(spacing: 12) {
                 ZStack {
-                    Circle().fill(RadialGradient(colors: [ember.opacity(0.7), .clear], center: .center, startRadius: 4, endRadius: 90)).frame(width: 180, height: 180)
-                    Image(systemName: outcome.milestone != nil ? "flame.fill" : "star.fill").font(.system(size: 64))
-                        .foregroundStyle(LinearGradient(colors: [Color(red: 1, green: 0.92, blue: 0.55), ember], startPoint: .top, endPoint: .bottom))
+                    Circle().fill(RadialGradient(colors: [Theme.champagne.opacity(0.55), .clear], center: .center, startRadius: 4, endRadius: 70)).frame(width: 140, height: 140)
+                    Image(uiImage: UIImage(named: "wax-seal.png") ?? UIImage()).resizable().scaledToFit().frame(width: 74, height: 74)
+                    if outcome.milestone == nil {
+                        Text("\(outcome.levelAfter)").font(.num(26, .heavy)).foregroundStyle(Theme.cream).shadow(color: .black.opacity(0.4), radius: 2)
+                    }
                 }
-                Text(title).font(.story(32)).foregroundStyle(.white)
-                Text(line).font(.ui(16)).foregroundStyle(.white.opacity(0.85))
+                .frame(height: 110)
+                Text(title).font(.story(28, .medium)).foregroundStyle(Theme.ink)
+                Text(line).font(.story(16).italic()).foregroundStyle(Theme.ink.opacity(0.7)).multilineTextAlignment(.center)
                 if outcome.shieldEarned {
-                    Label("You earned a shield: one missed day won't break your flame", systemImage: "shield.fill")
-                        .font(.ui(13)).foregroundStyle(Color(red: 0.75, green: 0.88, blue: 1))
-                        .multilineTextAlignment(.center).padding(.horizontal, 30)
+                    Text("You earned a shield: one missed day won't put your flame out.")
+                        .font(.ui(13)).foregroundStyle(Theme.ink.opacity(0.6)).multilineTextAlignment(.center)
                 }
-                Button { finish() } label: {
-                    GoldButtonLabel(text: "Keep going")
-                }
-                .padding(.top, 6)
+                Button { finish() } label: { GoldButtonLabel(text: "Keep going") }
+                    .buttonStyle(PressableStyle()).padding(.top, 8)
             }
+            .padding(.horizontal, 26).padding(.vertical, 24)
+            .background(SheetPaper(corner: 26))
+            .padding(.horizontal, 34)
         }
     }
 
