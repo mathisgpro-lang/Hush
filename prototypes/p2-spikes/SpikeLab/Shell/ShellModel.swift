@@ -229,6 +229,7 @@ final class ShellModel {
     /// Each world lives in its own place in space, always switched on (so it never has to be re-prepared);
     /// only the camera of the world on screen is on, and the others are simply out of sight.
     private func place(_ root: Entity, _ cam: Entity, slot: Int) {
+        PixelMode.apply(to: root, on: PixelMode.on)        // the pixel look, if chosen
         root.position = [Float(slot) * 500, 0, 0]
         cam.isEnabled = false
         worldRoot.addChild(root)
@@ -239,6 +240,14 @@ final class ShellModel {
         mapScene.camera.isEnabled = a == .map && mapBuilt
         for (r, sc) in realmScenes { sc.camera.isEnabled = a == .realm(r) && realmsBuilt.contains(r) }
         if !isBuilt(a) { Task { @MainActor in await ensure(a); showActive() } }
+    }
+    /// Switches every built world (and your Spark) between the painted and the pixel look, live.
+    var pixel: Bool = PixelMode.on
+    func setPixel(_ on: Bool) {
+        PixelMode.on = on; pixel = on
+        if sanctuaryBuilt { PixelMode.apply(to: sanctuary.root, on: on) }
+        if mapBuilt { PixelMode.apply(to: mapScene.root, on: on) }
+        for r in realmsBuilt { PixelMode.apply(to: realmScene(r).root, on: on) }
     }
     func isBuilt(_ w: World) -> Bool {
         switch w { case .sanctuary: sanctuaryBuilt; case .map: mapBuilt; case .realm(let r): realmsBuilt.contains(r) }

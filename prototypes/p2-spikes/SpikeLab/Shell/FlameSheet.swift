@@ -73,6 +73,21 @@ struct FlameSheet: View {
                 .id(tab)
                 Spacer(minLength: 18)
             }
+            // The look of the worlds (a trial): painted or pixel.
+            VStack {
+                Spacer()
+                HStack(spacing: 18) {
+                    ForEach([("Painted", false), ("Pixel", true)], id: \.0) { t, v in
+                        Button { withAnimation(Motion.soft) { model.setPixel(v) } } label: {
+                            Text(t).font(.story(14, model.pixel == v ? .medium : .regular).italic())
+                                .foregroundStyle(Theme.cream.opacity(model.pixel == v ? 1 : 0.4))
+                                .overlay(alignment: .bottom) { if model.pixel == v { Capsule().fill(Theme.champagne).frame(height: 1).offset(y: 4) } }
+                        }
+                    }
+                }
+                .padding(.bottom, 14)
+            }
+            .frame(maxWidth: .infinity)
             Button { close() } label: {
                 Image(systemName: "xmark").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.cream.opacity(0.8))
                     .frame(width: 34, height: 34).background(Circle().fill(.white.opacity(0.08)))

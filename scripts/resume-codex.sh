@@ -59,6 +59,7 @@ run_brief docs/reviews/briefs/p2-plan-review.md \
 "$ROOT/scripts/p26-tod.sh"
 "$ROOT/scripts/p27-art.sh"
 "$ROOT/scripts/p28-art.sh"
+"$ROOT/scripts/p29-pixel.sh"
 
 # Design & Feel cohesion frames first (decision 106)
 "$ROOT/scripts/cohesion-frames.sh"
