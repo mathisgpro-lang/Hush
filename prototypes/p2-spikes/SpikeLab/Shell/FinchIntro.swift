@@ -527,9 +527,18 @@ struct FinchIntro: View {
         GeometryReader { g in
             let c = CGPoint(x: g.size.width / 2, y: g.size.height / 2), r = min(g.size.width, g.size.height) * 0.38
             ZStack {
-                EmberOrb(color: ember?.color ?? gold.opacity(0.6), size: 74, warmth: ember == nil ? 0.08 : 0.35, cracks: 0)
-                    .opacity(ember == nil ? 0.5 : 0.9)
-                    .position(c).animation(.spring(duration: 0.5), value: ember)
+                Group {                                       // your chosen ember, larger, at the centre
+                    if let e = ember, let img = UIImage(named: "ember-\(e.id).png") {
+                        ZStack {
+                            Circle().fill(RadialGradient(colors: [e.color.opacity(0.45), .clear], center: .center, startRadius: 4, endRadius: 70)).frame(width: 150, height: 150)
+                            Image(uiImage: img).resizable().scaledToFit().frame(width: 84, height: 84)
+                        }
+                        .id(e.id).transition(.scale(scale: 0.6).combined(with: .opacity))
+                    } else if ember != nil {
+                        EmberOrb(color: ember?.color ?? gold, size: 74, warmth: 0.35, cracks: 0)
+                    }
+                }
+                .position(c).animation(Motion.soft, value: ember)
                 ForEach(Array(emberChoices.enumerated()), id: \.element.id) { i, e in
                     let a = Double(i) / 6 * 2 * .pi - .pi / 2
                     Button {

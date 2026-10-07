@@ -144,9 +144,9 @@ struct FlameSheet: View {
                 Button { withAnimation(.spring(duration: 0.3)) { tab = i } } label: {
                     Text(t).font(.story(15, .semibold))
                         .padding(.horizontal, 14).padding(.vertical, 9)
-                        .background(RibbonShape().fill(tab == i ? LinearGradient(colors: [Color(red: 0.62, green: 0.16, blue: 0.12), Color(red: 0.42, green: 0.08, blue: 0.07)], startPoint: .top, endPoint: .bottom)
-                                                        : LinearGradient(colors: [Color(red: 0.3, green: 0.2, blue: 0.14), Color(red: 0.2, green: 0.13, blue: 0.09)], startPoint: .top, endPoint: .bottom)))
-                        .overlay(RibbonShape().stroke(Theme.gold.opacity(tab == i ? 0.8 : 0.3), lineWidth: 1))
+                        .background(RibbonShape().fill(tab == i ? LinearGradient(colors: [Color(red: 0.42, green: 0.14, blue: 0.11), Color(red: 0.3, green: 0.09, blue: 0.08)], startPoint: .top, endPoint: .bottom)
+                                                        : LinearGradient(colors: [Color(red: 0.22, green: 0.15, blue: 0.11), Color(red: 0.16, green: 0.11, blue: 0.08)], startPoint: .top, endPoint: .bottom)))
+                        .overlay(RibbonShape().stroke(Theme.champagne.opacity(tab == i ? 0.5 : 0.18), lineWidth: 0.6))
                         .foregroundStyle(Theme.cream.opacity(tab == i ? 1 : 0.7))
                 }
                 .buttonStyle(PressableStyle())
