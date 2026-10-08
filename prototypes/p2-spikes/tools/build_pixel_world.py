@@ -52,7 +52,7 @@ fire = (v > 0.92) & (h > 0.07) & (h < 0.16) & (s > 0.45)
 sky = (Y < 0.24) & ((h < 0.12) | (h > 0.7)) & (s > 0.2) & ~water
 sky &= (d < np.percentile(d, 25))
 mask = np.dstack([water, fall, fire, sky]).astype(np.uint8) * 255
-Image.fromarray(mask, "RGBA").resize((W * UP, H * UP), Image.NEAREST).save(f"{A}/px-home-motion.png")
+Image.fromarray(mask, "RGBA").save(f"{A}/px-home-motion.png")   # (at the true pixel size)
 
 # The stone circle: the biggest warm, bright, round patch near the middle.
 warm = (h > 0.06) & (h < 0.15) & (s > 0.35) & (v > 0.75) & (Y > 0.35) & (Y < 0.7)

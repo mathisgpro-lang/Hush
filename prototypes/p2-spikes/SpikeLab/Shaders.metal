@@ -144,6 +144,13 @@ inline float2 s2pixelUV(float2 uv, half3 tint, float2 unused)
     float2 n = s2grid(tint);
     return (floor(uv * n) + 0.5) / n;
 }
+/// A texture lookup in pixel mode lands on a pixel's centre (even mid-motion), so pixel art stays crisp at any size.
+inline float2 s2snap(float2 uv, half3 tint)
+{
+    if (!s2isPixel(tint)) return uv;
+    float2 n = s2grid(tint);
+    return (floor(uv * n) + 0.5) / n;
+}
 inline float3 s2pixelColor(float3 rgb, float2 uv, half3 tint, float2 unused)
 {
     if (!s2isPixel(tint)) return rgb;
@@ -316,11 +323,11 @@ void groveRestore(realitykit::surface_parameters params)
     float core0 = float(lm.g);
     float2 lick = float2(sin(uv.y * 520.0 - t * 11.0 + uv.x * 90.0) * 0.0007 + sin(uv.y * 210.0 - t * 6.3) * 0.0004,
                          -(0.5 + 0.5 * sin(t * 8.0 + uv.x * 400.0 + uv.y * 60.0)) * 0.0011) * core0;
-    half4 col = params.textures().base_color().sample(s, tuv + ripple * (1.0 - paleW) + sway + flow + breeze + cloud + lick);
+    half4 col = params.textures().base_color().sample(s, s2snap(tuv + ripple * (1.0 - paleW) + sway + flow + breeze + cloud + lick, pxTint));
     if (hasLife && skyM > 0.01) {
         // The sky drifts gently, one sharp reading (blending two shifted copies smeared the distant castles).
         float2 drift = float2(sin(t * 0.045) * 0.005 + sin(t * 0.017) * 0.003, sin(t * 0.03) * 0.0012);
-        col = mix(col, params.textures().base_color().sample(s, tuv + drift + cloud), half(skyM));
+        col = mix(col, params.textures().base_color().sample(s, s2snap(tuv + drift + cloud, pxTint)), half(skyM));
     }
     float3 rgb = float3(col.rgb);
     float3 rgbRaw = rgb;                              // (its lanterns keep their own fire, whatever the hour)
@@ -606,11 +613,11 @@ void stoneLive(realitykit::surface_parameters params)
     }
     float2 lick = float2(sin(uv.y * 520.0 - t * 11.0 + uv.x * 90.0) * 0.0007 + sin(uv.y * 210.0 - t * 6.3) * 0.0004,
                          -(0.5 + 0.5 * sin(t * 8.0 + uv.x * 400.0 + uv.y * 60.0)) * 0.0011) * saturate(fire * 1.5);   // flames lick upward
-    half4 col = params.textures().base_color().sample(s, tuv + ripple + flow + sway + cloud + lick);
+    half4 col = params.textures().base_color().sample(s, s2snap(tuv + ripple + flow + sway + cloud + lick, pxTint));
     if (params.material_constants().clearcoat_roughness_scale() > 0.5 && skyM > 0.01) {
         // (The map) its sea of clouds drifts gently, one sharp reading (decision 142).
         float2 drift = float2(sin(t * 0.04) * 0.004 + sin(t * 0.015) * 0.0025, sin(t * 0.028) * 0.001);
-        col = mix(col, params.textures().base_color().sample(s, tuv + drift + cloud), half(skyM));
+        col = mix(col, params.textures().base_color().sample(s, s2snap(tuv + drift + cloud, pxTint)), half(skyM));
     }
     float3 rgb = float3(col.rgb);
 
