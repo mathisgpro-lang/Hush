@@ -261,11 +261,11 @@ final class SanctuaryScene {
         let scale = (PixelMode.world ? 0.07 : 0.105) * h * k / 0.27   // the Spark: small, a newborn spirit (smaller in the pixel Sanctuary)
         let feet = SIMD3<Float>((hx(circle.x) - 0.5) * w * k, (circle.y - 0.5) * h * k, -d)
         hero.leanPivot.scale = .init(repeating: scale)
-        hero.leanPivot.position = feet + SIMD3(0, 0.09 * scale, 0)
+        hero.leanPivot.position = feet + SIMD3(0, (PixelMode.world ? 0.0 : 0.09) * scale, 0)   // (pixel: in the middle of the circle)
         hero.stationary = true
         // Floating well above the runes (Mathis: like in the Grove). Seen from above, a floating thing shows higher
         // on screen than its light on the ground: its glow pool stays on the circle's center stone.
-        hero.hoverHeight = 0.045                // the height Mathis picked (decision 127)
+        hero.hoverHeight = PixelMode.world ? 0.012 : 0.045     // pixel: right in the middle of the circle (Mathis, 2026-10-09)
         root.addChild(hero.leanPivot)
         heroFeet = feet; heroWorldScale = scale
 

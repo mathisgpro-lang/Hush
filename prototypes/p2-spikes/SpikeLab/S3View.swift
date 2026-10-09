@@ -272,7 +272,9 @@ final class RealmScene {
         let k = -circle.z / Self.distance
         heroScale = (PixelMode.world ? 0.07 : 0.105) * h * k / 0.27                            // the Spark's size, as in the Sanctuary
         hero.leanPivot.scale = .init(repeating: heroScale)
-        hero.leanPivot.position = circle + SIMD3(0, 0.09 * heroScale, 0)
+        // Standing right in the middle of its circle (Mathis): feet on the centre stone, only a breath of hover.
+        hero.leanPivot.position = circle + SIMD3(0, (PixelMode.world ? 0.0 : 0.09) * heroScale, 0)
+        if PixelMode.world { hero.hoverHeight = 0.012 }
         hero.stationary = true
         root.addChild(hero.leanPivot)
         heroFeet = circle

@@ -10,5 +10,5 @@ b stillwater 0.5 0.415 --water-band 0.5,0.7 --water-hue 0.55,0.2 --smooth 0.3 --
 b highlands 0.5 0.43 --min-light 10 --light-contrast 0.2 --max-lights 80
 b wilds 0.5 0.41 --water-band 0.72,1.0 --water-hue 0.55,0.13 --smooth 0.35 --min-light 8 --light-contrast 0.2 --max-lights 80
 b forge 0.5 0.41 --no-water --min-light 10 --light-contrast 0.15 --max-lights 120
-b grove 0.5 0.42 --water-band 0.8,1.0 --smooth 0.4 --min-light 8 --light-contrast 0.15 --max-lights 140
+b grove 0.5 0.402 --water-band 0.8,1.0 --smooth 0.4 --min-light 8 --light-contrast 0.15 --max-lights 140
 python3 tools/pixel_shrink.py
