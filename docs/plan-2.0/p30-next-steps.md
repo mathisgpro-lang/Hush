@@ -61,7 +61,7 @@
 
 - **No paywall, no subscription, no trial** (Mathis). The whole game stays free.
 - **From the notes: buying coins** at 2.99 CHF ("just enough to save your streak"), 9.99 CHF and 29.99 CHF.
-- **⚠ This conflicts with earlier decisions, and needs a choice (see the question below):**
+- **Decided (151): buying coins will be added later (P5), not now.** Its exact shape is decided when it is built, since it touches earlier decisions:
   - decision 81: no paid progress;
   - decision 141: coins never sold for money;
   - decision 134: shields earned by living, never bought.
@@ -97,5 +97,5 @@
 2. **The widget:** the Flame's vitality on the home screen, plus the icon changing at evolutions.
 3. **The floating-world map,** the travel and the rebirth animation (§3), with Codex's art.
 4. **The Hall of achievements, and weekly challenges** (offline first) (§2.4–2.5).
-5. **Shop and money** once the §4 question is answered. Live sales come at P5.
+5. **Shop** for cosmetics bought with earned coins. Buying coins with money comes later (decision 151, P5).
 6. **Sound, polish, a Codex review, then TestFlight with real users.**
