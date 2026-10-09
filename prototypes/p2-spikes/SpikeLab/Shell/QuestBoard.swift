@@ -10,6 +10,7 @@ struct QuestBoard: View {
     let add: () -> Void
     let open: (Call) -> Void
     let tick: (Call, CGPoint) -> Void
+    var streakOf: (String) -> Int = { _ in 0 }
     /// Like notifications on the lock screen (Mathis): one quest in front, the others stacked behind it; swipe up to
     /// fan them out into the full list, swipe down to gather them again.
     @State private var expanded = false
@@ -58,7 +59,7 @@ struct QuestBoard: View {
                 ZStack(alignment: .top) {
                     ForEach(Array(calls.enumerated()), id: \.element.id) { i, c in
                         let behind = !expanded && i > 0
-                        QuestRow(call: c, open: { open(c) }, tick: { p in tick(c, p) })
+                        QuestRow(call: c, streak: streakOf(c.title), open: { open(c) }, tick: { p in tick(c, p) })
                             .brightness(behind ? -0.06 * Double(min(i, 2)) : 0)
                             .scaleEffect(x: behind ? 1 - CGFloat(min(i, 2)) * 0.05 : 1, y: 1)
                             .offset(y: expanded ? CGFloat(i) * (Self.rowH + Self.gap) : CGFloat(min(i, 2)) * Self.peek)
@@ -92,6 +93,7 @@ struct QuestBoard: View {
 
 struct QuestRow: View {
     let call: Call
+    var streak: Int = 0                   // days in a row for this quest
     let open: () -> Void
     let tick: (CGPoint) -> Void
     @State private var tickCenter: CGPoint = .zero
@@ -110,6 +112,11 @@ struct QuestRow: View {
                             .strikethrough(call.done, color: Theme.ink.opacity(0.4)).lineLimit(1)
                         HStack(spacing: 6) {
                             Text(call.counted && !call.done ? "\(call.progress)/\(call.target) \(call.unit)" : "\(call.minutes) min")
+                            if streak > 0 {                                  // its own unbroken run: what counts
+                                Text("·")
+                                HStack(spacing: 2) { Image(systemName: "flame.fill").font(.system(size: 9)); Text("\(streak)d") }
+                                    .foregroundStyle(Theme.accent)
+                            }
                             Text("·")
                             HStack(spacing: 3) { EmberCoin(size: 11); Text("+10") }
                         }

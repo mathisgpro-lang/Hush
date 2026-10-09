@@ -278,7 +278,7 @@ struct FinchIntro: View {
         case .promise:
             VStack(spacing: 12) {
                 title("Keep your flame alive for 7 days?")
-                body2("At day 7 you earn a shield: one missed day won't put your flame out.")
+                body2("Small quests are enough. What matters is never stopping. At day 7 you earn a shield for a hard day.")
                 primary("I'm in") { journeyPromise(7); go(.mornings) }
                 secondary("Let's just begin") { go(.mornings) }
             }
@@ -387,7 +387,7 @@ struct FinchIntro: View {
                         Text("\(c.minutes) min").font(.ui(12)).foregroundStyle(Theme.ink.opacity(0.55))
                     }
                 }
-                Text("Day 1 of 66 · swap any quest in your satchel").font(.ui(11)).foregroundStyle(Theme.ink.opacity(0.5))
+                Text("Small is fine: what counts is doing them every day.").font(.ui(11)).foregroundStyle(Theme.ink.opacity(0.5))
             }
             .padding(20).frame(maxWidth: .infinity, alignment: .leading)
             .background(SheetPaper(corner: 22))

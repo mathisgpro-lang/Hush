@@ -100,7 +100,8 @@ struct HomeView: View {
                             QuestBoard(calls: today, streakLine: streakLine(model.journey, light: model.light),
                                        add: { withAnimation(.sheet) { satchelOpen = true } },
                                        open: { c in withAnimation(.sheet) { open = c } },
-                                       tick: { c, p in finish(c, size: geo.size, from: p) })
+                                       tick: { c, p in finish(c, size: geo.size, from: p) },
+                                       streakOf: { model.journey.questStreak($0) })
                                 .transition(.move(edge: .bottom).combined(with: .opacity))
                             Rectangle().fill(Theme.champagne.opacity(0.25)).frame(height: 0.75).padding(.horizontal, 12).padding(.top, 2)
                         }
@@ -426,6 +427,15 @@ struct HomeView: View {
                     .shadow(color: call.realm.color.opacity(0.5), radius: 10)
                 Text(call.title).font(.story(26)).foregroundStyle(ink)
                 Text(call.detail).font(.ui(15)).multilineTextAlignment(.center).foregroundStyle(ink.opacity(0.8))
+                if !call.reason.isEmpty {
+                    Text(call.reason).font(.story(14).italic()).multilineTextAlignment(.center).foregroundStyle(ink.opacity(0.65))
+                }
+                // The heart of it: every day, not how hard.
+                HStack(spacing: 6) {
+                    Image(systemName: "flame.fill").font(.system(size: 11)).foregroundStyle(Theme.accent)
+                    Text(Consistency.line(call.title.count)).font(.story(14, .medium)).foregroundStyle(Theme.accent)
+                }
+                .multilineTextAlignment(.center)
                 QuestMeta(call: call, streak: model.journey.questStreak(call.title), ink: ink)
                 let live = model.calls.first { $0.id == call.id } ?? call
                 if live.counted {

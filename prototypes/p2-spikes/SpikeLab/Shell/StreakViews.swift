@@ -79,7 +79,8 @@ struct RewardBurst: View {
                     .shadow(color: .black.opacity(0.85), radius: 5)
                     .opacity(shown ? 1 : 0).offset(y: shown ? 0 : 6)
                     if outcome.streakAfter > outcome.streakBefore {
-                        Text(outcome.streakAfter == 1 ? "Your flame is lit" : "\(outcome.streakAfter) days in a row").font(.story(15).italic())
+                        Text(outcome.streakAfter == 1 ? "Your flame is lit" : "\(outcome.streakAfter) days in a row · this day counts as much as any").font(.story(15).italic())
+                            .multilineTextAlignment(.center)
                             .foregroundStyle(Theme.cream.opacity(0.85)).shadow(color: .black.opacity(0.85), radius: 5)
                             .opacity(shown ? 1 : 0)
                     }
@@ -178,5 +179,24 @@ func flameLine(_ j: Journey) -> String {
     if let n = next, s.state != .broken, n.days - s.best <= 2, n.days > s.best {
         options = ["\(n.days - s.best) more day\(n.days - s.best == 1 ? "" : "s") and I become a \(n.name)!"]
     } else if week >= 6 { options.append("Six of the last seven days. You're becoming someone new.") }
+    if j.dayNumber() % 3 == 0 && s.state != .repairable(need: 2) && s.state != .repairable(need: 1) {
+        options = ["Small or big, it doesn't matter. Every day does.", "I don't need big. I need every day.", "It's not how much. It's never stopping."]
+    }
     return options[j.dayNumber() % options.count]
+}
+
+/// The heart of Hush (Mathis, 2026-10-09): it's not how hard a quest is, it's doing it every day without a break.
+/// Said often, in a few different words, so it never sounds like a slogan.
+enum Consistency {
+    static let lines = [
+        "Small is fine. What counts is doing it every day.",
+        "It's not about how hard it is. It's about not missing a day.",
+        "A tiny quest kept every day beats a big one done once.",
+        "Easy or hard, every day you keep is what changes you.",
+        "Showing up today matters more than how much you do.",
+    ]
+    static func line(_ salt: Int = 0) -> String {
+        let day = Calendar.current.ordinality(of: .day, in: .era, for: Date()) ?? 0
+        return lines[abs(day + salt) % lines.count]
+    }
 }
