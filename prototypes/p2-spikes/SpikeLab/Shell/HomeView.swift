@@ -478,6 +478,7 @@ struct HomeView: View {
             strand = nil
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             if let outcome { withAnimation(.spring(response: 0.4)) { reward = outcome } }   // +XP, the number climbs, milestones
+            if let f = outcome?.evolvedTo { model.showForm(f) }                              // a new form, everywhere (decision 152)
             if call.realm == world { realmScene?.act() }        // done here, for this realm: its next lights relight
             director?.actionCompleted(call.realm == .grove ? .heart : call.realm == .library ? .mind : call.realm == .highlands ? .body : .spirit)
         }

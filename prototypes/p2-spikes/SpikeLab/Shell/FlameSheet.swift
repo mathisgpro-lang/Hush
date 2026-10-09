@@ -36,9 +36,10 @@ struct FlameSheet: View {
                 spark
                 VStack(spacing: 4) {
                     Text(j.name.isEmpty ? "Your Spark" : "\(j.name)'s Spark").font(.story(26, .medium).italic()).foregroundStyle(Theme.cream)
-                    Text("SPARK · DAY \(j.dayNumber())").font(.ui(11, .semibold)).tracking(2).foregroundStyle(Theme.champagne.opacity(0.8))
+                    Text("\(model.form.name.uppercased()) · DAY \(j.dayNumber())").font(.ui(11, .semibold)).tracking(2).foregroundStyle(Theme.champagne.opacity(0.8))
                 }
                 .padding(.top, 6)
+                formsRow.padding(.top, 12)
                 Spacer(minLength: 22)
                 // Three quiet numbers.
                 HStack(spacing: 0) {
@@ -115,11 +116,45 @@ struct FlameSheet: View {
                     .background(Circle().fill(Color.black.opacity(0.25)))
                     .offset(x: cos(a) * 105, y: sin(a) * 105)
             }
-            Image(uiImage: SparkTint.image(PixelMode.sparkImage, ember: model.emberID) ?? UIImage()).resizable().scaledToFit()
-                .frame(height: 120).offset(y: bob ? -4 : 3)
+            Image(uiImage: UIImage(named: model.form.base + "-keyed.png") ?? SparkTint.image(PixelMode.sparkImage, ember: model.emberID) ?? UIImage())
+                .resizable().interpolation(.none).scaledToFit()
+                .frame(height: 110 * CGFloat(model.form.growth)).offset(y: bob ? -4 : 3)
+                .id(model.form).transition(.scale(scale: 0.7).combined(with: .opacity))
         }
         .frame(height: 240)
         .animation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true), value: bob)
+    }
+
+    /// Your forms (decision 152): the ones you've reached can be chosen; the next ones wait in shadow with the
+    /// days they need.
+    private var formsRow: some View {
+        let reached = j.reachedForm
+        return HStack(spacing: 10) {
+            ForEach(Evolution.allCases) { f in
+                let open = f.rawValue <= reached.rawValue && f.available
+                Button {
+                    guard open else { return }
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(Motion.soft) { model.showForm(f) }
+                } label: {
+                    VStack(spacing: 3) {
+                        ZStack {
+                            Circle().fill(model.form == f ? Theme.champagne.opacity(0.22) : .white.opacity(0.05)).frame(width: 46, height: 46)
+                            Circle().stroke(model.form == f ? Theme.champagne : Theme.champagne.opacity(0.15), lineWidth: model.form == f ? 1.2 : 0.5).frame(width: 46, height: 46)
+                            if let img = UIImage(named: (f.available ? f.base : "px-spark") + "-keyed.png") {
+                                Image(uiImage: img).renderingMode(open ? .original : .template).resizable().interpolation(.none).scaledToFit()
+                                    .frame(height: 22 + CGFloat(f.rawValue) * 2.5)
+                                    .foregroundStyle(Color.black.opacity(0.7))
+                                    .opacity(open ? 1 : 0.55)
+                            }
+                        }
+                        Text(open ? f.name : "\(f.days)d").font(.ui(9.5, .semibold)).foregroundStyle(Theme.cream.opacity(open ? 0.85 : 0.4))
+                    }
+                }
+                .buttonStyle(PressableStyle())
+                .disabled(!open)
+            }
+        }
     }
 
     private func figure(_ big: String, _ label: String) -> some View {

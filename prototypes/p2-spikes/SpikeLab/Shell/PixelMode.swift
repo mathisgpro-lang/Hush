@@ -35,7 +35,7 @@ enum PixelMode {
                 let texH = Float(m.baseColor.texture?.resource.height ?? 1024)
                 let texW = Float(m.baseColor.texture?.resource.width ?? 1024)
                 let native = world && texH < 1000                  // a pixel world at its true size (tools/pixel_shrink.py)
-                let isSpark = !native && texW < 1200                // your Spark (drawn 12 texels per pixel)
+                let isSpark = !native && texW < 2000                // your Spark and its forms (drawn 12 texels per pixel)
                 var k = isSpark ? (world ? 12 : max(2, texH / 80)) : max(1.5, texH / rowsPerScreen)
                 if native { k = 1 }                                 // one texel = one art pixel
                 // The grid travels in the emissive tint, which the renderer linearises: pre-encode it (sRGB).

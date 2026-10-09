@@ -95,15 +95,19 @@ struct RewardBurst: View {
     }
 
     @ViewBuilder private var celebration: some View {
-        let title: String = outcome.milestone.map { "\($0) days in a row" } ?? "Level \(outcome.levelAfter)"
-        let line: String = outcome.milestone.map { m in m >= 66 ? "Sixty-six days. This is who you are now." : "Your flame burns steadier every day." } ?? "Every quest makes you a little more you."
+        let title: String = outcome.evolvedTo.map { "Your Flame became a \($0.name)" } ?? outcome.milestone.map { "\($0) days in a row" } ?? "Level \(outcome.levelAfter)"
+        let line: String = outcome.evolvedTo.map { "\($0.days) days in a row. This form is yours for good." } ?? outcome.milestone.map { m in m >= 66 ? "Sixty-six days. This is who you are now." : "Your flame burns steadier every day." } ?? "Every quest makes you a little more you."
         ZStack {
             Color.black.opacity(0.3).ignoresSafeArea().onTapGesture { finish() }
             VStack(spacing: 12) {
                 ZStack {
                     Circle().fill(RadialGradient(colors: [Theme.champagne.opacity(0.55), .clear], center: .center, startRadius: 4, endRadius: 70)).frame(width: 140, height: 140)
-                    Image(uiImage: UIImage(named: "wax-seal.png") ?? UIImage()).resizable().scaledToFit().frame(width: 74, height: 74)
-                    if outcome.milestone == nil {
+                    if let f = outcome.evolvedTo, let img = UIImage(named: f.base + "-keyed.png") {
+                        Image(uiImage: img).resizable().interpolation(.none).scaledToFit().frame(height: 104)     // the new form
+                    } else {
+                        Image(uiImage: UIImage(named: "wax-seal.png") ?? UIImage()).resizable().scaledToFit().frame(width: 74, height: 74)
+                    }
+                    if outcome.milestone == nil && outcome.evolvedTo == nil {
                         Text("\(outcome.levelAfter)").font(.num(26, .heavy)).foregroundStyle(Theme.cream).shadow(color: .black.opacity(0.4), radius: 2)
                     }
                 }
@@ -130,7 +134,7 @@ struct RewardBurst: View {
             try? await Task.sleep(for: .milliseconds(350))
             withAnimation(.easeOut(duration: 0.8)) { counted = outcome.attributeAfter }       // the number climbs
             try? await Task.sleep(for: .milliseconds(1400))
-            if outcome.milestone != nil || outcome.levelAfter > outcome.levelBefore {
+            if outcome.evolvedTo != nil || outcome.milestone != nil || outcome.levelAfter > outcome.levelBefore {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) { stage = 1 }
             } else {

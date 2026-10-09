@@ -208,7 +208,10 @@ final class ShellModel {
             defer { if PerfProbe.on { print(String(format: "BUILD %@ %.0f ms (main thread)", "\(w)", (CACurrentMediaTime() - t0) * 1000)) } }
             switch w {
             case .sanctuary where !sanctuaryBuilt:
-                if (try? await sanctuary.build()) != nil { place(sanctuary.root, sanctuary.camera, slot: 0); sanctuaryBuilt = true }
+                if (try? await sanctuary.build()) != nil {
+                    await wearForm(sanctuary.hero, root: sanctuary.root)
+                    place(sanctuary.root, sanctuary.camera, slot: 0); sanctuaryBuilt = true
+                }
             case .map where !mapBuilt:
                 let lastOpen = roadIndex(roadOrder.last { open.contains($0) } ?? .sanctuary)
                 if (try? await mapScene.build(open: open, flameAt: flameAt, lastOpenRoadIndex: lastOpen, ember: emberID)) != nil {
@@ -216,7 +219,10 @@ final class ShellModel {
                 }
             case .realm(let r) where !realmsBuilt.contains(r):
                 let sc = realmScene(r)
-                if (try? await sc.build()) != nil { place(sc.root, sc.camera, slot: 2 + (RealmID.allCases.firstIndex(of: r) ?? 0)); realmsBuilt.insert(r) }
+                if (try? await sc.build()) != nil {
+                    await wearForm(sc.hero, root: sc.root)
+                    place(sc.root, sc.camera, slot: 2 + (RealmID.allCases.firstIndex(of: r) ?? 0)); realmsBuilt.insert(r)
+                }
             default: break
             }
         }
@@ -248,6 +254,25 @@ final class ShellModel {
         if sanctuaryBuilt { PixelMode.apply(to: sanctuary.root, on: on) }
         if mapBuilt { PixelMode.apply(to: mapScene.root, on: on) }
         for r in realmsBuilt { PixelMode.apply(to: realmScene(r).root, on: on) }
+    }
+    // MARK: Your Flame's form (decision 152)
+    /// The form shown everywhere; set when you choose one, or when a new one is reached.
+    var form: Evolution = .spark
+    private func wearForm(_ hero: HeroRig, root: Entity) async {
+        let f = journey.form
+        guard f != .spark else { return }
+        await hero.switchForm(base: f.base, growth: f.growth)
+        PixelMode.apply(to: root, on: PixelMode.on)            // its pixel grid follows the new sprite
+    }
+    /// Shows a form in every world at once (chosen in Your Flame, or reached by the streak).
+    func showForm(_ f: Evolution) {
+        journey.choose(f)
+        form = journey.form
+        Task { @MainActor in
+            let w = journey.form
+            if sanctuaryBuilt { await sanctuary.hero.switchForm(base: w.base, growth: w.growth); PixelMode.apply(to: sanctuary.root, on: PixelMode.on) }
+            for r in realmsBuilt { let sc = realmScene(r); await sc.hero.switchForm(base: w.base, growth: w.growth); PixelMode.apply(to: sc.root, on: PixelMode.on) }
+        }
     }
     func isBuilt(_ w: World) -> Bool {
         switch w { case .sanctuary: sanctuaryBuilt; case .map: mapBuilt; case .realm(let r): realmsBuilt.contains(r) }
@@ -329,6 +354,7 @@ final class ShellModel {
         journey.grant(200, id: "beta-purse")              // the test's starter purse: enough to buy a world right away
         if CommandLine.arguments.contains("-quests") { for id in ["a", "c", "d"] { toggleChosen(id) } }   // (test: three taken)
         planDay()
+        form = journey.form
     }
 
     func chose(_ interest: String) {

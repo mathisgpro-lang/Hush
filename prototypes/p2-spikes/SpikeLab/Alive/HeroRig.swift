@@ -36,7 +36,10 @@ final class HeroRig: FlameRig {
     /// Which painted Flame to use (e.g. "hero" or "d", the root frame's own Flame), how far its feet sit above the
     /// image's bottom (fraction of its height), whether to add a reflection and extra glows (the root frame already
     /// paints its own glow), and how much it drifts (a sitting Flame barely moves).
-    private let base: String, footInset: Float, withReflection: Bool, withGlows: Bool
+    private var base: String
+    private let footInset: Float, withReflection: Bool, withGlows: Bool
+    /// How tall this form stands (evolutions grow, decision 152).
+    private var growth: Float = 1
     /// The Spark (decision 125): a pure spirit with no legs. It hovers and bobs above the ground, its flame tip
     /// sways, and the hour lights it (sparkFire/sparkLive shaders).
     let spirit: Bool
@@ -65,20 +68,8 @@ final class HeroRig: FlameRig {
         faces = ["open": tex,
                  "blink": try await TextureResource(named: "\(base)-blink.png"),
                  "happy": try await TextureResource(named: "\(base)-happy.png")]
-        let aspect = Float(tex.width) / Float(tex.height)
-        let h: Float = 0.27, w = h * aspect
-        let (nx, ny) = (16, 32)
-        var pos: [SIMD3<Float>] = [], uvs: [SIMD2<Float>] = [], idx: [UInt32] = []
-        for j in 0...ny { for i in 0...nx {
-            let u = Float(i) / Float(nx), v = Float(j) / Float(ny)
-            pos.append([(u - 0.5) * w, v * h, 0]); uvs.append([u, v])
-        } }
-        for j in 0..<ny { for i in 0..<nx {
-            let a = UInt32(j * (nx + 1) + i), b = a + 1, c = a + UInt32(nx + 1), d = c + 1
-            idx += [a, b, d, a, d, c]
-        } }
-        var desc = MeshDescriptor(name: "hero")
-        desc.positions = .init(pos); desc.textureCoordinates = .init(uvs); desc.primitives = .triangles(idx)
+        let h: Float = 0.27
+        let desc = Self.bodyDescriptor(aspect: Float(tex.width) / Float(tex.height), height: h * growth)
         var unlit = UnlitMaterial()
         unlit.color = .init(tint: .white, texture: PaintedRig.clamped(tex))
         unlit.blending = .transparent(opacity: .init(floatLiteral: 1.0))
@@ -282,6 +273,42 @@ final class HeroRig: FlameRig {
     private func hold(roll: Float, for seconds: Double) {
         behaviorRoll = roll
         after(seconds) { self.behaviorRoll = 0 }
+    }
+
+    /// The body's mesh: a fine grid (so the fire shader can bend it), its feet at y = 0.
+    private static func bodyDescriptor(aspect: Float, height h: Float) -> MeshDescriptor {
+        let w = h * aspect
+        let (nx, ny) = (16, 32)
+        var pos: [SIMD3<Float>] = [], uvs: [SIMD2<Float>] = [], idx: [UInt32] = []
+        for j in 0...ny { for i in 0...nx {
+            let u = Float(i) / Float(nx), v = Float(j) / Float(ny)
+            pos.append([(u - 0.5) * w, v * h, 0]); uvs.append([u, v])
+        } }
+        for j in 0..<ny { for i in 0..<nx {
+            let a = UInt32(j * (nx + 1) + i), b = a + 1, c = a + UInt32(nx + 1), d = c + 1
+            idx += [a, b, d, a, d, c]
+        } }
+        var desc = MeshDescriptor(name: "hero")
+        desc.positions = .init(pos); desc.textureCoordinates = .init(uvs); desc.primitives = .triangles(idx)
+        return desc
+    }
+
+    /// Your chosen form (decision 152): the same living Flame, another body. Its sprite, faces and height change;
+    /// everything alive about it (breathing, the fire, its reactions) carries on.
+    func switchForm(base newBase: String, growth g: Float) async {
+        guard newBase != base || g != growth, let tex = try? await TextureResource(named: "\(newBase)-keyed.png") else { return }
+        base = newBase; growth = g
+        let blink = (try? await TextureResource(named: "\(newBase)-blink.png")) ?? tex
+        let happy = (try? await TextureResource(named: "\(newBase)-happy.png")) ?? tex
+        faces = ["open": tex, "blink": blink, "happy": happy]
+        let desc = Self.bodyDescriptor(aspect: Float(tex.width) / Float(tex.height), height: 0.27 * g)
+        guard let mesh = try? MeshResource.generate(from: [desc]) else { return }
+        for e in [hero, reflection].compactMap({ $0 }) {
+            guard var comp = e.model else { continue }
+            comp.mesh = mesh
+            if var m = comp.materials.first as? CustomMaterial { m.baseColor = .init(tint: m.baseColor.tint, texture: .init(tex)); comp.materials = [m] }
+            e.model = comp
+        }
     }
 
     private func setFace(_ key: String) {

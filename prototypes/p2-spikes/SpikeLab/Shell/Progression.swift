@@ -41,6 +41,23 @@ enum Pillar6: String, CaseIterable {
     }
 }
 
+/// The Flame's forms (decision 152, Mathis's notes): each is reached by the streak (your best streak, so a form is
+/// never taken away; a broken streak only dims the Flame). Once reached, you can choose to show any of them.
+enum Evolution: Int, CaseIterable, Identifiable {
+    case spark, flame, blaze, kindled, radiant, beyond
+    var id: Int { rawValue }
+    var name: String { ["Spark", "Flame", "Blaze", "Kindled", "Radiant", "Beyond"][rawValue] }
+    var days: Int { [0, 3, 7, 14, 30, 90][rawValue] }
+    /// The sprite's base name (pixel art: <base>-keyed/-blink/-happy.png).
+    var base: String { self == .spark ? "px-spark" : "px-\(["", "flame", "blaze", "kindled", "radiant", "beyond"][rawValue])" }
+    /// How tall it stands next to the Spark.
+    var growth: Float { [1, 1.18, 1.32, 1.44, 1.55, 1.66][rawValue] }
+    /// The art is in the app (Codex paints them one by one).
+    var available: Bool { Bundle.main.url(forResource: base + "-keyed", withExtension: "png") != nil }
+    static func reached(best: Int) -> Evolution { allCases.last { $0.days <= best } ?? .spark }
+    var next: Evolution? { Evolution(rawValue: rawValue + 1) }
+}
+
 enum Progression {
     static let arcLength = 66                     // the first arc: 66 days, then a graduation
 

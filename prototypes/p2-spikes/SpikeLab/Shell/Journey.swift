@@ -28,6 +28,7 @@ struct DeedOutcome {
     let milestone: Int?
     let shieldEarned: Bool
     var embers = 0              // Embers it earned (they fly into the counter, decision 141)
+    var evolvedTo: Evolution?   // a new form reached with this quest (decision 152)
 }
 
 @MainActor @Observable
@@ -47,6 +48,17 @@ final class Journey {
     private(set) var meetHour: Int?
     private(set) var promise: Int?
     private(set) var grants: [String: Int] = [:]     // one-time gifts (the beta's starter purse)
+    // MARK: Evolutions (decision 152)
+    private(set) var chosenForm: Evolution?
+    /// The highest form your best streak has reached (never taken away).
+    var reachedForm: Evolution { Evolution.reached(best: streak().best) }
+    /// The form your Flame shows: the one you chose (if reached), else the highest reached.
+    var form: Evolution {
+        let r = reachedForm
+        guard let c = chosenForm, c.rawValue <= r.rawValue, c.available else { return Evolution.allCases.last { $0.rawValue <= r.rawValue && $0.available } ?? .spark }
+        return c
+    }
+    func choose(_ f: Evolution) { guard f.rawValue <= reachedForm.rawValue else { return }; chosenForm = f; save() }
     /// A one-time gift of Embers (given once per id).
     func grant(_ amount: Int, id: String) { guard grants[id] == nil else { return }; grants[id] = amount; save() }
     func setUp(dayOne: [String: Int], meetHour: Int?, promise: Int?) {
@@ -56,19 +68,19 @@ final class Journey {
         save()
     }
     private let key = "journey.v1"
-    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil; var dayOne: [String: Int]? = nil; var meetHour: Int? = nil; var promise: Int? = nil; var grants: [String: Int]? = nil }
+    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil; var dayOne: [String: Int]? = nil; var meetHour: Int? = nil; var promise: Int? = nil; var grants: [String: Int]? = nil; var form: Int? = nil }
 
     init() {
         if CommandLine.arguments.contains("-freshjourney") { UserDefaults.standard.removeObject(forKey: key) }
         if let d = UserDefaults.standard.data(forKey: key), let s = try? JSONDecoder().decode(Saved.self, from: d) {
             bornOn = s.bornOn; name = s.name; ember = s.ember; pages = s.pages; deeds = s.deeds
-            checkIns = s.checkIns ?? []; bought = Set(s.bought ?? []); dayOne = s.dayOne ?? [:]; meetHour = s.meetHour; promise = s.promise; grants = s.grants ?? [:]
+            checkIns = s.checkIns ?? []; bought = Set(s.bought ?? []); dayOne = s.dayOne ?? [:]; meetHour = s.meetHour; promise = s.promise; grants = s.grants ?? [:]; chosenForm = s.form.flatMap(Evolution.init(rawValue:))
         }
         if CommandLine.arguments.contains("-seedjourney") { seedForTesting() }
     }
 
     private func save() {
-        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought), dayOne: dayOne, meetHour: meetHour, promise: promise, grants: grants)
+        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought), dayOne: dayOne, meetHour: meetHour, promise: promise, grants: grants, form: chosenForm?.rawValue)
         if let d = try? JSONEncoder().encode(s) { UserDefaults.standard.set(d, forKey: key) }
     }
 
@@ -106,6 +118,7 @@ final class Journey {
     func did(_ title: String, detail: String, realm: RealmID, minutes: Int = 5, on date: Date = Date()) -> DeedOutcome {
         let before = streak(at: date)
         let embersBefore = embers
+        let formBefore = reachedForm
         let pillar = Pillar6.of(realm)
         let attrBefore = attribute(pillar), lvlBefore = Progression.level(xp: totalXP).level
         let gain = Progression.xp(minutes: minutes, streak: before.current)
@@ -123,6 +136,12 @@ final class Journey {
                                   streakBefore: before.current, streakAfter: after.current,
                                   milestone: milestone, shieldEarned: after.shields > before.shields)
         outcome.embers = embers - embersBefore
+        if reachedForm.rawValue > formBefore.rawValue {
+            outcome.evolvedTo = reachedForm
+            chosenForm = reachedForm                        // you see your new form at once (you can pick another)
+            write("form-\(reachedForm.rawValue)", world: "emberlands", title: "A new form: \(reachedForm.name)",
+                  "\(reachedForm.days) days in a row. Your Flame grew into a \(reachedForm.name), and it will never lose that.", on: date)
+        }
         let n = dayNumber(of: date)
         let today = deeds.filter { Calendar.current.isDate($0.date, inSameDayAs: date) }
         let lines = today.map { "“\($0.title)”" }
