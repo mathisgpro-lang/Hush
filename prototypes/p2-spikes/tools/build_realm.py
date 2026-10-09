@@ -24,6 +24,14 @@ if PIXEL:
     # Snap to its true grid (~2.2 source px per art pixel, like the Sanctuary), a fixed palette, then 4× with hard
     # edges so it stays crisp on screen. One single view (no side panels).
     src = Image.open(f"../../docs/design/p29/px-{rid}.png").convert("RGB")
+    if opt("--circle"):              # decision 156: crop so the circle's centre lands at (0.5, 0.40) in every world
+        cu0, cv0 = [float(x) for x in opt("--circle").split(",")]
+        sw, sh = src.size; T = 0.40
+        left = max(0.0, 2 * cu0 - 1); right = max(0.0, 1 - 2 * cu0)
+        top = max(0.0, 1 - cv0 / T) if cv0 < T else 0.0
+        bottom = (cv0 - T) / (1 - T) if cv0 > T else 0.0
+        src = src.crop((int(left * sw), int(top * sh), int(sw - right * sw), int(sh - bottom * sh)))
+        print("cropped to centre the circle", src.size)
     gw, gh = round(src.width / 2.2), round(src.height / 2.2)
     art = src.resize((gw, gh), Image.BOX).quantize(colors=72, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
     W, H = gw * 4, gh * 4

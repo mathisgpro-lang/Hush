@@ -28,6 +28,10 @@ def clean(img, px, colors):
 
 # ---- The world ----
 src = Image.open(f"{D}/px-sanctuary.png").convert("RGB")
+# Decision 156: crop so the circle's centre (measured 0.518, 0.49) lands at (0.5, 0.40), as in every world.
+CU, CV, T = 0.518, 0.49, 0.40
+sw, sh = src.size
+src = src.crop((int((2 * CU - 1) * sw), 0, sw, int(sh - (CV - T) / (1 - T) * sh)))
 art = clean(src, SRC_PX, 72)
 W, H = art.size
 art.resize((W * UP, H * UP), Image.NEAREST).save(f"{A}/px-home-paint.png")
@@ -59,7 +63,7 @@ warm = (h > 0.06) & (h < 0.15) & (s > 0.35) & (v > 0.75) & (Y > 0.35) & (Y < 0.7
 lab, n = nd.label(nd.binary_closing(warm, iterations=2))
 sizes = nd.sum(warm, lab, range(1, n + 1))
 cy, cx = nd.center_of_mass(lab == (int(np.argmax(sizes)) + 1)) if n else (H / 2, W / 2)
-json.dump({"circleU": 0.52, "circleV": 0.488, "gridW": W, "gridH": H}, open(f"{A}/px-home-features.json", "w"))
+json.dump({"circleU": 0.5, "circleV": 0.40, "gridW": W, "gridH": H}, open(f"{A}/px-home-features.json", "w"))
 print("circle", round(cx / W, 3), round(1 - cy / H, 3), "water", round(water.mean(), 3), "fall", round(fall.mean(), 4), "fire", round(fire.mean(), 4), "sky", round(sky.mean(), 3))
 
 # ---- The Spark ----
