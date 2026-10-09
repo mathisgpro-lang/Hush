@@ -29,7 +29,7 @@ def clean(img, px, colors):
 # ---- The world ----
 src = Image.open(f"{D}/px-sanctuary.png").convert("RGB")
 # Decision 156: crop so the circle's centre (measured 0.518, 0.49) lands at (0.5, 0.40), as in every world.
-CU, CV, T = 0.518, 0.49, 0.40
+CU, CV, T = 0.5, 0.443, 0.40   # (the v2 Sanctuary, bigger circle)
 sw, sh = src.size
 src = src.crop((int((2 * CU - 1) * sw), 0, sw, int(sh - (CV - T) / (1 - T) * sh)))
 art = clean(src, SRC_PX, 72)

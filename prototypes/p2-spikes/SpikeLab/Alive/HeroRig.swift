@@ -49,6 +49,8 @@ final class HeroRig: FlameRig {
     private var lastMatKey = SIMD4<Float>(-9, -9, -9, -9), lastMatHour: Float = -9, lastTintAngle: Float = -99, lastTintStrength: Float = -1
     /// How high a spirit floats above its spot (rig units).
     var hoverHeight: Float = 0.06
+    /// How much it bobs up and down (0: it stands still on the ground, breathing in place).
+    var hoverBob: Float = 1
     /// Your ember's color on the Spark's fire (SparkTint): hue rotation (radians) and saturation.
     var tint: (angle: Float, saturation: Float, strength: Float) = (0, 1, 0)
     /// A stationary Flame stays exactly where it sits (no drifting, no leaning toward fingers or moths): only in-place life.
@@ -161,7 +163,7 @@ final class HeroRig: FlameRig {
         body.step(dt: dt)
         walkPivot.transform.translation = [stationary ? 0 : body.x, 0, 0]
         // A spirit floats: a slow bob (two rhythms so it never visibly loops) above the ground.
-        let hover: Float = spirit ? hoverHeight + 0.01 * sin(hoverTime * 1.5) + 0.004 * sin(hoverTime * 0.63 + 1) : 0
+        let hover: Float = spirit ? hoverHeight + hoverBob * (0.01 * sin(hoverTime * 1.5) + 0.004 * sin(hoverTime * 0.63 + 1)) : 0
         bodyPivot.transform = Transform(scale: [body.scaleX, body.scaleY, 1],
                                         rotation: simd_quatf(angle: body.roll, axis: [0, 0, 1]),
                                         translation: [0, Self.feetY + body.y + hover, 0])

@@ -61,6 +61,7 @@ final class RealmScene {
     @ObservationIgnored private var time: Float = 0
     @ObservationIgnored private let noise = SmoothNoise(seed: 31)
     @ObservationIgnored private var heroFeet = SIMD3<Float>(0, 0, 0)
+    static let feetLift: Float = 0.016
     @ObservationIgnored private var heroScale: Float = 0.42
     @ObservationIgnored private var flareOrder: Float = -1
     @ObservationIgnored private var flareAge: Float = 10
@@ -267,14 +268,15 @@ final class RealmScene {
         }
 
         // The Flame on the stone circle.
-        let circle = point(hx(circleUV.x), circleUV.y, nearer: 0.012)
+        // The feet land exactly on the centre of the circle (Mathis): the sprite foot offset, calibrated on screen.
+        let circle = point(hx(circleUV.x), circleUV.y + (PixelMode.world ? Self.feetLift : 0), nearer: 0.012)
         try await hero.build()
         let k = -circle.z / Self.distance
         heroScale = (PixelMode.world ? 0.07 : 0.105) * h * k / 0.27                            // the Spark's size, as in the Sanctuary
         hero.leanPivot.scale = .init(repeating: heroScale)
         // Standing right in the middle of its circle (Mathis): feet on the centre stone, only a breath of hover.
         hero.leanPivot.position = circle + SIMD3(0, (PixelMode.world ? 0.0 : 0.09) * heroScale, 0)
-        if PixelMode.world { hero.hoverHeight = 0.012 }
+        if PixelMode.world { hero.hoverHeight = 0; hero.hoverBob = 0 }   // feet exactly on the centre
         hero.stationary = true
         root.addChild(hero.leanPivot)
         heroFeet = circle
