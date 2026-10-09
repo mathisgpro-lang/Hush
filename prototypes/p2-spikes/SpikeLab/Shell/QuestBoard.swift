@@ -24,7 +24,7 @@ struct QuestBoard: View {
                                               : Self.rowH + CGFloat(min(2, max(0, n - 1))) * Self.peek
         VStack(alignment: .leading, spacing: 7) {
             HStack(alignment: .center, spacing: 8) {
-                Text(left == 0 ? (calls.isEmpty ? "Your day is ready" : "All done today") : left == 1 ? "1 quest left" : "\(left) quests left")
+                Text(left == 0 ? (calls.isEmpty ? "Your day is ready" : "Your Flame feels good today") : "Your Flame needs today")
                     .font(.story(16, .medium)).foregroundStyle(Theme.cream)
                 Spacer()
                 if n > 1 {
@@ -103,7 +103,7 @@ struct QuestRow: View {
                 HStack(spacing: 12) {
                     ZStack {
                         Circle().fill(call.realm.color.opacity(0.22)).frame(width: 38, height: 38)
-                        Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage()).resizable().scaledToFit().frame(width: 28, height: 28)
+                        Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage(named: "\(call.prop.replacingOccurrences(of: "px-", with: "")).png") ?? UIImage()).resizable().interpolation(.none).scaledToFit().frame(width: 28, height: 28)
                     }
                     VStack(alignment: .leading, spacing: 2) {
                         Text(call.title).font(.story(17, .semibold)).foregroundStyle(Theme.ink.opacity(call.done ? 0.4 : 1))

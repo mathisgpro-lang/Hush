@@ -118,6 +118,10 @@ struct Call: Identifiable, Equatable {
     var counted: Bool { target > 1 }
     /// The painted object it becomes in the world (Codex's props, iteration 2).
     var prop: String {
+        let px = PixelMode.world ? "px-" : ""                  // the pixel props (decision 149)
+        return px + paintedProp
+    }
+    private var paintedProp: String {
         if symbol == "sparkle" { return "prop-scroll" }
         switch realm {
         case .grove: return "prop-lantern"
@@ -135,7 +139,7 @@ final class ShellModel {
         guard let i = CommandLine.arguments.firstIndex(of: "-realm"), i + 1 < CommandLine.arguments.count else { return nil }
         return RealmID(rawValue: CommandLine.arguments[i + 1])
     }
-    var interest: String = "Be closer to people I love"
+    var interest: String = UserDefaults.standard.string(forKey: "interest") ?? "Be closer to people I love"   // why you came (kept)
     /// Open realms: home, the Grove (Act I), and every realm whose pillar you've lit with a real action (and whose world
     /// is painted). Beyond the Veil never opens in the prototype. (-allopen: everything painted, for testing.)
     var open: Set<RealmID> {
@@ -359,6 +363,7 @@ final class ShellModel {
 
     func chose(_ interest: String) {
         self.interest = interest
+        UserDefaults.standard.set(interest, forKey: "interest")
         makeCalls()
         planDay()
     }
@@ -368,22 +373,9 @@ final class ShellModel {
         for c in calls.prefix(4) where chosenCount < Self.maxChosen && c.id != "b" { toggleChosen(c.id) }
     }
 
+    /// Today's quests from the library, picked for you (decision 154).
     func makeCalls() {
-        let first: Call = switch interest {
-        case "Read again": Call(id: "a", title: "Ten pages", detail: "Read ten pages of any book you like.", symbol: "book.fill", realm: .library, minutes: 15, difficulty: "Medium", target: 10, unit: "pages", reason: "You said you want to read again. Ten pages a day is about a book a month.")
-        case "Find calm": Call(id: "a", title: "Three slow breaths", detail: "Sit, close your eyes, breathe in for four, out for six.", symbol: "drop.fill", realm: .stillwater, minutes: 2, target: 3, unit: "breaths", reason: "Slow breathing (longer out than in) calms the body within a minute.")
-        case "Move a little every day": Call(id: "a", title: "A moment outside", detail: "Walk for ten minutes, at an easy pace.", symbol: "figure.walk", realm: .highlands, minutes: 10, target: 10, unit: "min", reason: "Ten easy minutes a day is where lasting movement habits start.")
-        case "Make something / focus": Call(id: "a", title: "One focused block", detail: "Twenty minutes on one thing that matters to you.", symbol: "hammer.fill", realm: .forge, minutes: 20, difficulty: "Medium", target: 20, unit: "min", reason: "One protected block a day beats long sessions you can't keep up.")
-        case "Spend time in nature": Call(id: "a", title: "Notice something alive", detail: "Step outside and find one living thing to look at closely.", symbol: "leaf.fill", realm: .wilds, minutes: 5, reason: "A few minutes outside, really looking, lifts the mood for hours.")
-        default: Call(id: "a", title: "A lantern for someone", detail: "Tell someone you love one thing you admire about them.", symbol: "heart.fill", realm: .grove, reason: "You chose to be closer to the people you love. One kind word today is a lantern relit.")
-        }
-        // The day's quests, offered in the satchel (iteration 2): you choose up to three; they wait in the world.
-        calls = [first,
-                 Call(id: "b", title: "A small challenge", detail: "A little fox is curious about kindness: thank someone who rarely hears it.", symbol: "sparkle", realm: .grove, minutes: 3, frequency: "Today's Spark", difficulty: "Medium"),
-                 Call(id: "c", title: "A quiet moment", detail: "Two minutes of silence by the hearth before bed.", symbol: "moon.fill", realm: .stillwater, minutes: 2, target: 2, unit: "min"),
-                 Call(id: "d", title: "Ten minutes outside", detail: "Step out and walk at an easy pace. Notice the sky.", symbol: "figure.walk", realm: .highlands, minutes: 10, target: 10, unit: "min"),
-                 Call(id: "e", title: "One page", detail: "Read a single page of something you've been meaning to read.", symbol: "book.fill", realm: .library, minutes: 5),
-                 Call(id: "f", title: "Twenty push-ups", detail: "In as many sets as you need. Rest between them.", symbol: "figure.strengthtraining.traditional", realm: .highlands, minutes: 6, difficulty: "Hard", target: 20, unit: "reps")]
+        calls = QuestLibrary.today(journey: journey, interest: interest)
     }
 
     static let maxChosen = 3

@@ -146,3 +146,37 @@ struct RewardBurst: View {
     }
     private func finish() { withAnimation(.easeOut(duration: 0.25)) { done() } }
 }
+
+/// Your Flame's line of the day (Mathis's notes: "daily quote based on the last days' completions"): written from
+/// your real record, warm, never guilt. The same line all day; a new one tomorrow.
+func flameLine(_ j: Journey) -> String {
+    let cal = Calendar.current
+    let s = j.streak()
+    func count(daysAgo d: Int) -> Int {
+        guard let day = cal.date(byAdding: .day, value: -d, to: Date()) else { return 0 }
+        return j.deeds.filter { cal.isDate($0.date, inSameDayAs: day) }.count
+    }
+    let today = count(daysAgo: 0), yesterday = count(daysAgo: 1)
+    let week = (0..<7).filter { count(daysAgo: $0) > 0 }.count
+    let next = j.reachedForm.next
+    var options: [String]
+    switch s.state {
+    case .livedToday:
+        options = today >= 3 ? ["Three today! I can feel myself growing.", "What a day. I'm burning bright."]
+                             : ["Thank you. I feel warm.", "That's the light I needed today."]
+    case .waiting where s.current >= 3:
+        options = ["\(s.current) days in a row. One small thing keeps us going.", "We're on a streak. I'm ready when you are."]
+    case .shieldedYesterday:
+        options = ["A shield caught yesterday. Today, let's light us up again."]
+    case .repairable:
+        options = ["We missed a day. Two small things today and our streak lives on."]
+    case .broken where s.best > 0:
+        options = ["Every flame flickers. One small thing and I'm warm again.", "New day, new light. I'm still here."]
+    default:
+        options = yesterday > 0 ? ["Yesterday was good. Shall we do it again?"] : ["Good to see you. Let's start small."]
+    }
+    if let n = next, s.state != .broken, n.days - s.best <= 2, n.days > s.best {
+        options = ["\(n.days - s.best) more day\(n.days - s.best == 1 ? "" : "s") and I become a \(n.name)!"]
+    } else if week >= 6 { options.append("Six of the last seven days. You're becoming someone new.") }
+    return options[j.dayNumber() % options.count]
+}

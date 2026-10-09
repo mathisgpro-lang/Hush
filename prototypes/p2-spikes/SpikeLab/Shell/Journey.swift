@@ -68,19 +68,19 @@ final class Journey {
         save()
     }
     private let key = "journey.v1"
-    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil; var dayOne: [String: Int]? = nil; var meetHour: Int? = nil; var promise: Int? = nil; var grants: [String: Int]? = nil; var form: Int? = nil }
+    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil; var dayOne: [String: Int]? = nil; var meetHour: Int? = nil; var promise: Int? = nil; var grants: [String: Int]? = nil; var form: Int? = nil; var skipLog: [String: [Date]]? = nil }
 
     init() {
         if CommandLine.arguments.contains("-freshjourney") { UserDefaults.standard.removeObject(forKey: key) }
         if let d = UserDefaults.standard.data(forKey: key), let s = try? JSONDecoder().decode(Saved.self, from: d) {
             bornOn = s.bornOn; name = s.name; ember = s.ember; pages = s.pages; deeds = s.deeds
-            checkIns = s.checkIns ?? []; bought = Set(s.bought ?? []); dayOne = s.dayOne ?? [:]; meetHour = s.meetHour; promise = s.promise; grants = s.grants ?? [:]; chosenForm = s.form.flatMap(Evolution.init(rawValue:))
+            checkIns = s.checkIns ?? []; bought = Set(s.bought ?? []); dayOne = s.dayOne ?? [:]; meetHour = s.meetHour; promise = s.promise; grants = s.grants ?? [:]; chosenForm = s.form.flatMap(Evolution.init(rawValue:)); skipLog = s.skipLog ?? [:]
         }
         if CommandLine.arguments.contains("-seedjourney") { seedForTesting() }
     }
 
     private func save() {
-        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought), dayOne: dayOne, meetHour: meetHour, promise: promise, grants: grants, form: chosenForm?.rawValue)
+        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought), dayOne: dayOne, meetHour: meetHour, promise: promise, grants: grants, form: chosenForm?.rawValue, skipLog: skipLog)
         if let d = try? JSONEncoder().encode(s) { UserDefaults.standard.set(d, forKey: key) }
     }
 
@@ -200,7 +200,12 @@ final class Journey {
     func questStreak(_ title: String) -> Int { Progression.questStreak(title: title, deeds: deeds) }
     /// Skipped quests (honest, never punished): today only.
     private(set) var skippedToday: Set<String> = []
-    func skip(_ title: String) { skippedToday.insert(title) }
+    /// When each quest was skipped (the picker makes a quest lighter after three skips in two weeks).
+    private(set) var skipLog: [String: [Date]] = [:]
+    func skip(_ title: String) {
+        guard !skippedToday.contains(title) else { return }
+        skippedToday.insert(title); skipLog[title, default: []].append(Date()); save()
+    }
 
     /// The first time you looked out over the Emberlands.
     func sawTheWorld() {

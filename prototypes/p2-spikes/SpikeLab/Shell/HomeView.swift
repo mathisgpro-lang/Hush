@@ -299,11 +299,11 @@ struct HomeView: View {
             }
             HUDBar(journey: model.journey, embers: shownEmbers ?? model.journey.embers)   // streak, day, Embers (134, 141, 146)
                 .padding(.top, 4)
-            if model.tour != nil {
-                Text(streakLine(model.journey, light: model.light))
-                    .font(.story(14).italic()).foregroundStyle(Theme.cream.opacity(0.8))
-                    .shadow(color: Theme.warmShadow.opacity(0.9), radius: 5)
-            }
+            // Your Flame's line of the day (from your last days).
+            Text("“\(flameLine(model.journey))”")
+                .font(.story(14).italic()).foregroundStyle(Theme.cream.opacity(0.9)).multilineTextAlignment(.center)
+                .shadow(color: .black.opacity(0.9), radius: 5).shadow(color: .black.opacity(0.5), radius: 10)
+                .padding(.horizontal, 30).padding(.top, 2)
         }
         .padding(.top, 8)
     }
