@@ -85,6 +85,8 @@ struct WorldLayer: View {
         }
         .ignoresSafeArea()
         .modifier(RenderScale(scale: WorldLayer.renderScale))
+        .offset(y: -model.worldLift * UIScreen.main.bounds.height)        // the stage in the top half (decision 157)
+        .animation(Motion.soft, value: model.worldLift)
         .allowsHitTesting(false)
         }
     }

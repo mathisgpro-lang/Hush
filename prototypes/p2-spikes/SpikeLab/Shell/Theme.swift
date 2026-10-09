@@ -31,6 +31,8 @@ enum Theme {
     static let champagneDeep = Color(red: 0.86, green: 0.7, blue: 0.45)
     /// Shadows carry the world's warm hue, never pure black.
     static let warmShadow = Color(red: 0.25, green: 0.12, blue: 0.04)
+    /// The quest floor under every world (decision 157): a deep warm earth, solid.
+    static let floor = Color(red: 0.13, green: 0.09, blue: 0.075)
 }
 
 /// One motion language: soft springs, nothing snappy or bouncy-loud.

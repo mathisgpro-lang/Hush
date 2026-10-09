@@ -278,6 +278,14 @@ final class ShellModel {
             for r in realmsBuilt { let sc = realmScene(r); await sc.hero.switchForm(base: w.base, growth: w.growth); PixelMode.apply(to: sc.root, on: PixelMode.on) }
         }
     }
+    /// Decision 157 (after Finch): on home the world is a stage in the top half and the quests own the bottom half.
+    /// The whole world view is lifted so every circle's centre (and the Flame's feet) sits 42% down the screen.
+    var worldLift: CGFloat {
+        guard PixelMode.world, questsUp else { return 0 }
+        switch screen { case .home, .realm: return 0.215; default: return 0 }
+    }
+    /// The quest sheet is up (quests fully shown, the world a stage above) or down (the world fills the screen).
+    var questsUp = true
     func isBuilt(_ w: World) -> Bool {
         switch w { case .sanctuary: sanctuaryBuilt; case .map: mapBuilt; case .realm(let r): realmsBuilt.contains(r) }
     }

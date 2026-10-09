@@ -11,6 +11,11 @@ struct QuestBoard: View {
     let open: (Call) -> Void
     let tick: (Call, CGPoint) -> Void
     var streakOf: (String) -> Int = { _ in 0 }
+    /// The quest floor shows every quest as a list (decision 157); the stack is for small spaces.
+    var alwaysOpen = false
+    /// (Quest floor) the sheet is up, and how to move it.
+    var sheetUp = true
+    var toggleSheet: () -> Void = {}
     /// Like notifications on the lock screen (Mathis): one quest in front, the others stacked behind it; swipe up to
     /// fan them out into the full list, swipe down to gather them again.
     @State private var expanded = false
@@ -28,7 +33,7 @@ struct QuestBoard: View {
                 Text(left == 0 ? (calls.isEmpty ? "Your day is ready" : "Your Flame feels good today") : "Your Flame needs today")
                     .font(.story(16, .medium)).foregroundStyle(Theme.cream)
                 Spacer()
-                if n > 1 {
+                if n > 1 && !alwaysOpen {
                     Button { withAnimation(Motion.soft) { expanded.toggle() } } label: {
                         HStack(spacing: 4) {
                             Text(expanded ? "Less" : "\(n - 1) more").font(.ui(12, .semibold))
@@ -38,6 +43,13 @@ struct QuestBoard: View {
                         .padding(.horizontal, 10).frame(height: 28)
                         .background(Capsule().fill(.white.opacity(0.1)))
                         .contentShape(Capsule())
+                    }
+                    .buttonStyle(PressableStyle())
+                }
+                if alwaysOpen {                                      // lower or raise the sheet
+                    Button(action: toggleSheet) {
+                        Image(systemName: sheetUp ? "chevron.down" : "chevron.up").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.cream)
+                            .frame(width: 28, height: 28).background(Circle().fill(.white.opacity(0.1))).contentShape(Circle())
                     }
                     .buttonStyle(PressableStyle())
                 }
@@ -55,6 +67,16 @@ struct QuestBoard: View {
                         .frame(maxWidth: .infinity).frame(height: Self.rowH)
                         .background(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.champagne.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
                 }
+            } else if alwaysOpen && !sheetUp {
+                EmptyView()                                          // lowered: just the header
+            } else if alwaysOpen {
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: Self.gap) {
+                        ForEach(calls) { c in QuestRow(call: c, streak: streakOf(c.title), open: { open(c) }, tick: { p in tick(c, p) }) }
+                    }
+                    .padding(.bottom, 4)
+                }
+                .scrollBounceBehavior(.basedOnSize)
             } else {
                 ZStack(alignment: .top) {
                     ForEach(Array(calls.enumerated()), id: \.element.id) { i, c in
@@ -85,7 +107,7 @@ struct QuestBoard: View {
                 let dy = v.translation.height + (v.predictedEndTranslation.height - v.translation.height) * 0.3
                 if dy < -30, !expanded { UIImpactFeedbackGenerator(style: .soft).impactOccurred(); withAnimation(Motion.soft) { expanded = true } }
                 else if dy > 30, expanded { withAnimation(Motion.soft) { expanded = false } }
-            })
+            }, including: alwaysOpen ? .subviews : .all)          // (the list scrolls instead)
         .animation(Motion.soft, value: calls.map(\.done))
         .animation(.interactiveSpring, value: drag)
     }
