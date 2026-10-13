@@ -285,8 +285,6 @@ final class ShellModel {
         guard PixelMode.world else { return 0 }
         switch screen { case .home, .realm: return 0.215; default: return 0 }
     }
-    /// The quest sheet is up (quests fully shown, the world a stage above) or down (only its header; the rest of the world shows).
-    var questsUp = true
     func isBuilt(_ w: World) -> Bool {
         switch w { case .sanctuary: sanctuaryBuilt; case .map: mapBuilt; case .realm(let r): realmsBuilt.contains(r) }
     }
@@ -317,10 +315,11 @@ final class ShellModel {
     }
 
     private func advance(_ dt: Float) {
+        let lift = Float(worldLift)          // the stage in the top half (157): the scene's camera looks lower (158)
         switch activeWorld {
-        case .sanctuary: if sanctuaryBuilt { sanctuary.update(dt: dt) }
+        case .sanctuary: if sanctuaryBuilt { sanctuary.stageLift = lift; sanctuary.update(dt: dt) }
         case .map: if mapBuilt { mapScene.update(dt: dt) }
-        case .realm(let r): if realmsBuilt.contains(r) { realmScene(r).update(dt: dt) }
+        case .realm(let r): if realmsBuilt.contains(r) { let sc = realmScene(r); sc.stageLift = lift; sc.update(dt: dt) }
         }
     }
 

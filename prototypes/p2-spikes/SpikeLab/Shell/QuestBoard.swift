@@ -13,9 +13,6 @@ struct QuestBoard: View {
     var streakOf: (String) -> Int = { _ in 0 }
     /// The quest floor shows every quest as a list (decision 157); the stack is for small spaces.
     var alwaysOpen = false
-    /// (Quest floor) the sheet is up, and how to move it.
-    var sheetUp = true
-    var toggleSheet: () -> Void = {}
     /// Like notifications on the lock screen (Mathis): one quest in front, the others stacked behind it; swipe up to
     /// fan them out into the full list, swipe down to gather them again.
     @State private var expanded = false
@@ -46,13 +43,6 @@ struct QuestBoard: View {
                     }
                     .buttonStyle(PressableStyle())
                 }
-                if alwaysOpen {                                      // lower or raise the sheet
-                    Button(action: toggleSheet) {
-                        Image(systemName: sheetUp ? "chevron.down" : "chevron.up").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.cream)
-                            .frame(width: 28, height: 28).background(Circle().fill(.white.opacity(0.1))).contentShape(Circle())
-                    }
-                    .buttonStyle(PressableStyle())
-                }
                 Button(action: add) {
                     Image(systemName: "plus").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.cream)
                         .frame(width: 28, height: 28).background(Circle().fill(.white.opacity(0.1)))
@@ -67,8 +57,6 @@ struct QuestBoard: View {
                         .frame(maxWidth: .infinity).frame(height: Self.rowH)
                         .background(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.champagne.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
                 }
-            } else if alwaysOpen && !sheetUp {
-                EmptyView()                                          // lowered: just the header
             } else if alwaysOpen {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: Self.gap) {

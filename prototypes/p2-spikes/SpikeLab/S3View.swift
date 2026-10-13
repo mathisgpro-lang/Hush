@@ -36,6 +36,7 @@ final class RealmScene {
     @ObservationIgnored let hero = HeroRig(base: PixelMode.sparkBase, footInset: 0.045, reflection: false, glows: true, wander: 0.004, spirit: true)
     @ObservationIgnored let life = SanctuaryLife()
     @ObservationIgnored private var painting: ModelEntity?
+    @ObservationIgnored private var ground: ModelEntity?      // the painted ground below the painting (decision 160)
     @ObservationIgnored private var flies: Entity?
     /// Things that float in the sky, cut out of the painting (tools/build_life.py): books drift and flap their pages,
     /// islands bob, each in its own rhythm (decision 142).
@@ -70,6 +71,9 @@ final class RealmScene {
     @ObservationIgnored private var flight: (from: SIMD3<Float>, to: SIMD3<Float>, t: Float, lightTo: Float, flare: Float)?
     @ObservationIgnored var updates: EventSubscription?
     @ObservationIgnored var focus: SIMD3<Float>?
+    /// How far up the world shows, as a share of the screen (decisions 157–158): the camera looks that much lower.
+    @ObservationIgnored var stageLift: Float = 0
+    @ObservationIgnored private var liftNow: Float = 0
     @ObservationIgnored private var camPos = SIMD3<Float>(0, 0, 0)
     @ObservationIgnored private var camLook = SIMD3<Float>(0, 0, -1.2)
     @ObservationIgnored private var camVel = SIMD3<Float>(0, 0, 0)
@@ -196,6 +200,11 @@ final class RealmScene {
         }
         let p = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
         root.addChild(p); painting = p
+        if PixelMode.world && wide, let pm = material as? CustomMaterial,
+           let g = await WorldGround.make(asset: "\(id)-world", mask: "lights", from: pm, paintTexH: tex.height, width: w, height: h,
+                                          distance: Self.distance, bottomDistance: { u in Self.distance - self.relief(self.depthAt(u, 0)) }) {
+            root.addChild(g); ground = g
+        }
 
         // The floaters, each at its own depth a little in front of the painting (so they move against it).
         if let url = Bundle.main.url(forResource: "\(id)-floaters", withExtension: "json"), let data = try? Data(contentsOf: url),
@@ -381,6 +390,7 @@ final class RealmScene {
             m.clearcoat = .init(floatLiteral: max(0.0001, hero.hour / 24))   // the light of the hour (new realms)
             m.specular = .init(floatLiteral: hx(0.5))                          // where the sun sits
             comp.materials = [m]; painting.model = comp
+            WorldGround.follow(ground, m)
         }
         let rate: Float = (r < 0.25 ? 2 : 2 + (r - 0.25) * 18).rounded()      // always a few: the realm is never still
         if rate != fliesRate, let flies, var f = flies.components[ParticleEmitterComponent.self] {   // only on change (smooth)
@@ -412,7 +422,9 @@ final class RealmScene {
             pan += panVel * dt
         }
         let pv = SIMD3<Float>(pan.x + homeShift, pan.y, 0)
-        camera.look(at: camLook + pv, from: camPos + pv, relativeTo: root)
+        liftNow += (stageLift - liftNow) * min(1, dt * 5)
+        let down = SIMD3<Float>(0, liftNow * 2 * Self.distance * tan(Self.fov / 2 * .pi / 180), 0)
+        camera.look(at: camLook + pv - down, from: camPos + pv - down, relativeTo: root)
     }
 
     private func setStrand(opacity: Float, emitting: Bool) {

@@ -64,6 +64,7 @@ run_brief docs/reviews/briefs/p2-plan-review.md \
 "$ROOT/scripts/p29-library2.sh"
 "$ROOT/scripts/p30-evolutions.sh"
 "$ROOT/scripts/p30-reframe.sh"
+"$ROOT/scripts/p31-extend.sh"
 
 # Design & Feel cohesion frames first (decision 106)
 "$ROOT/scripts/cohesion-frames.sh"

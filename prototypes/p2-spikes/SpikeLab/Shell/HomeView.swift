@@ -79,7 +79,7 @@ struct HomeView: View {
                     // It flies frame by frame (time-based, no steps), easing in and out along an arc.
                     TimelineView(.animation) { tl in
                         let k = min(1, CGFloat(tl.date.timeIntervalSince(s.start) / 0.9)), t = k * k * (3 - 2 * k)
-                        let to = lifted(scene.screenPoint(world: scene.flameUV, in: fullSize))
+                        let to = scene.screenPoint(world: scene.flameUV, in: fullSize)
                         let p = CGPoint(x: s.from.x + (to.x - s.from.x) * t, y: s.from.y + (to.y - s.from.y) * t - sin(t * .pi) * 80)
                         Circle().fill(RadialGradient(colors: [.white, Color(red: 1, green: 0.8, blue: 0.4), .clear], center: .center, startRadius: 1, endRadius: 22))
                             .frame(width: 44, height: 44).scaleEffect(1 - 0.35 * t).position(p)
@@ -92,8 +92,8 @@ struct HomeView: View {
                     Spacer()
                     if let toast { Text(toast).font(.ui(14)).padding(.horizontal, 14).padding(.vertical, 8)
                         .background(Capsule().fill(.black.opacity(0.6))).foregroundStyle(.white).transition(.opacity).padding(.bottom, 8) }
-                    // The quest floor (decision 157, after Finch): the bottom half belongs to your quests, on solid
-                    // ground; the world is the stage above it and never shows behind them.
+                    // The quest sheet (decisions 157, 160, 161, after Finch): the bottom half always belongs to your
+                    // quests, on a solid sheet; the world is the stage above it.
                     if model.tour != nil || focused != nil { hint }
                     VStack(spacing: 8) {
                         if model.tour == nil && focused == nil {
@@ -101,29 +101,25 @@ struct HomeView: View {
                                        add: { withAnimation(.sheet) { satchelOpen = true } },
                                        open: { c in withAnimation(.sheet) { open = c } },
                                        tick: { c, p in finish(c, size: geo.size, from: p) },
-                                       streakOf: { model.journey.questStreak($0) }, alwaysOpen: true,
-                                       sheetUp: model.questsUp,
-                                       toggleSheet: { withAnimation(Motion.soft) { model.questsUp.toggle() } })
+                                       streakOf: { model.journey.questStreak($0) }, alwaysOpen: true)
                                 .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
                         Spacer(minLength: 0)
                         cockpitBar
                     }
+                    .shadow(color: .black.opacity(0.7), radius: 3, y: 1)          // legible over the world
                     .padding(.top, 18).padding(.bottom, 2)
-                    .frame(height: model.questsUp ? max(320, geo.size.height * 0.47 + geo.safeAreaInsets.bottom) : 150, alignment: .top)
+                    .frame(height: max(320, geo.size.height * 0.47 + geo.safeAreaInsets.bottom), alignment: .top)
                     .background(alignment: .top) {
-                        // The sheet: solid under the quests; the world goes on behind it and shows when it's down.
-                        VStack(spacing: 0) {
-                            LinearGradient(colors: [Theme.floor.opacity(0), Theme.floor.opacity(model.questsUp ? 1 : 0.88)], startPoint: .top, endPoint: .bottom).frame(height: 28)
-                            Theme.floor.opacity(model.questsUp ? 1 : 0.88)
-                        }
-                        .padding(.horizontal, -16).padding(.top, -28)
-                        .ignoresSafeArea(edges: .bottom)
+                        // Always open, and see-through (Mathis, decision 161): a light veil with rounded shoulders, the
+                        // world (painted all the way down, 160) shows behind your quests; the cards themselves are solid.
+                        UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28, style: .continuous)
+                            .fill(Theme.floor.opacity(0.42))
+                            .overlay(UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28, style: .continuous)
+                                .stroke(Theme.cream.opacity(0.12), lineWidth: 0.75))
+                            .padding(.horizontal, -16).padding(.top, -4)
+                            .ignoresSafeArea(edges: .bottom)
                     }
-                    .gesture(DragGesture(minimumDistance: 16).onEnded { v in          // swipe the sheet up or down
-                        if v.translation.height > 40, model.questsUp { withAnimation(Motion.soft) { model.questsUp = false } }
-                        else if v.translation.height < -40, !model.questsUp { withAnimation(Motion.soft) { model.questsUp = true } }
-                    })
                 }
                 .padding(.horizontal, 16)
                 .opacity(flameOpen ? 0 : 1)                      // Your Flame is its own quiet page
@@ -234,14 +230,12 @@ struct HomeView: View {
     }
 
     /// A tap on the world: the nearest of the realm's places (within reach) tells its story; otherwise your Spark reacts.
-    /// A point of the world as it shows on screen (the world view is lifted, decision 157).
-    private func lifted(_ p: CGPoint) -> CGPoint { CGPoint(x: p.x, y: p.y - model.worldLift * UIScreen.main.bounds.height) }
 
     private func tappedWorld(at p: CGPoint, in size: CGSize) {
         if PerfProbe.on { print("TAP world at", p) }
         if focused != nil { unfocus(); return }
         let near = RealmContent.spots(world).map { s -> (Spot, CGFloat) in
-            let c = lifted(scene.screenPoint(world: s.uv, in: size)); return (s, hypot(p.x - c.x, p.y - c.y))
+            let c = scene.screenPoint(world: s.uv, in: size); return (s, hypot(p.x - c.x, p.y - c.y))
         }.min { $0.1 < $1.1 }
         if let (s, d) = near, d < 70 { focus(s) } else { director?.tapped() }
     }
@@ -500,7 +494,7 @@ struct HomeView: View {
     }
 
     private func finish(_ call: Call, size: CGSize, from given: CGPoint? = nil) {
-        let from = given ?? lifted(scene.screenPoint(world: spotFor(call), in: fullSize))
+        let from = given ?? scene.screenPoint(world: spotFor(call), in: fullSize)
         withAnimation { open = nil }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         let outcome = withAnimation(.sheet) { model.complete(call.id) }

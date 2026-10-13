@@ -12,6 +12,7 @@ final class SanctuaryScene {
     let camera = PerspectiveCamera()
     private var painting: ModelEntity?
     private var backdrop: ModelEntity?
+    private var ground: ModelEntity?          // the painted ground below the painting (decision 160)
     private var vitality: Float = 1
     private var paintingW: Float = 1, paintingH: Float = 1
     /// The swipeable world (decision 120): when the stitched world exists, the home image is a window in its middle.
@@ -70,6 +71,10 @@ final class SanctuaryScene {
     private var appear = Spring(1, stiffness: 90, damping: 9)
     /// Camera focus for exploring spots: nil = the home view.
     var focus: SIMD3<Float>?
+    /// How far up the world shows, as a share of the screen (decisions 157–158): the camera looks that much lower, so
+    /// the painting (taller than the screen) still fills the whole view below; it glides there, never jumps.
+    var stageLift: Float = 0
+    private var liftNow: Float = 0
     private var camPos = SIMD3<Float>(0, 0, 0), camLook = SIMD3<Float>(0, 0, -1.2)
     private var camVel = SIMD3<Float>(0, 0, 0), lookVel = SIMD3<Float>(0, 0, 0)
     /// Looking around (Clash of Clans–style): the camera slides a little in any direction (meters), but the
@@ -171,6 +176,12 @@ final class SanctuaryScene {
         }
         let p = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
         root.addChild(p); painting = p
+        if PixelMode.world, let pm = material as? CustomMaterial,
+           let g = await WorldGround.make(asset: prefix, mask: "motion", from: pm, paintTexH: tex.height, width: w, height: h,
+                                          distance: Self.distance,
+                                          bottomDistance: { u in Self.distance - (self.depth == nil ? Self.depthOffset(0) : self.relief(self.depthAt(u, 0))) }) {
+            root.addChild(g); ground = g
+        }
 
         if let lib, layers != nil {
             // The sky, far away (so it drifts behind the land when you look around), its clouds alive.
@@ -459,6 +470,7 @@ final class SanctuaryScene {
                 lc.materials = [lm]; layer.model = lc
             }
             comp.materials = [m]; painting.model = comp
+            WorldGround.follow(ground, m, customValue: [m.custom.value.x, 2, 2, 0], specular: 2)   // (no circle, no sun down there)
         }
         // The camera breathes very slowly (an alive world), and follows the phone's tilt for parallax.
         let driftAmp: Float = layers != nil ? 0.03 : (autoDrift ? 0.12 : 0.04)     // a calm breath, not a sway
@@ -492,7 +504,9 @@ final class SanctuaryScene {
         camPos += camVel * dt
         lookVel += (wc * wc * (wantLook - camLook) - 2 * wc * lookVel) * dt
         camLook += lookVel * dt
-        camera.look(at: camLook + panV, from: camPos + panV, relativeTo: root)
+        liftNow += (stageLift - liftNow) * min(1, dt * 5)
+        let down = SIMD3<Float>(0, liftNow * Self.visibleHeight, 0)
+        camera.look(at: camLook + panV - down, from: camPos + panV - down, relativeTo: root)
     }
 }
 
