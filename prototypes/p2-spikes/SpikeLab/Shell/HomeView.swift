@@ -135,7 +135,7 @@ struct HomeView: View {
                     RoundComplete(length: j.roundLength, lived: j.roundDaysLived, round: j.roundsDone + 1) { n in
                         withAnimation(.sheet) { j.startRound(n) }
                     }
-                    .transition(.opacity)
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))       // springs in (task 5)
                 }
                 if model.dailyGift > 0 && model.tour == nil && built && open == nil && !(satchelOpen || bookOpen || flameOpen) {
                     DailyPouch(amount: model.dailyGift) { pt in
@@ -143,7 +143,7 @@ struct HomeView: View {
                         withAnimation(.easeOut(duration: 0.25)) { model.dailyGift = 0 }
                         coins(from: pt, amount: a)
                     }
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
                 }
                 if let b = burst {
                     CoinFlight(burst: b, landed: { i in
@@ -435,6 +435,7 @@ struct HomeView: View {
             .frame(maxWidth: .infinity).padding(.vertical, 4).foregroundStyle(Theme.cream)
             .contentShape(Rectangle())                        // the whole slot answers a tap, not only its word
         }
+        .buttonStyle(PressableStyle())                        // it sinks under the finger, then hops (task 5)
     }
 
     /// A quest you tapped in the world: the same parchment as the satchel's journal.

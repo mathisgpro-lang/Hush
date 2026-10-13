@@ -110,6 +110,7 @@ struct QuestRow: View {
     let tick: (CGPoint) -> Void
     @State private var tickCenter: CGPoint = .zero
     @State private var pressed = false
+    @State private var popped = 0          // bumps when the quest is done: the tick pops, a ring ripples, the card bounces
 
     var body: some View {
         HStack(spacing: 12) {
@@ -138,7 +139,7 @@ struct QuestRow: View {
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CardPress())
             // The tick: one tap and it's done.
             Button {
                 guard !call.done else { return }
@@ -153,18 +154,50 @@ struct QuestRow: View {
                         .scaleEffect(call.done ? 1.1 : 1)
                 }
                 .frame(width: 52, height: 46)
-                .background(GeometryReader { g in Color.clear.onAppear { tickCenter = CGPoint(x: g.frame(in: .global).midX, y: g.frame(in: .global).midY) }
-                    .onChange(of: g.frame(in: .global)) { _, f in tickCenter = CGPoint(x: f.midX, y: f.midY) } })
+                .keyframeAnimator(initialValue: CGFloat(1), trigger: popped) { v, s in v.scaleEffect(s) } keyframes: { _ in
+                    KeyframeTrack {
+                        CubicKeyframe(0.82, duration: 0.07)
+                        SpringKeyframe(1.28, duration: 0.16, spring: .snappy)
+                        SpringKeyframe(1, duration: 0.4, spring: .bouncy)
+                    }
+                }
+                .background {                                     // a golden ring ripples out of the tick
+                    Circle().stroke(Theme.gold, lineWidth: 3)
+                        .keyframeAnimator(initialValue: Ripple(), trigger: popped) { v, r in v.scaleEffect(r.scale).opacity(r.opacity) } keyframes: { _ in
+                            KeyframeTrack(\.scale) { CubicKeyframe(0.6, duration: 0.01); CubicKeyframe(2.6, duration: 0.55) }
+                            KeyframeTrack(\.opacity) { CubicKeyframe(0.9, duration: 0.01); CubicKeyframe(0, duration: 0.55) }
+                        }
+                        .allowsHitTesting(false)
+                }
+                .onGeometryChange(for: CGPoint.self) { CGPoint(x: $0.frame(in: .global).midX, y: $0.frame(in: .global).midY) } action: { tickCenter = $0 }
             }
             .buttonStyle(PressableStyle())
             .disabled(call.done)
         }
         .padding(.leading, 10).padding(.trailing, 12).frame(height: 72)
+        .keyframeAnimator(initialValue: CGFloat(1), trigger: popped) { v, s in v.scaleEffect(s) } keyframes: { _ in
+            KeyframeTrack { SpringKeyframe(1.035, duration: 0.14, spring: .snappy); SpringKeyframe(1, duration: 0.45, spring: .bouncy) }
+        }
         .background(RoundedRectangle(cornerRadius: 22, style: .continuous)
             .fill(LinearGradient(colors: [Color(red: 1, green: 0.98, blue: 0.93), Theme.paperTop], startPoint: .top, endPoint: .bottom))
             .opacity(call.done ? 0.82 : 1))
         .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Theme.paperEdge.opacity(0.35), lineWidth: 0.75))
         .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
         .animation(.spring(response: 0.35, dampingFraction: 0.6), value: call.done)
+        .onChange(of: call.done) { _, done in if done { popped += 1 } }
+    }
+}
+
+/// The ring's two values over time.
+private struct Ripple { var scale: CGFloat = 0.6; var opacity: Double = 0 }
+
+/// A card under the finger: it sinks a touch and brightens, then springs back (task 5: taps you can feel).
+struct CardPress: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .brightness(configuration.isPressed ? 0.03 : 0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.65), value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { _, down in if down { Haptic.touch() } }
     }
 }
