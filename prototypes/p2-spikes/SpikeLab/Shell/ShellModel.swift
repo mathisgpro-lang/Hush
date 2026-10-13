@@ -281,6 +281,9 @@ final class ShellModel {
     /// Decision 157 (after Finch): on home the world is a stage in the top half and the quests own the bottom half.
     /// The whole world view is lifted so every circle's centre (and the Flame's feet) sits 42% down the screen.
     /// The lift never changes with the quest sheet: opening or lowering the quests leaves the world still (decision 158).
+    /// Where the Flame's feet belong on screen (a share of its height), measured by home: midway between the streak
+    /// panel and the quests, plus half the Flame's height (decision 162).
+    @ObservationIgnored var feetTarget: Float?
     var worldLift: CGFloat {
         guard PixelMode.world else { return 0 }
         switch screen { case .home, .realm: return 0.215; default: return 0 }
@@ -316,10 +319,11 @@ final class ShellModel {
 
     private func advance(_ dt: Float) {
         let lift = Float(worldLift)          // the stage in the top half (157): the scene's camera looks lower (158)
+        let feet = lift > 0 ? feetTarget : nil
         switch activeWorld {
-        case .sanctuary: if sanctuaryBuilt { sanctuary.stageLift = lift; sanctuary.update(dt: dt) }
+        case .sanctuary: if sanctuaryBuilt { sanctuary.stageLift = lift; sanctuary.feetTarget = feet; sanctuary.update(dt: dt) }
         case .map: if mapBuilt { mapScene.update(dt: dt) }
-        case .realm(let r): if realmsBuilt.contains(r) { let sc = realmScene(r); sc.stageLift = lift; sc.update(dt: dt) }
+        case .realm(let r): if realmsBuilt.contains(r) { let sc = realmScene(r); sc.stageLift = lift; sc.feetTarget = feet; sc.update(dt: dt) }
         }
     }
 

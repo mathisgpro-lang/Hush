@@ -74,6 +74,9 @@ final class RealmScene {
     /// How far up the world shows, as a share of the screen (decisions 157–158): the camera looks that much lower.
     @ObservationIgnored var stageLift: Float = 0
     @ObservationIgnored private var liftNow: Float = 0
+    /// Where the Flame's feet belong on screen, when home has measured it (decision 162).
+    @ObservationIgnored var feetTarget: Float?
+    @ObservationIgnored private var liftBias: Float = 0     // learnt on screen: what the formula misses
     @ObservationIgnored private var camPos = SIMD3<Float>(0, 0, 0)
     @ObservationIgnored private var camLook = SIMD3<Float>(0, 0, -1.2)
     @ObservationIgnored private var camVel = SIMD3<Float>(0, 0, 0)
@@ -397,7 +400,7 @@ final class RealmScene {
             fliesRate = rate; f.mainEmitter.birthRate = rate; flies.components.set(f)
         }
         flies?.position.x = life.wind * 0.03
-        let drift = SIMD2(noise.sample(time * 0.09), noise.sample(time * 0.07 + 30)) * 0.025
+        let drift = SIMD2(noise.sample(time * 0.09), noise.sample(time * 0.07 + 30)) * (PixelMode.world ? 0.008 : 0.025)
         let offset = SIMD3<Float>(drift.x, drift.y * 0.6, 0)
         let (wantPos, wantLook): (SIMD3<Float>, SIMD3<Float>) = focus.map { f0 in
             // Glide toward the spot but keep the view inside the painting (side spots would show its edge).
@@ -422,9 +425,20 @@ final class RealmScene {
             pan += panVel * dt
         }
         let pv = SIMD3<Float>(pan.x + homeShift, pan.y, 0)
+        if let f = feetTarget {          // home measures the space between the streak panel and the quests (decision 162)
+            let f0 = WorldLayer.overscanAnchor + (f - WorldLayer.overscanAnchor) / WorldLayer.overscan   // (undo the overscan)
+            let t = tan(Self.fov / 2 * .pi / 180), dz = max(0.1, camPos.z - heroFeet.z)
+            stageLift = ((0.5 - f0) * 2 * t * dz - heroFeet.y) / (2 * Self.distance * t) + liftBias
+        }
         liftNow += (stageLift - liftNow) * min(1, dt * 5)
         let down = SIMD3<Float>(0, liftNow * 2 * Self.distance * tan(Self.fov / 2 * .pi / 180), 0)
         camera.look(at: camLook + pv - down, from: camPos + pv - down, relativeTo: root)
+        if let f = feetTarget {          // where the feet really landed: nudge the lift until they're exactly there
+            let f0 = WorldLayer.overscanAnchor + (f - WorldLayer.overscanAnchor) / WorldLayer.overscan
+            let rel = camera.transformMatrix(relativeTo: root).inverse * SIMD4<Float>(heroFeet.x, heroFeet.y, heroFeet.z, 1)
+            let fy = 0.5 - rel.y / max(0.01, -rel.z) / tan(Self.fov / 2 * .pi / 180) * 0.5
+            liftBias = max(-0.15, min(0.15, liftBias + (fy - f0) * dt * 1.5))
+        }
     }
 
     private func setStrand(opacity: Float, emitting: Bool) {

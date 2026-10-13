@@ -75,6 +75,10 @@ final class SanctuaryScene {
     /// the painting (taller than the screen) still fills the whole view below; it glides there, never jumps.
     var stageLift: Float = 0
     private var liftNow: Float = 0
+    /// Where the Flame's feet belong on screen (a share of its height), when home has measured it: the lift is solved
+    /// from it, so the Flame sits in the middle of the free space on every screen (decision 162).
+    var feetTarget: Float?
+    private var liftBias: Float = 0     // learnt on screen: what the formula misses
     private var camPos = SIMD3<Float>(0, 0, 0), camLook = SIMD3<Float>(0, 0, -1.2)
     private var camVel = SIMD3<Float>(0, 0, 0), lookVel = SIMD3<Float>(0, 0, 0)
     /// Looking around (Clash of Clans–style): the camera slides a little in any direction (meters), but the
@@ -473,9 +477,10 @@ final class SanctuaryScene {
             WorldGround.follow(ground, m, customValue: [m.custom.value.x, 2, 2, 0], specular: 2)   // (no circle, no sun down there)
         }
         // The camera breathes very slowly (an alive world), and follows the phone's tilt for parallax.
-        let driftAmp: Float = layers != nil ? 0.03 : (autoDrift ? 0.12 : 0.04)     // a calm breath, not a sway
+        // (Pixel worlds: barely a breath, so the Flame stays in the middle of its space, decision 162.)
+        let driftAmp: Float = PixelMode.world ? 0.008 : layers != nil ? 0.03 : (autoDrift ? 0.12 : 0.04)     // a calm breath, not a sway
         let drift = SIMD2(noise.sample(time * 0.08), noise.sample(time * 0.06 + 30)) * driftAmp
-        var offset = SIMD3<Float>(tilt.x * 0.11 + drift.x, -tilt.y * 0.07 + drift.y * 0.6, sin(time * 0.11) * (layers != nil ? 0.015 : 0.05))
+        var offset = SIMD3<Float>(tilt.x * 0.11 + drift.x, -tilt.y * 0.07 + drift.y * 0.6, sin(time * 0.11) * (PixelMode.world ? 0.006 : layers != nil ? 0.015 : 0.05))
         if CommandLine.arguments.contains("-camtest") { offset = SIMD3(sin(time * 1.2) > 0 ? 0.1 : -0.1, cos(time * 0.9) > 0 ? 0.07 : -0.07, 0.05) }
         offset.x = max(-0.1, min(0.1, offset.x)); offset.y = max(-0.07, min(0.07, offset.y))
         let (wantPos, wantLook): (SIMD3<Float>, SIMD3<Float>) = focus.map { f0 in
@@ -504,9 +509,20 @@ final class SanctuaryScene {
         camPos += camVel * dt
         lookVel += (wc * wc * (wantLook - camLook) - 2 * wc * lookVel) * dt
         camLook += lookVel * dt
+        if let f = feetTarget {          // home measures the space between the streak panel and the quests (decision 162)
+            let f0 = WorldLayer.overscanAnchor + (f - WorldLayer.overscanAnchor) / WorldLayer.overscan   // (undo the overscan)
+            let t = tan(Self.fov / 2 * .pi / 180), dz = max(0.1, camPos.z - heroFeet.z)
+            stageLift = ((0.5 - f0) * 2 * t * dz - heroFeet.y) / Self.visibleHeight + liftBias
+        }
         liftNow += (stageLift - liftNow) * min(1, dt * 5)
         let down = SIMD3<Float>(0, liftNow * Self.visibleHeight, 0)
         camera.look(at: camLook + panV - down, from: camPos + panV - down, relativeTo: root)
+        if let f = feetTarget {          // where the feet really landed: nudge the lift until they're exactly there
+            let f0 = WorldLayer.overscanAnchor + (f - WorldLayer.overscanAnchor) / WorldLayer.overscan
+            let rel = camera.transformMatrix(relativeTo: root).inverse * SIMD4<Float>(heroFeet.x, heroFeet.y, heroFeet.z, 1)
+            let fy = 0.5 - rel.y / max(0.01, -rel.z) / tan(Self.fov / 2 * .pi / 180) * 0.5
+            liftBias = max(-0.15, min(0.15, liftBias + (fy - f0) * dt * 1.5))
+        }
     }
 }
 

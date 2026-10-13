@@ -86,7 +86,7 @@ struct WorldLayer: View {
         .ignoresSafeArea()
         .modifier(RenderScale(scale: WorldLayer.renderScale))
         // A breath of overscan, pinned on the Flame's circle so it never moves: the camera's slow drift never shows an edge.
-        .scaleEffect(1.04, anchor: UnitPoint(x: 0.5, y: 0.40))
+        .scaleEffect(CGFloat(WorldLayer.overscan), anchor: UnitPoint(x: 0.5, y: CGFloat(WorldLayer.overscanAnchor)))
         .allowsHitTesting(false)
         }
     }
@@ -94,6 +94,8 @@ struct WorldLayer: View {
     /// The painted world is drawn at 75% of the screen's resolution, then scaled up: painted art stays sharp, and
     /// the graphics chip gets its headroom back (the 3D's fixed cost scales with pixels: 4.4 → 1.2 ms at 60%).
     /// The interface itself (text, buttons, sheets) is always drawn at full resolution. (-rs N to test others.)
+    /// The breath of overscan around the Flame's spot (the scenes undo it when they place the Flame on screen).
+    nonisolated static let overscan: Float = 1.04, overscanAnchor: Float = 0.40
     static let renderScale: CGFloat = {
         let a = CommandLine.arguments
         if let i = a.firstIndex(of: "-rs"), i + 1 < a.count, let v = Double(a[i + 1]) { return CGFloat(v) }

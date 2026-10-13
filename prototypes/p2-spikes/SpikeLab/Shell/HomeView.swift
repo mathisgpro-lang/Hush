@@ -11,6 +11,8 @@ struct HomeView: View {
     private var scene: LivingWorld { world == .sanctuary ? model.sanctuary : model.realmScene(world) }
     private var realmScene: RealmScene? { world == .sanctuary ? nil : model.realmScene(world) }
     private var built: Bool { world == .sanctuary ? model.sanctuaryBuilt : model.realmsBuilt.contains(world) }
+    @State private var bandTop: CGFloat = 0          // the free space around the Flame (162): its top…
+    @State private var bandBottom: CGFloat = 0       // …and its bottom (the quests)
     @State private var focused: Spot?
     @State private var reward: DeedOutcome?
     @State private var backdrop: Double = 0           // the blurred world behind full sheets (0 = live world)
@@ -106,6 +108,7 @@ struct HomeView: View {
                         }
                         cockpitBar
                     }
+                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { bandBottom = $0; placeFlame() }
                     .shadow(color: .black.opacity(0.7), radius: 3, y: 1)          // legible over the world
                     .padding(.top, 18).padding(.bottom, 2)
                     .background(alignment: .top) {
@@ -322,6 +325,16 @@ struct HomeView: View {
                 .padding(.horizontal, 30).padding(.top, 2)
         }
         .padding(.top, 8)
+        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { bandTop = $0; placeFlame() }
+    }
+
+    /// Decision 162: the Flame sits in the middle of the free space between the streak panel (with its line) and the
+    /// quests, on every screen; its feet go about half a Flame below that middle.
+    private func placeFlame() {
+        let h = UIScreen.main.bounds.height
+        guard bandTop > 0, bandBottom > bandTop, h > 0 else { return }
+        let mid = (bandTop + bandBottom) / 2
+        model.feetTarget = Float((mid + h * 0.03) / h)          // (calibrated on screen: the sprite's visible feet)
     }
 
     /// The tour's first stops: the satchel, then the world.

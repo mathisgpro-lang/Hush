@@ -19,16 +19,16 @@ struct QuestBoard: View {
     @GestureState private var drag: CGFloat = 0
 
     private var left: Int { calls.filter { !$0.done }.count }
-    private static let rowH: CGFloat = 56, gap: CGFloat = 8, peek: CGFloat = 9
+    private static let rowH: CGFloat = 72, gap: CGFloat = 11, peek: CGFloat = 9   // airy cards (Mathis, after Finch)
 
     var body: some View {
         let n = calls.count
         let stackH = n == 0 ? Self.rowH : expanded ? CGFloat(n) * Self.rowH + CGFloat(max(0, n - 1)) * Self.gap
                                               : Self.rowH + CGFloat(min(2, max(0, n - 1))) * Self.peek
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center, spacing: 8) {
                 Text(left == 0 ? (calls.isEmpty ? "Your day is ready" : "Your Flame feels good today") : "Your Flame needs today")
-                    .font(.story(16, .medium)).foregroundStyle(Theme.cream)
+                    .font(.story(18, .medium)).foregroundStyle(Theme.cream)
                 Spacer()
                 if n > 1 && !alwaysOpen {
                     Button { withAnimation(Motion.soft) { expanded.toggle() } } label: {
@@ -114,13 +114,13 @@ struct QuestRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Button(action: open) {
-                HStack(spacing: 12) {
+                HStack(spacing: 14) {
                     ZStack {
-                        Circle().fill(call.realm.color.opacity(0.22)).frame(width: 38, height: 38)
-                        Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage(named: "\(call.prop.replacingOccurrences(of: "px-", with: "")).png") ?? UIImage()).resizable().interpolation(.none).scaledToFit().frame(width: 28, height: 28)
+                        Circle().fill(call.realm.color.opacity(0.22)).frame(width: 50, height: 50)
+                        Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage(named: "\(call.prop.replacingOccurrences(of: "px-", with: "")).png") ?? UIImage()).resizable().interpolation(.none).scaledToFit().frame(width: 36, height: 36)
                     }
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(call.title).font(.story(17, .semibold)).foregroundStyle(Theme.ink.opacity(call.done ? 0.4 : 1))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(call.title).font(.story(18.5, .semibold)).foregroundStyle(Theme.ink.opacity(call.done ? 0.4 : 1))
                             .strikethrough(call.done, color: Theme.ink.opacity(0.4)).lineLimit(1)
                         HStack(spacing: 6) {
                             Text(call.counted && !call.done ? "\(call.progress)/\(call.target) \(call.unit)" : "\(call.minutes) min")
@@ -148,22 +148,22 @@ struct QuestRow: View {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .fill(call.done ? AnyShapeStyle(LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.4), Color(red: 0.93, green: 0.55, blue: 0.22)], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(Color.white))
                     RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(call.done ? .clear : Theme.paperEdge.opacity(0.55), lineWidth: 1.2)
-                    Image(systemName: "checkmark").font(.system(size: 19, weight: .heavy))
+                    Image(systemName: "checkmark").font(.system(size: 21, weight: .heavy))
                         .foregroundStyle(call.done ? .white : Color(red: 0.42, green: 0.62, blue: 0.3))
                         .scaleEffect(call.done ? 1.1 : 1)
                 }
-                .frame(width: 46, height: 40)
+                .frame(width: 52, height: 46)
                 .background(GeometryReader { g in Color.clear.onAppear { tickCenter = CGPoint(x: g.frame(in: .global).midX, y: g.frame(in: .global).midY) }
                     .onChange(of: g.frame(in: .global)) { _, f in tickCenter = CGPoint(x: f.midX, y: f.midY) } })
             }
             .buttonStyle(PressableStyle())
             .disabled(call.done)
         }
-        .padding(.horizontal, 8).frame(height: 56)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .padding(.leading, 10).padding(.trailing, 12).frame(height: 72)
+        .background(RoundedRectangle(cornerRadius: 22, style: .continuous)
             .fill(LinearGradient(colors: [Color(red: 1, green: 0.98, blue: 0.93), Theme.paperTop], startPoint: .top, endPoint: .bottom))
             .opacity(call.done ? 0.82 : 1))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Theme.paperEdge.opacity(0.35), lineWidth: 0.75))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Theme.paperEdge.opacity(0.35), lineWidth: 0.75))
         .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
         .animation(.spring(response: 0.35, dampingFraction: 0.6), value: call.done)
     }
