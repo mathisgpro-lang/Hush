@@ -59,7 +59,6 @@ enum Evolution: Int, CaseIterable, Identifiable {
 }
 
 enum Progression {
-    static let arcLength = 66                     // the first arc: 66 days, then a graduation
 
     /// XP for one quest: more for longer ones, a little more while your streak is alive (up to +50% at 30 days).
     static func xp(minutes: Int, streak: Int) -> Int {

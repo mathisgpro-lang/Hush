@@ -133,6 +133,13 @@ struct HomeView: View {
                 if let call = open { card(call, size: geo.size) }
                 if let r = reward { RewardBurst(outcome: r) { withAnimation { reward = nil } }.id(r.xp ^ r.streakAfter << 8 ^ r.attributeAfter << 16) }
                 tourLayer
+                if model.journey.roundComplete && model.dailyGift == 0 && model.tour == nil && built && open == nil && reward == nil && !(satchelOpen || bookOpen || flameOpen) {
+                    let j = model.journey
+                    RoundComplete(length: j.roundLength, lived: j.roundDaysLived, round: j.roundsDone + 1) { n in
+                        withAnimation(.sheet) { j.startRound(n) }
+                    }
+                    .transition(.opacity)
+                }
                 if model.dailyGift > 0 && model.tour == nil && built && open == nil && !(satchelOpen || bookOpen || flameOpen) {
                     DailyPouch(amount: model.dailyGift) { pt in
                         let a = model.dailyGift
@@ -591,8 +598,8 @@ struct QuestJournal: View {
                 Capsule().fill(ink.opacity(0.3)).frame(width: 40, height: 5).padding(.top, 10)
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Day \(min(model.journey.dayNumber(), Progression.arcLength))").font(.story(30, .bold)).foregroundStyle(ink)
-                        + Text(" / \(Progression.arcLength)").font(.story(18)).foregroundStyle(ink.opacity(0.5))
+                        Text("Day \(model.journey.roundDay)").font(.story(30, .bold)).foregroundStyle(ink)
+                        + Text(" / \(model.journey.roundLength)").font(.story(18)).foregroundStyle(ink.opacity(0.5))
                         Text("Choose what you'll do today. Each one waits for you in the world.")
                             .font(.ui(13)).foregroundStyle(ink.opacity(0.7))
                     }

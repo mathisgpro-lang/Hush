@@ -276,12 +276,18 @@ struct FinchIntro: View {
                 if firstOutcome == nil { secondary("I did it") { firstDeedDone() } }
             }
         case .promise:
-            VStack(spacing: 12) {
-                title("Keep your flame alive for 7 days?")
-                body2("Small quests are enough. What matters is never stopping. At day 7 you earn a shield for a hard day.")
-                primary("I'm in") { journeyPromise(7); go(.mornings) }
-                secondary("Let's just begin") { go(.mornings) }
+            // Your first round (decision 159): you choose how long you commit; it's never "66" up front.
+            VStack(spacing: 10) {
+                Text("How long for your first round?").font(.story(22, .medium)).multilineTextAlignment(.center).foregroundStyle(Theme.ink)
+                Text("Small quests are enough. What matters is showing up every day. When the round ends, you choose the next one.")
+                    .font(.ui(13)).multilineTextAlignment(.center).foregroundStyle(Theme.ink.opacity(0.6)).padding(.bottom, 4)
+                choice("7 days · a good start") { journeyPromise(7); go(.mornings) }
+                choice("14 days · a real habit") { journeyPromise(14); go(.mornings) }
+                choice("30 days · a new you") { journeyPromise(30); go(.mornings) }
             }
+            .padding(18)
+            .background(SheetPaper(corner: 26))
+            .shadow(color: .black.opacity(0.4), radius: 18, y: 8)
         case .mornings:
             VStack(spacing: 12) {
                 title("Shall I bring you your day?")
@@ -407,7 +413,7 @@ struct FinchIntro: View {
     private var meetWord: String { (meetWhen ?? "Morning").lowercased() }
     private var meetHour: Int { ["Morning": 8, "Midday": 12, "Evening": 19][meetWhen ?? "Morning"] ?? 8 }
     private var meetTimeText: String { meetHour == 12 ? "12:30" : "\(meetHour):00" }
-    private func journeyPromise(_ days: Int) { model.journey.setUp(dayOne: [:], meetHour: nil, promise: days) }
+    private func journeyPromise(_ days: Int) { model.journey.startRound(days) }
 
     /// The reminder, asked last (once the value is felt), at the moment you chose. A local note: no server.
     private func askReminders() {
@@ -764,7 +770,9 @@ struct FinchIntro: View {
             await w(2); answers[1] = ["Be closer to people I love", "Read again"]; await w(1); go(.stand)
             await w(1.5); for (i, p) in Pillar6.allCases.enumerated() { rating[p] = [1, 2, 0, 1, 1, 2][i] }; await w(1.5); go(.moment)
             await w(1.5); meetWhen = "Morning"; meetFor = "15 min"; await w(1); go(.preparing)
-            await w(3.5); await w(3); go(.firstDeed); await w(3); firstDeedDone(); await w(4); go(.mornings); await w(2); finish()
+            await w(3.5); await w(3); go(.firstDeed); await w(3); firstDeedDone(); await w(4)
+            if CommandLine.arguments.contains("-stoppromise") { go(.promise); return }          // to look at the round choice
+            go(.mornings); await w(2); finish()
         }
     }
 }

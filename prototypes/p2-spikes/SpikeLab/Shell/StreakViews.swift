@@ -6,7 +6,7 @@ import SwiftUI
 private let gold = Color(red: 1, green: 0.78, blue: 0.42)
 private let ember = Color(red: 1, green: 0.55, blue: 0.22)
 
-/// 🔥 14 · 🛡 1 · Day 14 / 66
+/// 🔥 14 · 🛡 1 · Day 4 / 7 (the day of your round)
 struct StreakBar: View {
     let journey: Journey
     var body: some View {
@@ -30,7 +30,7 @@ struct StreakBar: View {
                 .foregroundStyle(Color(red: 0.7, green: 0.85, blue: 1))
                 .padding(.horizontal, 8).padding(.vertical, 5).background(Capsule().fill(.black.opacity(0.45)))
             }
-            Text("Day \(min(journey.dayNumber(), Progression.arcLength)) / \(Progression.arcLength)")
+            Text("Day \(journey.roundDay) / \(journey.roundLength)")
                 .font(.ui(13, .bold)).foregroundStyle(.white.opacity(0.9))
                 .padding(.horizontal, 10).padding(.vertical, 5).background(Capsule().fill(.black.opacity(0.45)))
         }
@@ -199,4 +199,36 @@ enum Consistency {
         let day = Calendar.current.ordinality(of: .day, in: .era, for: Date()) ?? 0
         return lines[abs(day + salt) % lines.count]
     }
+}
+
+/// A round is over (decision 159): celebrate it, say honestly how many of its days you came back, and choose the next
+/// round. Never a judgement: every day you lived counts, and the next round starts today.
+struct RoundComplete: View {
+    let length: Int, lived: Int, round: Int
+    let choose: (Int) -> Void
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "flame.fill").font(.system(size: 40))
+                .foregroundStyle(LinearGradient(colors: [Color(red: 1, green: 0.88, blue: 0.55), Color(red: 1, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom))
+                .shadow(color: Theme.gold.opacity(0.6), radius: 14)
+            Text(round == 1 ? "Your first round is done" : "Round \(round) is done").font(.story(22)).foregroundStyle(Theme.ink)
+            Text(lived >= length ? "\(length) days, and you came back every single one. That's the whole secret."
+                 : "\(length) days. You came back on \(lived) of them, and your Flame remembers every one.")
+                .font(.ui(13)).foregroundStyle(Theme.ink.opacity(0.7)).multilineTextAlignment(.center)
+            Text("How long for the next round?").font(.story(16, .medium)).foregroundStyle(Theme.ink).padding(.top, 4)
+            ForEach(Journey.roundChoices, id: \.self) { n in
+                Button { UIImpactFeedbackGenerator(style: .medium).impactOccurred(); choose(n) } label: {
+                    ParchmentChoice(text: n == length ? "\(n) days · again" : "\(n) days", selected: n == Self.suggested(after: length))
+                }
+                .buttonStyle(PressableStyle())
+            }
+        }
+        .padding(22)
+        .background(SheetPaper(corner: 24))
+        .padding(.horizontal, 32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.35).ignoresSafeArea())
+    }
+    /// A gentle step up: after 7, suggest 14; after 14, 30; after 30, 30 again.
+    static func suggested(after n: Int) -> Int { Journey.roundChoices.first { $0 > n } ?? n }
 }

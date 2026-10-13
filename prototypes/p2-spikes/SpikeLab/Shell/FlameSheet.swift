@@ -199,9 +199,9 @@ struct FlameSheet: View {
         }
     }
 
-    /// This week's seven flames, and the 66-day line.
+    /// This week's seven flames, and the line of your round (decision 159).
     private var journeyPanel: some View {
-        let d = min(j.dayNumber(), Progression.arcLength)
+        let d = j.roundDay, len = j.roundLength
         return VStack(spacing: 18) {
             HStack(spacing: 0) {
                 ForEach(Array(zip(["M", "T", "W", "T", "F", "S", "S"], j.thisWeek).enumerated()), id: \.offset) { _, day in
@@ -216,10 +216,10 @@ struct FlameSheet: View {
             VStack(spacing: 6) {
                 GeometryReader { g in
                     Capsule().fill(Theme.cream.opacity(0.12))
-                    Capsule().fill(Theme.champagne.opacity(0.85)).frame(width: g.size.width * CGFloat(d) / CGFloat(Progression.arcLength))
+                    Capsule().fill(Theme.champagne.opacity(0.85)).frame(width: g.size.width * CGFloat(d) / CGFloat(len))
                 }
                 .frame(height: 2)
-                Text(d >= Progression.arcLength ? "You graduated. A new arc begins." : "Day \(d) of \(Progression.arcLength) · at 66 days, your habits become you")
+                Text("Day \(d) of your \(len)-day round · every day counts, however small")
                     .font(.story(13).italic()).foregroundStyle(Theme.cream.opacity(0.55)).multilineTextAlignment(.center)
             }
         }
@@ -308,19 +308,19 @@ struct FlameSheet: View {
     }
 
     private var arcCard: some View {
-        let d = min(j.dayNumber(), Progression.arcLength)
+        let d = j.roundDay, len = j.roundLength
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("The first arc").font(.ui(15, .bold)).foregroundStyle(cream)
+                Text(j.roundsDone == 0 ? "Your first round" : "Round \(j.roundsDone + 1)").font(.ui(15, .bold)).foregroundStyle(cream)
                 Spacer()
-                Text("Day \(d) / \(Progression.arcLength)").font(.ui(13, .bold)).foregroundStyle(gold)
+                Text("Day \(d) / \(len)").font(.ui(13, .bold)).foregroundStyle(gold)
             }
             GeometryReader { g in
                 Capsule().fill(cream.opacity(0.12))
-                Capsule().fill(LinearGradient(colors: [Theme.gold, .orange], startPoint: .leading, endPoint: .trailing)).frame(width: g.size.width * CGFloat(d) / CGFloat(Progression.arcLength))
+                Capsule().fill(LinearGradient(colors: [Theme.gold, .orange], startPoint: .leading, endPoint: .trailing)).frame(width: g.size.width * CGFloat(d) / CGFloat(len))
             }
             .frame(height: 8)
-            Text(d >= Progression.arcLength ? "You graduated. A new arc begins." : "At day 66, your Spark graduates: the habits you built become part of who you are.")
+            Text("At day \(len), the round is yours and you choose the next one. Showing up matters more than how much you do.")
                 .font(.ui(12)).foregroundStyle(cream.opacity(0.6))
         }
     }

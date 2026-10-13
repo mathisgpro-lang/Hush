@@ -47,6 +47,31 @@ final class Journey {
     private(set) var dayOne: [String: Int] = [:]
     private(set) var meetHour: Int?
     private(set) var promise: Int?
+    // MARK: Rounds (decision 159): you choose how long you commit, 7, 14 or 30 days, then the next round.
+    private(set) var roundStart: Int?                 // the day number the current round began on (nil: day 1)
+    private(set) var roundsDone = 0
+    static let roundChoices = [7, 14, 30]
+    /// How long the current round lasts (the promise you chose; 7 until you choose).
+    var roundLength: Int { promise ?? 7 }
+    /// Today's day within the round (1…length).
+    var roundDay: Int { min(max(1, dayNumber() - (roundStart ?? 1) + 1), roundLength) }
+    /// The round's last day is behind you: time to celebrate and choose the next one.
+    var roundComplete: Bool { dayNumber() - (roundStart ?? 1) + 1 > roundLength }
+    /// How many of the round's days you really lived (shown when it ends; never a judgement).
+    var roundDaysLived: Int {
+        let first = roundStart ?? 1
+        return Set(deeds.map { dayNumber(of: $0.date) }.filter { $0 >= first && $0 < first + roundLength }).count
+    }
+    /// Close this round (a Book page) and begin the next one today.
+    func startRound(_ days: Int) {
+        if roundComplete {
+            let n = roundsDone + 1, lived = roundDaysLived, len = roundLength
+            write("round-\(n)", world: RealmID.sanctuary.rawValue, title: "Round \(n): \(len) days",
+                  "You promised \(len) days and you came back to your Flame on \(lived) of them. Its light remembers every one. Then you chose the next round: \(days) days.")
+            roundsDone = n
+        }
+        promise = days; roundStart = dayNumber(); save()
+    }
     private(set) var grants: [String: Int] = [:]     // one-time gifts (the beta's starter purse)
     // MARK: Evolutions (decision 152)
     private(set) var chosenForm: Evolution?
@@ -68,19 +93,19 @@ final class Journey {
         save()
     }
     private let key = "journey.v1"
-    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil; var dayOne: [String: Int]? = nil; var meetHour: Int? = nil; var promise: Int? = nil; var grants: [String: Int]? = nil; var form: Int? = nil; var skipLog: [String: [Date]]? = nil }
+    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil; var dayOne: [String: Int]? = nil; var meetHour: Int? = nil; var promise: Int? = nil; var grants: [String: Int]? = nil; var form: Int? = nil; var skipLog: [String: [Date]]? = nil; var roundStart: Int? = nil; var roundsDone: Int? = nil }
 
     init() {
         if CommandLine.arguments.contains("-freshjourney") { UserDefaults.standard.removeObject(forKey: key) }
         if let d = UserDefaults.standard.data(forKey: key), let s = try? JSONDecoder().decode(Saved.self, from: d) {
             bornOn = s.bornOn; name = s.name; ember = s.ember; pages = s.pages; deeds = s.deeds
-            checkIns = s.checkIns ?? []; bought = Set(s.bought ?? []); dayOne = s.dayOne ?? [:]; meetHour = s.meetHour; promise = s.promise; grants = s.grants ?? [:]; chosenForm = s.form.flatMap(Evolution.init(rawValue:)); skipLog = s.skipLog ?? [:]
+            checkIns = s.checkIns ?? []; bought = Set(s.bought ?? []); dayOne = s.dayOne ?? [:]; meetHour = s.meetHour; promise = s.promise; grants = s.grants ?? [:]; chosenForm = s.form.flatMap(Evolution.init(rawValue:)); skipLog = s.skipLog ?? [:]; roundStart = s.roundStart; roundsDone = s.roundsDone ?? 0
         }
         if CommandLine.arguments.contains("-seedjourney") { seedForTesting() }
     }
 
     private func save() {
-        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought), dayOne: dayOne, meetHour: meetHour, promise: promise, grants: grants, form: chosenForm?.rawValue, skipLog: skipLog)
+        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought), dayOne: dayOne, meetHour: meetHour, promise: promise, grants: grants, form: chosenForm?.rawValue, skipLog: skipLog, roundStart: roundStart, roundsDone: roundsDone)
         if let d = try? JSONEncoder().encode(s) { UserDefaults.standard.set(d, forKey: key) }
     }
 

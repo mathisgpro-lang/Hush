@@ -127,7 +127,7 @@ struct DailyPouch: View {
 }
 
 /// The top bar of every world (decision 146): one slim, quiet capsule. Your streak, the day of the arc, your Embers,
-/// separated by hairlines; nothing shouts.
+/// separated by hairlines (the day is the day of your round, decision 159); nothing shouts.
 struct HUDBar: View {
     let journey: Journey
     let embers: Int
@@ -143,7 +143,7 @@ struct HUDBar: View {
                 }
             }
             Rectangle().fill(Theme.cream.opacity(0.18)).frame(width: 0.5, height: 14)
-            Text("Day \(min(journey.dayNumber(), Progression.arcLength)) / \(Progression.arcLength)").font(.ui(13, .semibold)).foregroundStyle(Theme.cream.opacity(0.85))
+            Text("Day \(journey.roundDay) / \(journey.roundLength)").font(.ui(13, .semibold)).foregroundStyle(Theme.cream.opacity(0.85))
             Rectangle().fill(Theme.cream.opacity(0.18)).frame(width: 0.5, height: 14)
             HStack(spacing: 5) {
                 EmberCoin(size: 15)
