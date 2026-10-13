@@ -1,4 +1,4 @@
-// The quest library and the picker (P3.0 step 1, decision 154). Every quest is small, concrete and safe, with a
+// The quest library and the picker (P3.0 step 1, decisions 154, 163). Every quest is short, concrete and safe, with a
 // reason why (cited in plain words), a size (minutes, or a count to reach) and a level: 1 easy, 2 steady, 3 stretch.
 // The picker builds your day like a good coach would, without ever shaming:
 //   · one habit you're building (from why you came), the same each day so it becomes yours, a level up when it's easy;
@@ -23,58 +23,67 @@ struct QuestDef: Identifiable, Hashable {
 }
 
 enum QuestLibrary {
+    // Short, readable at a glance, after Finch (Mathis, 2026-10-13: "do 10 push ups, read 20 pages, 10 min meditation").
+    // Not life's basics but getting stronger as a whole: Body, Mind and Spirit first, and sustainability (the World).
+    // The card shows the title; opening it shows how, and why (decision 163).
     static let all: [QuestDef] = [
         // Body (the Ascent Highlands)
-        .init(id: "body-walk10", pillar: .body, level: 1, title: "Ten minutes outside", detail: "Walk at an easy pace. Look up at the sky once.", why: "Ten easy minutes a day is where lasting movement habits start.", symbol: "figure.walk", minutes: 10, target: 10, unit: "min"),
-        .init(id: "body-stretch", pillar: .body, level: 1, title: "Five-minute stretch", detail: "Neck, shoulders, back, legs: slow, never painful.", why: "Gentle daily stretching eases stiffness from sitting.", symbol: "figure.flexibility", minutes: 5, target: 5, unit: "min"),
-        .init(id: "body-water", pillar: .body, level: 1, title: "A glass of water now", detail: "Drink one full glass, slowly.", why: "Many of us start the day under-hydrated; a glass is the easiest win.", symbol: "drop.fill", minutes: 1),
-        .init(id: "body-squats", pillar: .body, level: 2, title: "Twenty squats", detail: "In as many sets as you need. Knees over toes, back straight.", why: "Leg strength is one of the best predictors of staying active with age.", symbol: "figure.strengthtraining.functional", minutes: 4, target: 20, unit: "squats"),
-        .init(id: "body-walk30", pillar: .body, level: 2, title: "A 30-minute walk", detail: "Brisk enough to talk but not sing.", why: "About 150 minutes of brisk walking a week is the WHO's baseline for health.", symbol: "figure.walk.motion", minutes: 30, target: 30, unit: "min"),
-        .init(id: "body-workout", pillar: .body, level: 3, title: "A real workout", detail: "20 minutes of something that makes you breathe hard: run, cycle, a class.", why: "Vigorous exercise strengthens the heart and lifts mood for hours.", symbol: "figure.run", minutes: 20, target: 20, unit: "min"),
+        .init(id: "body-squats", pillar: .body, level: 1, title: "15 squats", detail: "In as many sets as you need. Feet shoulder-width, back straight, knees over toes.", why: "Leg strength is one of the best predictors of staying strong and independent with age.", symbol: "figure.strengthtraining.functional", minutes: 3, target: 15, unit: "squats"),
+        .init(id: "body-walk", pillar: .body, level: 1, title: "15-min brisk walk", detail: "Fast enough to talk but not sing.", why: "Brisk walking every day is the simplest base for heart health (WHO: 150 min a week).", symbol: "figure.walk.motion", minutes: 15, target: 15, unit: "min"),
+        .init(id: "body-stretch", pillar: .body, level: 1, title: "10-min mobility", detail: "Hips, shoulders, spine: slow and controlled, never painful.", why: "Daily mobility keeps joints moving freely and protects you from stiffness and injury.", symbol: "figure.flexibility", minutes: 10, target: 10, unit: "min"),
+        .init(id: "body-pushups", pillar: .body, level: 2, title: "10 push-ups", detail: "Any sets you need. On your knees is fine: full range, body straight.", why: "Push-up capacity is linked to lower heart-disease risk; upper-body strength builds fast.", symbol: "figure.strengthtraining.traditional", minutes: 3, target: 10, unit: "push-ups"),
+        .init(id: "body-plank", pillar: .body, level: 2, title: "1-min plank", detail: "Elbows under shoulders, body in one line. Rest and repeat until you reach a minute.", why: "A strong core supports your back and every other movement.", symbol: "figure.core.training", minutes: 2, target: 60, unit: "sec"),
+        .init(id: "body-walk30", pillar: .body, level: 2, title: "30-min walk", detail: "Brisk, outside if you can.", why: "Thirty minutes a day, five days a week, meets the WHO's activity baseline.", symbol: "figure.walk", minutes: 30, target: 30, unit: "min"),
+        .init(id: "body-run", pillar: .body, level: 3, title: "20-min run", detail: "An easy pace you could keep talking at. Walk breaks are fine.", why: "Regular running strengthens the heart and lifts mood for hours.", symbol: "figure.run", minutes: 20, target: 20, unit: "min"),
+        .init(id: "body-pushups30", pillar: .body, level: 3, title: "30 push-ups", detail: "In sets of whatever you can do well. Stop before your form breaks.", why: "Building past your comfort zone, safely, is how strength keeps growing.", symbol: "figure.strengthtraining.traditional", minutes: 6, target: 30, unit: "push-ups"),
         // Mind (the Library of Embers)
-        .init(id: "mind-page", pillar: .mind, level: 1, title: "One page", detail: "Read a single page of something you've meant to read.", why: "A tiny daily start is how reading habits come back.", symbol: "book.fill", minutes: 3),
-        .init(id: "mind-10pages", pillar: .mind, level: 2, title: "Ten pages", detail: "Read ten pages of any book you like.", why: "Ten pages a day is about a book a month.", symbol: "book.fill", minutes: 15, target: 10, unit: "pages"),
-        .init(id: "mind-learn", pillar: .mind, level: 1, title: "Learn one thing", detail: "Look up something you've wondered about. Explain it to yourself in one sentence.", why: "Explaining in your own words is how things stick.", symbol: "lightbulb.fill", minutes: 5),
-        .init(id: "mind-notes", pillar: .mind, level: 2, title: "Three ideas on paper", detail: "Write three ideas about anything: work, life, a project.", why: "Writing ideas down frees the mind and they grow.", symbol: "pencil.and.scribble", minutes: 5, target: 3, unit: "ideas"),
-        .init(id: "mind-course", pillar: .mind, level: 3, title: "A lesson of a course", detail: "Do one lesson of something you're learning: a language, a skill.", why: "Small regular sessions beat cramming for long-term memory.", symbol: "graduationcap.fill", minutes: 20, target: 20, unit: "min"),
-        .init(id: "mind-noscreen", pillar: .mind, level: 3, title: "An evening without scrolling", detail: "No social feeds after dinner. Read, talk or rest instead.", why: "Less late scrolling means better sleep and a calmer mind.", symbol: "iphone.slash", minutes: 60),
-        // Heart (the Whispering Grove)
-        .init(id: "heart-lantern", pillar: .heart, level: 1, title: "A lantern for someone", detail: "Tell someone you love one thing you admire about them.", why: "Expressed appreciation is one of the strongest builders of close bonds.", symbol: "heart.fill", minutes: 5),
-        .init(id: "heart-thanks", pillar: .heart, level: 1, title: "A thank-you", detail: "Thank someone who rarely hears it: a colleague, a neighbour, a driver.", why: "Gratitude lifts both the one who gives it and the one who hears it.", symbol: "hands.clap.fill", minutes: 2),
-        .init(id: "heart-call", pillar: .heart, level: 2, title: "Call someone you miss", detail: "Ten minutes, just to hear how they are.", why: "Regular contact is what keeps friendships alive over the years.", symbol: "phone.fill", minutes: 10, target: 10, unit: "min"),
-        .init(id: "heart-listen", pillar: .heart, level: 2, title: "Really listen", detail: "In one conversation today, only ask and listen. No advice.", why: "Feeling heard is one of the deepest forms of care.", symbol: "ear.fill", minutes: 10),
-        .init(id: "heart-plan", pillar: .heart, level: 3, title: "Plan time together", detail: "Set a date with someone you love: a walk, a meal, a game.", why: "Shared time, planned ahead, is what close relationships are built on.", symbol: "calendar.badge.plus", minutes: 5),
-        .init(id: "heart-letter", pillar: .heart, level: 3, title: "A letter that matters", detail: "Write a few honest lines to someone who shaped you. Send it.", why: "Gratitude letters are among the most studied happiness boosts.", symbol: "envelope.fill", minutes: 15),
+        .init(id: "mind-read10", pillar: .mind, level: 1, title: "Read 10 pages", detail: "Any book that makes you think. Paper or e-reader, not a feed.", why: "Ten pages a day is about a book a month: a dozen new minds every year.", symbol: "book.fill", minutes: 15, target: 10, unit: "pages"),
+        .init(id: "mind-words", pillar: .mind, level: 1, title: "Learn 5 words", detail: "In a language you're learning. Say each one out loud in a sentence.", why: "Short daily practice beats long sessions for memory (spaced repetition).", symbol: "character.book.closed.fill", minutes: 5, target: 5, unit: "words"),
+        .init(id: "mind-ideas", pillar: .mind, level: 1, title: "Write 3 ideas", detail: "About anything: work, life, a project. Just get them on paper.", why: "Writing ideas down frees working memory, and ideas grow when you see them.", symbol: "pencil.and.scribble", minutes: 5, target: 3, unit: "ideas"),
+        .init(id: "mind-read20", pillar: .mind, level: 2, title: "Read 20 pages", detail: "Somewhere quiet, phone in another room.", why: "Deep reading trains the focus that scrolling wears down.", symbol: "book.fill", minutes: 25, target: 20, unit: "pages"),
+        .init(id: "mind-lesson", pillar: .mind, level: 2, title: "1 course lesson", detail: "One lesson of something you're learning: a language, an instrument, a skill.", why: "Regular small sessions are how real skills are built.", symbol: "graduationcap.fill", minutes: 20, target: 20, unit: "min"),
+        .init(id: "mind-teach", pillar: .mind, level: 2, title: "Explain it simply", detail: "Pick something you learned this week and explain it in five sentences.", why: "Explaining in plain words is the surest way to truly understand (the Feynman technique).", symbol: "lightbulb.fill", minutes: 10),
+        .init(id: "mind-offline", pillar: .mind, level: 3, title: "1 hour, no phone", detail: "Phone in another room for a whole hour. Read, think, make.", why: "An hour without notifications restores attention like nothing else.", symbol: "iphone.slash", minutes: 60, target: 60, unit: "min"),
+        .init(id: "mind-read50", pillar: .mind, level: 3, title: "Read 50 pages", detail: "A long, uninterrupted session with one book.", why: "Long reading sessions build the deep concentration that great work needs.", symbol: "books.vertical.fill", minutes: 60, target: 50, unit: "pages"),
         // Spirit (the Stillwater)
-        .init(id: "spirit-breaths", pillar: .spirit, level: 1, title: "Three slow breaths", detail: "In for four, out for six. Eyes closed if you can.", why: "A longer out-breath calms the body within a minute.", symbol: "wind", minutes: 1, target: 3, unit: "breaths"),
-        .init(id: "spirit-quiet", pillar: .spirit, level: 1, title: "A quiet moment", detail: "Two minutes of silence before bed. No phone.", why: "A calm wind-down helps you fall asleep sooner.", symbol: "moon.fill", minutes: 2, target: 2, unit: "min"),
-        .init(id: "spirit-gratitude", pillar: .spirit, level: 1, title: "Three good things", detail: "Write three good things from today, however small.", why: "Noticing good moments trains attention away from worry.", symbol: "sparkles", minutes: 3, target: 3, unit: "things"),
-        .init(id: "spirit-meditate", pillar: .spirit, level: 2, title: "Ten minutes of stillness", detail: "Sit, follow your breath, come back gently each time you drift.", why: "Regular short meditation lowers stress and sharpens focus.", symbol: "figure.mind.and.body", minutes: 10, target: 10, unit: "min"),
-        .init(id: "spirit-journal", pillar: .spirit, level: 2, title: "Write it out", detail: "Five minutes of honest writing about how you feel.", why: "Putting feelings into words calms them.", symbol: "book.closed.fill", minutes: 5, target: 5, unit: "min"),
-        .init(id: "spirit-sleep", pillar: .spirit, level: 3, title: "To bed on time", detail: "Lights out at the time you chose. Screens away 30 minutes before.", why: "Regular sleep is the foundation every other habit rests on.", symbol: "bed.double.fill", minutes: 30),
-        // Craft (Forge Mountain)
-        .init(id: "craft-block", pillar: .craft, level: 2, title: "One focused block", detail: "Twenty minutes on one thing that matters. Phone in another room.", why: "One protected block a day beats long sessions you can't keep up.", symbol: "hammer.fill", minutes: 20, target: 20, unit: "min"),
-        .init(id: "craft-start", pillar: .craft, level: 1, title: "Five minutes on it", detail: "Start the thing you've been putting off. Just five minutes.", why: "Starting is the hardest part; five minutes is often enough to keep going.", symbol: "play.fill", minutes: 5, target: 5, unit: "min"),
-        .init(id: "craft-tidy", pillar: .craft, level: 1, title: "Clear one surface", detail: "Your desk, a shelf, a drawer: just one.", why: "A clear space makes focus easier.", symbol: "tray.fill", minutes: 5),
-        .init(id: "craft-plan", pillar: .craft, level: 1, title: "Tomorrow's one thing", detail: "Write the single most important thing for tomorrow.", why: "Deciding the night before makes the morning start itself.", symbol: "checklist", minutes: 2),
-        .init(id: "craft-deep", pillar: .craft, level: 3, title: "An hour of deep work", detail: "60 minutes on your most important work, no interruptions.", why: "Deep, undistracted work is where most real progress happens.", symbol: "flame.fill", minutes: 60, target: 60, unit: "min"),
-        .init(id: "craft-make", pillar: .craft, level: 2, title: "Make something", detail: "Draw, cook, build, write: 15 minutes making anything.", why: "Making things with your hands and mind is deeply satisfying.", symbol: "paintbrush.fill", minutes: 15, target: 15, unit: "min"),
-        // World (the Wilds)
-        .init(id: "world-alive", pillar: .world, level: 1, title: "Notice something alive", detail: "Step outside and look closely at one living thing.", why: "A few minutes of real attention to nature lifts the mood.", symbol: "leaf.fill", minutes: 5),
-        .init(id: "world-kind", pillar: .world, level: 1, title: "A small kindness", detail: "Do one small kind thing for someone you don't know.", why: "Kindness to strangers raises your own well-being too.", symbol: "hand.raised.fill", minutes: 5),
-        .init(id: "world-litter", pillar: .world, level: 1, title: "Pick up three things", detail: "Pick up three pieces of litter on your way.", why: "Small acts of care for shared places add up.", symbol: "trash.fill", minutes: 3, target: 3, unit: "pieces"),
-        .init(id: "world-green", pillar: .world, level: 2, title: "Twenty minutes in green", detail: "A park, a garden, a forest: twenty unhurried minutes.", why: "About two hours a week in nature is linked to better health and mood.", symbol: "tree.fill", minutes: 20, target: 20, unit: "min"),
-        .init(id: "world-help", pillar: .world, level: 2, title: "Help with something", detail: "Offer your time to someone who needs it today.", why: "Helping others is one of the surest sources of meaning.", symbol: "person.2.fill", minutes: 15),
-        .init(id: "world-volunteer", pillar: .world, level: 3, title: "Find a cause", detail: "Look up one local group you could help, and contact them.", why: "Regular volunteering is linked to lasting happiness.", symbol: "globe.europe.africa.fill", minutes: 15),
+        .init(id: "spirit-breaths", pillar: .spirit, level: 1, title: "10 slow breaths", detail: "In for four, out for six. Eyes closed if you can.", why: "A longer out-breath calms the nervous system within a minute.", symbol: "wind", minutes: 2, target: 10, unit: "breaths"),
+        .init(id: "spirit-gratitude", pillar: .spirit, level: 1, title: "3 gratitudes", detail: "Write three things you're grateful for today, however small.", why: "A daily gratitude practice is one of the most studied ways to lift well-being.", symbol: "sparkles", minutes: 3, target: 3, unit: "things"),
+        .init(id: "spirit-med5", pillar: .spirit, level: 1, title: "5-min meditation", detail: "Sit, follow your breath, come back gently each time you drift.", why: "Even five minutes a day lowers stress and trains attention.", symbol: "figure.mind.and.body", minutes: 5, target: 5, unit: "min"),
+        .init(id: "spirit-med10", pillar: .spirit, level: 2, title: "10-min meditation", detail: "Same practice, a little longer. Notice, then return.", why: "Ten minutes a day over weeks measurably reduces anxiety and improves focus.", symbol: "figure.mind.and.body", minutes: 10, target: 10, unit: "min"),
+        .init(id: "spirit-journal", pillar: .spirit, level: 2, title: "5-min journal", detail: "Write honestly about how you feel and why.", why: "Putting feelings into words calms them (expressive writing research).", symbol: "book.closed.fill", minutes: 5, target: 5, unit: "min"),
+        .init(id: "spirit-screens", pillar: .spirit, level: 2, title: "No screens at bed", detail: "Screens away 30 minutes before sleep. Read or rest instead.", why: "Less light and stimulation before bed means deeper, faster sleep.", symbol: "moon.fill", minutes: 30),
+        .init(id: "spirit-med20", pillar: .spirit, level: 3, title: "20-min meditation", detail: "A longer sit. Stay with the breath through the restless parts.", why: "Longer sits build the calm you can carry into hard moments.", symbol: "figure.mind.and.body", minutes: 20, target: 20, unit: "min"),
+        .init(id: "spirit-silence", pillar: .spirit, level: 3, title: "30-min silent walk", detail: "No music, no podcast, no phone: just walk and notice.", why: "Silence and nature together are among the best resets for the mind.", symbol: "figure.walk", minutes: 30, target: 30, unit: "min"),
+        // World: sustainability (the Wilds)
+        .init(id: "world-litter", pillar: .world, level: 1, title: "Pick up 5 litter", detail: "Five pieces on your way. Bin or recycle them.", why: "Litter harms wildlife and waterways; small acts of care add up and spread.", symbol: "trash.fill", minutes: 5, target: 5, unit: "pieces"),
+        .init(id: "world-bottle", pillar: .world, level: 1, title: "No plastic bottles", detail: "Carry a refillable bottle all day.", why: "A refillable bottle saves hundreds of single-use bottles a year.", symbol: "waterbottle.fill", minutes: 1),
+        .init(id: "world-unplug", pillar: .world, level: 1, title: "Unplug standby", detail: "Switch off chargers and devices on standby at home.", why: "Standby power can be up to 10% of a home's electricity.", symbol: "powerplug.fill", minutes: 5),
+        .init(id: "world-meatfree", pillar: .world, level: 2, title: "Meat-free day", detail: "All your meals plant-based today.", why: "Eating less meat is one of the biggest personal cuts to emissions and water use.", symbol: "leaf.fill", minutes: 5),
+        .init(id: "world-bike", pillar: .world, level: 2, title: "Walk or bike it", detail: "One trip you'd usually drive: on foot, by bike or transit.", why: "Short car trips are the least efficient; swapping them cuts emissions and moves you.", symbol: "bicycle", minutes: 20),
+        .init(id: "world-shower", pillar: .world, level: 2, title: "4-min shower", detail: "Time it. Off while you soap.", why: "Shorter showers save water and the energy that heats it.", symbol: "shower.fill", minutes: 4, target: 4, unit: "min"),
+        .init(id: "world-nothingnew", pillar: .world, level: 3, title: "Buy nothing new", detail: "A whole day without buying anything new. Repair, borrow or wait.", why: "Most of our footprint hides in the things we buy.", symbol: "bag.badge.minus", minutes: 5),
+        .init(id: "world-zerowaste", pillar: .world, level: 3, title: "Zero-waste day", detail: "Nothing in the general bin today: refuse, reuse, recycle, compost.", why: "One day shows you exactly where your waste comes from, and how to cut it.", symbol: "arrow.3.trianglepath", minutes: 10),
+        // Heart (the Whispering Grove): fewer, still about growing
+        .init(id: "heart-text", pillar: .heart, level: 1, title: "Text a friend", detail: "Tell them one thing you appreciate about them.", why: "Expressed appreciation is one of the strongest builders of close bonds.", symbol: "message.fill", minutes: 2),
+        .init(id: "heart-call", pillar: .heart, level: 2, title: "10-min call", detail: "Someone you miss. Just to hear how they are.", why: "Regular contact is what keeps friendships alive over the years.", symbol: "phone.fill", minutes: 10, target: 10, unit: "min"),
+        .init(id: "heart-listen", pillar: .heart, level: 2, title: "Listen, no advice", detail: "In one conversation today, only ask and listen.", why: "Feeling truly heard is one of the deepest forms of care.", symbol: "ear.fill", minutes: 10),
+        .init(id: "heart-letter", pillar: .heart, level: 3, title: "Write a letter", detail: "A few honest lines to someone who shaped you. Send it.", why: "Gratitude letters are among the most studied happiness boosts.", symbol: "envelope.fill", minutes: 15),
+        // Craft (Forge Mountain): fewer, still about growing
+        .init(id: "craft-start", pillar: .craft, level: 1, title: "5 min on it", detail: "Start the thing you've been putting off. Just five minutes.", why: "Starting is the hardest part; five minutes is often enough to keep going.", symbol: "play.fill", minutes: 5, target: 5, unit: "min"),
+        .init(id: "craft-focus", pillar: .craft, level: 2, title: "25-min focus", detail: "One task, phone in another room, timer on.", why: "Short protected blocks are how deep work becomes a habit (the Pomodoro method).", symbol: "timer", minutes: 25, target: 25, unit: "min"),
+        .init(id: "craft-make", pillar: .craft, level: 2, title: "Make something", detail: "Draw, code, cook, build, write: 20 minutes making anything.", why: "Making things trains skill and patience, and it feels good.", symbol: "paintbrush.fill", minutes: 20, target: 20, unit: "min"),
+        .init(id: "craft-deep", pillar: .craft, level: 3, title: "1 hour deep work", detail: "Sixty minutes on your most important work, no interruptions.", why: "Deep, undistracted work is where most real progress happens.", symbol: "flame.fill", minutes: 60, target: 60, unit: "min"),
     ]
 
-    /// Small surprises (the Spark): playful, from the world's lore.
+    /// Small surprises (the Spark): playful, short, from the world's lore.
     static let surprises: [(String, String)] = [
-        ("A small challenge", "A little fox is curious about kindness: thank someone who rarely hears it."),
+        ("The fox's dare", "A little fox dares you: 20 jumping jacks, right now."),
         ("The owl's question", "Quill asks: what's one thing you're proud of this week? Say it out loud."),
         ("The heron's pause", "Ilo stands still for a whole minute. Can you, wherever you are?"),
-        ("Orrin's spark", "Fix one small broken thing today: a button, a squeaky door, a bug."),
+        ("Orrin's spark", "Fix one broken thing today instead of replacing it."),
     ]
+    /// The pillars the quests grow around (Mathis): Body, Mind, Spirit, and the World (sustainability).
+    static let core: [Pillar6] = [.body, .mind, .spirit, .world]
 
     static func pillar(forInterest i: String) -> Pillar6 {
         Pillar6.of(emberChoices.first { $0.interest == i }?.realm ?? .grove)
@@ -100,15 +109,16 @@ enum QuestLibrary {
             return choices.isEmpty ? all.first { $0.pillar == p }! : choices[Int(rng.next() % UInt64(choices.count))]
         }
         // The pillar you rated lowest on Day 1, or lived least lately.
-        let weakest = Pillar6.allCases.filter { $0 != main }.min { a, b in
+        let weakest = core.filter { $0 != main }.min { a, b in
             let ra = j.dayOne[a.rawValue] ?? 1, rb = j.dayOne[b.rawValue] ?? 1
             return ra != rb ? ra < rb : experience(a) < experience(b)
         } ?? .spirit
-        let explore = Pillar6.allCases.filter { $0 != main && $0 != weakest }.min { lastDone($0) < lastDone($1) } ?? .world
+        let explore = core.filter { $0 != main && $0 != weakest }.min { lastDone($0) < lastDone($1) } ?? .world
         var used: Set<String> = []
         func take(_ p: Pillar6, stable: Bool = false) -> QuestDef { let q = pick(p, avoid: used, stable: stable); used.insert(q.id); return q }
         let a = take(main, stable: true), c = take(weakest), d = take(explore)
-        let rest = Pillar6.allCases.filter { ![main, weakest, explore].contains($0) }.shuffled(using: &rng)
+        let rest = core.filter { ![main, weakest, explore].contains($0) }.shuffled(using: &rng)        // the core four first,
+            + [Pillar6.heart, .craft].filter { $0 != main }.shuffled(using: &rng)                   // then the Grove and the Forge
         let e = take(rest.first ?? .mind), f = take(rest.dropFirst().first ?? .body)
         let s = surprises[Int(rng.next() % UInt64(surprises.count))]
         func call(_ q: QuestDef, _ id: String, reason: String = "") -> Call {

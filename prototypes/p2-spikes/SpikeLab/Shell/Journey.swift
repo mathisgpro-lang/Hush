@@ -285,9 +285,9 @@ final class Journey {
         func ago(_ d: Int) -> Date { cal.date(byAdding: .day, value: -d, to: Date())! }
         born(name: "Mathis", ember: "Love", on: ago(9))
         write("satchel", world: RealmID.sanctuary.rawValue, title: "The satchel",
-              "Your Spark opened the old satchel and you chose your first quests: “A lantern for someone”, “A quiet moment” and “Ten minutes outside”. They waited for you on the stones, glowing softly.", on: ago(9))
+              "Your Spark opened the old satchel and you chose your first quests: “10 push-ups”, “5-min meditation” and “Read 10 pages”. They waited for you on the stones, glowing softly.", on: ago(9))
         // Nine days in a row (a shield earned at 7), today not yet lived.
-        let plan: [(String, RealmID, Int)] = [("A lantern for someone", .grove, 5), ("Ten minutes outside", .highlands, 10), ("A quiet moment", .stillwater, 2), ("One page", .library, 5)]
+        let plan: [(String, RealmID, Int)] = [("10 push-ups", .highlands, 3), ("15-min brisk walk", .highlands, 15), ("5-min meditation", .stillwater, 5), ("Read 10 pages", .library, 15)]
         for d in stride(from: 9, through: 1, by: -1) {
             let q = plan[d % plan.count]; did(q.0, detail: "", realm: q.1, minutes: q.2, on: ago(d))
             if d % 3 == 0 { let r = plan[(d + 1) % plan.count]; did(r.0, detail: "", realm: r.1, minutes: r.2, on: ago(d)) }
