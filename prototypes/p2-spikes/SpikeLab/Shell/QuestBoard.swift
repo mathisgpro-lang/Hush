@@ -65,6 +65,8 @@ struct QuestBoard: View {
                     .padding(.bottom, 4)
                 }
                 .scrollBounceBehavior(.basedOnSize)
+                // Exactly as tall as its quests (up to four, then it scrolls): the sheet hugs them, right above the bar.
+                .frame(height: CGFloat(min(n, 4)) * Self.rowH + CGFloat(max(0, min(n, 4) - 1)) * Self.gap + 4)
             } else {
                 ZStack(alignment: .top) {
                     ForEach(Array(calls.enumerated()), id: \.element.id) { i, c in
