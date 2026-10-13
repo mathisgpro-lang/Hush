@@ -123,7 +123,7 @@ struct HomeView: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .opacity(flameOpen ? 0 : 1)                      // Your Flame is its own quiet page
+                .opacity(flameOpen || CommandLine.arguments.contains("-worldonly") ? 0 : 1)   // Your Flame is its own quiet page (-worldonly: test, the world alone)
                 .animation(Motion.soft, value: flameOpen)
 
                 if let s = focused { VStack { Spacer(); spotCard(s).padding(.horizontal, 16) } }
