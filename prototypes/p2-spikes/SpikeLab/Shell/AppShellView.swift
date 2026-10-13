@@ -8,7 +8,7 @@ struct AppShellView: View {
     var body: some View {
         let _ = PerfProbe.body("Shell")
         ZStack {
-            Color.black.ignoresSafeArea()
+            Theme.floor.ignoresSafeArea()               // the ground the world rests on (never a black band)
             WorldLayer(model: model)
                 .onAppear { if CommandLine.arguments.contains("-perf") { print(String(format: "LAUNCH first screen %.0f ms", (CACurrentMediaTime() - AppTimer.start) * 1000)) } }                 // the one 3D view: the worlds live here, screens float on top
             switch model.screen {
@@ -85,7 +85,12 @@ struct WorldLayer: View {
         }
         .ignoresSafeArea()
         .modifier(RenderScale(scale: WorldLayer.renderScale))
-        .offset(y: -model.worldLift * UIScreen.main.bounds.height)        // the stage in the top half (decision 157)
+        // A breath of overscan, pinned on the Flame's circle so it never moves: the camera's slow drift never shows an edge.
+        .scaleEffect(1.04, anchor: UnitPoint(x: 0.5, y: 0.40 + model.worldLift))
+        .clipped()
+        // The world's lower edge melts into the ground the quest sheet stands on.
+        .overlay(alignment: .bottom) { LinearGradient(colors: [Theme.floor.opacity(0), Theme.floor], startPoint: .top, endPoint: .bottom).frame(height: 110).ignoresSafeArea() }
+        .offset(y: -model.worldLift * UIScreen.main.bounds.height)        // the stage in the top half, fixed (decisions 157, 158)
         .animation(Motion.soft, value: model.worldLift)
         .allowsHitTesting(false)
         }

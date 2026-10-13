@@ -280,11 +280,12 @@ final class ShellModel {
     }
     /// Decision 157 (after Finch): on home the world is a stage in the top half and the quests own the bottom half.
     /// The whole world view is lifted so every circle's centre (and the Flame's feet) sits 42% down the screen.
+    /// The lift never changes with the quest sheet: opening or lowering the quests leaves the world still (decision 158).
     var worldLift: CGFloat {
-        guard PixelMode.world, questsUp else { return 0 }
+        guard PixelMode.world else { return 0 }
         switch screen { case .home, .realm: return 0.215; default: return 0 }
     }
-    /// The quest sheet is up (quests fully shown, the world a stage above) or down (the world fills the screen).
+    /// The quest sheet is up (quests fully shown, the world a stage above) or down (only its header; the rest of the world shows).
     var questsUp = true
     func isBuilt(_ w: World) -> Bool {
         switch w { case .sanctuary: sanctuaryBuilt; case .map: mapBuilt; case .realm(let r): realmsBuilt.contains(r) }
