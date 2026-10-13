@@ -128,7 +128,7 @@ struct FlameSheet: View {
     /// Your forms (decision 152): the ones you've reached can be chosen; the next ones wait in shadow with the
     /// days they need.
     private var formsRow: some View {
-        let reached = j.reachedForm
+        let reached = j.pickableForm                    // (every form, while they're all open)
         return HStack(spacing: 10) {
             ForEach(Evolution.allCases) { f in
                 let open = f.rawValue <= reached.rawValue && f.available

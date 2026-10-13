@@ -55,6 +55,8 @@ enum Evolution: Int, CaseIterable, Identifiable {
     /// The art is in the app (Codex paints them one by one).
     var available: Bool { Bundle.main.url(forResource: base + "-keyed", withExtension: "png") != nil }
     static func reached(best: Int) -> Evolution { allCases.last { $0.days <= best } ?? .spark }
+    /// For now (Mathis, 2026-10-13): every form can be chosen in Your Flame, whatever the streak. Turn off for launch.
+    static let allOpen = true
     var next: Evolution? { Evolution(rawValue: rawValue + 1) }
 }
 

@@ -148,45 +148,51 @@ struct RewardBurst: View {
     private func finish() { withAnimation(.easeOut(duration: 0.25)) { done() } }
 }
 
-/// Your Flame's line of the day (Mathis's notes: "daily quote based on the last days' completions"): written from
-/// your real record, warm, never guilt. The same line all day; a new one tomorrow.
-func flameLine(_ j: Journey) -> String {
-    let cal = Calendar.current
-    let s = j.streak()
-    func count(daysAgo d: Int) -> Int {
-        guard let day = cal.date(byAdding: .day, value: -d, to: Date()) else { return 0 }
-        return j.deeds.filter { cal.isDate($0.date, inSameDayAs: day) }.count
+/// Your Flame's message of the day (Mathis, 2026-10-13, task 4): the same from morning to night, a new one each
+/// morning, and always about *why* the small daily quests matter, not only inspiration. (The streak's ups and downs are
+/// told at the moment they happen: the reward, the round card.)
+func flameLine(_ j: Journey) -> String { DailyWhy.today() }
+
+enum DailyWhy {
+    static let messages = [
+        "1% better each day is 37 times better in a year. That's why we never skip.",
+        "One push-up won't change you. One every day for a year will.",
+        "Every quest is a vote for who you're becoming.",
+        "Big changes are just small days, stacked.",
+        "Motivation fades. Habits stay. That's why today counts.",
+        "The days you don't feel like it are the ones that build you.",
+        "After about two months, the things you do daily start doing themselves.",
+        "Small enough to do every day is strong enough to change a life.",
+        "Your brain rewires around what you repeat. Let's repeat the good.",
+        "A missed day is a bump. Two in a row is a new habit. Let's never miss twice.",
+        "I grow from the days you keep, not the hours you spend.",
+        "Ten pages a day is a dozen books a year. Small adds up.",
+        "Strength isn't built in one workout. It's built in the next one, and the next.",
+        "Today's small quest is tomorrow's normal.",
+        "Every day you show up, the next one gets easier.",
+        "Not a perfect day: an unbroken chain of good-enough ones.",
+        "Habits compound like money: slowly, then all at once.",
+        "Calm, strength, focus: none of them arrive. They're practised.",
+        "We don't need a big leap. We need a small step we never stop taking.",
+        "Who you are in a year is decided on ordinary days like this one.",
+        "Consistency beats intensity. Every single time.",
+        "Each quest you finish tells your brain: this is who we are now.",
+        "A little every day is how mountains are climbed.",
+        "Don't break the chain. That's the whole secret.",
+        "Hard days count double. Showing up on them is how you get strong.",
+        "It's not about today's quest. It's about the person who does it every day.",
+        "Small and daily beats big and someday.",
+        "Your future self is built from today's tiny choices.",
+        "The quest is small on purpose: so nothing can stop us doing it today.",
+        "Every day you keep, I burn a little steadier. So do you.",
+    ]
+    /// One per calendar day (stable all day, a new one each morning).
+    static func today(_ date: Date = Date()) -> String {
+        let day = Calendar.current.ordinality(of: .day, in: .era, for: date) ?? 0
+        return messages[day % messages.count]
     }
-    let today = count(daysAgo: 0), yesterday = count(daysAgo: 1)
-    let week = (0..<7).filter { count(daysAgo: $0) > 0 }.count
-    let next = j.reachedForm.next
-    var options: [String]
-    switch s.state {
-    case .livedToday:
-        options = today >= 3 ? ["Three today! I can feel myself growing.", "What a day. I'm burning bright."]
-                             : ["Thank you. I feel warm.", "That's the light I needed today."]
-    case .waiting where s.current >= 3:
-        options = ["\(s.current) days in a row. One small thing keeps us going.", "We're on a streak. I'm ready when you are."]
-    case .shieldedYesterday:
-        options = ["A shield caught yesterday. Today, let's light us up again."]
-    case .repairable:
-        options = ["We missed a day. Two small things today and our streak lives on."]
-    case .broken where s.best > 0:
-        options = ["Every flame flickers. One small thing and I'm warm again.", "New day, new light. I'm still here."]
-    default:
-        options = yesterday > 0 ? ["Yesterday was good. Shall we do it again?"] : ["Good to see you. Let's start small."]
-    }
-    if let n = next, s.state != .broken, n.days - s.best <= 2, n.days > s.best {
-        options = ["\(n.days - s.best) more day\(n.days - s.best == 1 ? "" : "s") and I become a \(n.name)!"]
-    } else if week >= 6 { options.append("Six of the last seven days. You're becoming someone new.") }
-    if j.dayNumber() % 3 == 0 && s.state != .repairable(need: 2) && s.state != .repairable(need: 1) {
-        options = ["Small or big, it doesn't matter. Every day does.", "I don't need big. I need every day.", "It's not how much. It's never stopping."]
-    }
-    return options[j.dayNumber() % options.count]
 }
 
-/// The heart of Hush (Mathis, 2026-10-09): it's not how hard a quest is, it's doing it every day without a break.
-/// Said often, in a few different words, so it never sounds like a slogan.
 enum Consistency {
     static let lines = [
         "Small is fine. What counts is doing it every day.",

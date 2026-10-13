@@ -19,6 +19,8 @@ struct QuestDef: Identifiable, Hashable {
     var minutes: Int = 5
     var target: Int = 1
     var unit: String = ""
+    /// Done once, then never offered again (a set-up, like installing Opal).
+    var once = false
     var realm: RealmID { pillar.realm }
 }
 
@@ -43,6 +45,8 @@ enum QuestLibrary {
         .init(id: "mind-read20", pillar: .mind, level: 2, title: "Read 20 pages", detail: "Somewhere quiet, phone in another room.", why: "Deep reading trains the focus that scrolling wears down.", symbol: "book.fill", minutes: 25, target: 20, unit: "pages"),
         .init(id: "mind-lesson", pillar: .mind, level: 2, title: "1 course lesson", detail: "One lesson of something you're learning: a language, an instrument, a skill.", why: "Regular small sessions are how real skills are built.", symbol: "graduationcap.fill", minutes: 20, target: 20, unit: "min"),
         .init(id: "mind-teach", pillar: .mind, level: 2, title: "Explain it simply", detail: "Pick something you learned this week and explain it in five sentences.", why: "Explaining in plain words is the surest way to truly understand (the Feynman technique).", symbol: "lightbulb.fill", minutes: 10),
+        // Set up once, when you're ready for it (Mathis): the blocker that protects your focus and your nights.
+        .init(id: "mind-opal", pillar: .mind, level: 2, title: "Set up Opal", detail: "Download Opal (free) and set two rules: social apps blocked during your focus time, and everything but calls after 22:00.", why: "Removing the temptation works far better than willpower: app blockers cut daily screen time.", symbol: "hourglass", minutes: 10, once: true),
         .init(id: "mind-offline", pillar: .mind, level: 3, title: "1 hour, no phone", detail: "Phone in another room for a whole hour. Read, think, make.", why: "An hour without notifications restores attention like nothing else.", symbol: "iphone.slash", minutes: 60, target: 60, unit: "min"),
         .init(id: "mind-read50", pillar: .mind, level: 3, title: "Read 50 pages", detail: "A long, uninterrupted session with one book.", why: "Long reading sessions build the deep concentration that great work needs.", symbol: "books.vertical.fill", minutes: 60, target: 50, unit: "pages"),
         // Spirit (the Stillwater)
@@ -52,6 +56,8 @@ enum QuestLibrary {
         .init(id: "spirit-med10", pillar: .spirit, level: 2, title: "10-min meditation", detail: "Same practice, a little longer. Notice, then return.", why: "Ten minutes a day over weeks measurably reduces anxiety and improves focus.", symbol: "figure.mind.and.body", minutes: 10, target: 10, unit: "min"),
         .init(id: "spirit-journal", pillar: .spirit, level: 2, title: "5-min journal", detail: "Write honestly about how you feel and why.", why: "Putting feelings into words calms them (expressive writing research).", symbol: "book.closed.fill", minutes: 5, target: 5, unit: "min"),
         .init(id: "spirit-screens", pillar: .spirit, level: 2, title: "No screens at bed", detail: "Screens away 30 minutes before sleep. Read or rest instead.", why: "Less light and stimulation before bed means deeper, faster sleep.", symbol: "moon.fill", minutes: 30),
+        // A rule for the strong (Mathis): from 22:00 the phone sleeps outside the bedroom.
+        .init(id: "spirit-bedroom", pillar: .spirit, level: 3, title: "Phone out at 22:00", detail: "From 22:00 your phone stays outside your bedroom all night. Use a real alarm clock.", why: "Phones in the bedroom delay sleep and cut its quality; keeping them out is one of the simplest sleep upgrades.", symbol: "bed.double.fill", minutes: 1),
         .init(id: "spirit-med20", pillar: .spirit, level: 3, title: "20-min meditation", detail: "A longer sit. Stay with the breath through the restless parts.", why: "Longer sits build the calm you can carry into hard moments.", symbol: "figure.mind.and.body", minutes: 20, target: 20, unit: "min"),
         .init(id: "spirit-silence", pillar: .spirit, level: 3, title: "30-min silent walk", detail: "No music, no podcast, no phone: just walk and notice.", why: "Silence and nature together are among the best resets for the mind.", symbol: "figure.walk", minutes: 30, target: 30, unit: "min"),
         // World: sustainability (the Wilds)
@@ -99,7 +105,7 @@ enum QuestLibrary {
         func level(for p: Pillar6) -> Int { experience(p) < 6 ? 1 : experience(p) < 20 ? 2 : 3 }
         func pick(_ p: Pillar6, avoid: Set<String>, stable: Bool) -> QuestDef {
             var lv = level(for: p)
-            var pool = all.filter { $0.pillar == p && !avoid.contains($0.id) }
+            var pool = all.filter { q in q.pillar == p && !avoid.contains(q.id) && !(q.once && j.deeds.contains { $0.title == q.title }) }
             // Skipped three times in two weeks: one level easier (never shamed, just lighter).
             if let hard = pool.first(where: { j.skipCount($0.title, days: 14) >= 3 }) { lv = max(1, hard.level - 1) }
             pool = pool.filter { j.skipCount($0.title, days: 14) < 3 }

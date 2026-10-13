@@ -77,13 +77,15 @@ final class Journey {
     private(set) var chosenForm: Evolution?
     /// The highest form your best streak has reached (never taken away).
     var reachedForm: Evolution { Evolution.reached(best: streak().best) }
-    /// The form your Flame shows: the one you chose (if reached), else the highest reached.
+    /// The highest form you may choose: the one you reached, or every form while they're all open (Evolution.allOpen).
+    var pickableForm: Evolution { Evolution.allOpen ? (Evolution.allCases.last { $0.available } ?? .spark) : reachedForm }
+    /// The form your Flame shows: the one you chose (if you may), else the highest reached.
     var form: Evolution {
         let r = reachedForm
-        guard let c = chosenForm, c.rawValue <= r.rawValue, c.available else { return Evolution.allCases.last { $0.rawValue <= r.rawValue && $0.available } ?? .spark }
+        guard let c = chosenForm, c.rawValue <= pickableForm.rawValue, c.available else { return Evolution.allCases.last { $0.rawValue <= r.rawValue && $0.available } ?? .spark }
         return c
     }
-    func choose(_ f: Evolution) { guard f.rawValue <= reachedForm.rawValue else { return }; chosenForm = f; save() }
+    func choose(_ f: Evolution) { guard f.rawValue <= pickableForm.rawValue else { return }; chosenForm = f; save() }
     /// A one-time gift of Embers (given once per id).
     func grant(_ amount: Int, id: String) { guard grants[id] == nil else { return }; grants[id] = amount; save() }
     func setUp(dayOne: [String: Int], meetHour: Int?, promise: Int?) {
