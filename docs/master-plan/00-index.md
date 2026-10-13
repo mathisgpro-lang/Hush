@@ -81,7 +81,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 ## ▶ Where we left off: RESUME HERE (updated 2026-10-13, decisions 144–161)
 
 **Current work: P3.0, the game loop on the pixel route** (`docs/plan-2.0/p30-next-steps.md`). Home = the world as a stage in the top half (camera lifted, 158/160), today's quests always open on a see-through sheet (161), bigger bar icons; rounds of 7/14/30 days replace the 66-day arc (159).
-- **Waiting on Codex** (usage limit, resets 17:39 on 2026-10-13; `scripts/resume-codex.sh` runs `scripts/p31-extend.sh`): the taller Stillwater and Wilds paintings. **When they land:** `cd prototypes/p2-spikes && python3 tools/build_ext.py stillwater wilds`, rebuild, check both worlds (ground under the sheet, no black), install on the iPhone.
+- ✅ All seven worlds painted to the bottom of the screen (decision 160; `tools/build_ext.py`). Test flag `-worldonly` shows a world without the interface.
 - **Next (P3.0 step 1):** timers and counters inside quests, Apple Health auto-ticks, how a lost streak feels, reminders. Offered and pending Mathis's word: a "living world" shader pass (water, torch light, mist, evolution dissolve) without the third-party Shader Techniques skill (judged thin, Unity-only).
 - Test flags: `-skipintro`, `-freshjourney`, `-autointro -stoppromise` (intro up to the round choice), `-seedjourney`, `-allopen`, `-realm <id>`, `-map`.
 - Phone: Release build to `dd-spikelab-dev`, `devicectl device install app`, device `00008120-001411043639A01E` (it must be unlocked to launch).
