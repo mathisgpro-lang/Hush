@@ -109,7 +109,7 @@ struct HomeView: View {
                     }
                     .shadow(color: .black.opacity(0.7), radius: 3, y: 1)          // legible over the world
                     .padding(.top, 18).padding(.bottom, 2)
-                    .frame(height: max(320, geo.size.height * 0.47 + geo.safeAreaInsets.bottom), alignment: .top)
+                    .frame(height: max(300, geo.size.height * 0.41 + geo.safeAreaInsets.bottom), alignment: .top)   // the quests sit just above the icons
                     .background(alignment: .top) {
                         // Always open, and see-through (Mathis, decision 161): a light veil with rounded shoulders, the
                         // world (painted all the way down, 160) shows behind your quests; the cards themselves are solid.
@@ -419,7 +419,7 @@ struct HomeView: View {
                     LiveIcon(kind: kind, image: image, calling: badge, taps: barTaps[label, default: 0])
                     if badge { Circle().fill(Theme.ember).frame(width: 9, height: 9).offset(x: 4, y: -2) }
                 }
-                Text(label).font(.ui(10.5, .semibold)).opacity(0.85)
+                Text(label).font(.ui(12, .semibold)).opacity(0.9)
             }
             .frame(maxWidth: .infinity).padding(.vertical, 4).foregroundStyle(Theme.cream)
             .contentShape(Rectangle())                        // the whole slot answers a tap, not only its word

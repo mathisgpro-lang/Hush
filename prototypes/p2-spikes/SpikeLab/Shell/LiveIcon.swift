@@ -17,14 +17,14 @@ struct LiveIcon: View {
     var body: some View {
         ZStack {
             glow
-            Image(uiImage: image ?? UIImage()).resizable().interpolation(PixelMode.world ? .none : .high).scaledToFit().frame(width: 30, height: 26)   // pixel icons stay crisp
+            Image(uiImage: image ?? UIImage()).resizable().interpolation(PixelMode.world ? .none : .high).scaledToFit().frame(width: 42, height: 36)   // pixel icons stay crisp (bigger, Mathis 2026-10-13)
                 .scaleEffect(x: kind == .flame ? (flicker ? 0.97 : 1.02) : 1,
                              y: kind == .flame ? (flicker ? 1.06 : 0.98) : (kind == .satchel && idle ? 1.035 : 1), anchor: .bottom)
                 .rotationEffect(.degrees(rotation), anchor: .bottom)
                 .offset(y: kind == .world ? (idle ? -1.5 : 1) : 0)
             sparkle
         }
-        .frame(width: 30, height: 26)
+        .frame(width: 42, height: 36)
         .keyframeAnimator(initialValue: Hop(), trigger: taps) { v, h in
             v.scaleEffect(x: h.sx, y: h.sy, anchor: .bottom).offset(y: h.y)
         } keyframes: { _ in
@@ -62,8 +62,8 @@ struct LiveIcon: View {
     /// The light that lives in each object.
     @ViewBuilder private var glow: some View {
         let warm = Color(red: 1, green: 0.62, blue: 0.25)
-        Circle().fill(RadialGradient(colors: [warm.opacity(calling ? 0.75 : 0.45), .clear], center: .center, startRadius: 0, endRadius: 22))
-            .frame(width: 40, height: 40)
+        Circle().fill(RadialGradient(colors: [warm.opacity(calling ? 0.75 : 0.45), .clear], center: .center, startRadius: 0, endRadius: 30))
+            .frame(width: 54, height: 54)
             .opacity(idle ? 1 : 0.45)
             .scaleEffect(kind == .flame && flicker ? 1.12 : 1)
     }
