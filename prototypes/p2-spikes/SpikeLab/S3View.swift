@@ -89,7 +89,9 @@ final class RealmScene {
     var lanternTotal = 0
     var litCount: Int { _ = heartDepth; return lanterns.filter { $0.order <= Restoration.amount(depth: heartDepth) }.count }
 
-    static let distance: Float = 1.2, fov: Float = 40
+    /// As in the Sanctuary: the painting is laid out for a 40° view but seen through 35°, so it reaches past every
+    /// edge of the screen and looking around never shows its end (Mathis, 2026-10-13: "no corners and no borders").
+    static let distance: Float = 1.2, fov: Float = 35, paintFov: Float = 40
 
     /// Which realm this is (one engine for every realm: the Grove, the Stillwater, the Highlands…). Its assets are
     /// named after it: <id>-world-paint/-lights/-depth.png and <id>-layout.json (tools/build_realm.py).
@@ -148,12 +150,12 @@ final class RealmScene {
             ctx.draw(img, in: CGRect(x: 0, y: 0, width: img.width, height: img.height))
             depthMap = (img.width, img.height, px)
         }
-        let visibleH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180)
+        let visibleH = 2 * Self.distance * tan(Self.paintFov / 2 * .pi / 180)
         let aspect = Float(tex.width) / Float(tex.height)
         let (w, h) = (visibleH * aspect * 1.08, visibleH * 1.08)
         pw = w; ph = h
         let screen = UIScreen.main.bounds.size
-        let camH = visibleH, camW = camH * Float(screen.width / screen.height)
+        let camH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180), camW = camH * Float(screen.width / screen.height)
         // Sideways: up to ~45% of a screen each way (Clash of Clans: the stone circle stays in reach); never past the world.
         func nearest(_ pts: [(Float, Float)]) -> Float { pts.map { Self.distance - relief(depthAt($0.0, $0.1)) }.min() ?? Self.distance }
         let steps = (0...40).map { Float($0) / 40 }
