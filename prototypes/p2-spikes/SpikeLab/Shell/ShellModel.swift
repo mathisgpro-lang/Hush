@@ -294,8 +294,12 @@ final class ShellModel {
 
     /// Every frame: only the world on screen moves.
     @ObservationIgnored private var tickCost: (sum: Double, n: Int, worst: Double) = (0, 0, 0)
+    /// Performance tour (-perftour, task 6): what the app is doing now, so every slow frame is logged with its moment.
+    @ObservationIgnored var perfStep = "start"
     func tick(_ dt: Float) {
         let t0 = CACurrentMediaTime()
+        if PerfTour.on, dt > 0.025 { print(String(format: "HITCH %.0f ms [%@]", dt * 1000, perfStep)) }
+        if PerfTour.on { ScreenFPS.shared.updates += 1 }
         defer {
             if CommandLine.arguments.contains("-perf") {
                 let c = (CACurrentMediaTime() - t0) * 1000
@@ -442,3 +446,46 @@ final class ShellModel {
         screen = s
     }
 }
+
+/// Task 6: a tour that walks the app by itself on the phone (-perftour) and logs every slow frame with its moment:
+/// the measurements behind the smoothness work. Home opens its sheets and ticks a quest at the end (HomeView).
+enum PerfTour {
+    static let on = CommandLine.arguments.contains("-perftour")
+    @MainActor static func run(_ m: ShellModel) async {
+        func step(_ name: String, _ seconds: Double, _ action: () -> Void) async {
+            m.perfStep = name; print("TOUR \(name)"); action()
+            try? await Task.sleep(for: .seconds(seconds))
+        }
+        try? await Task.sleep(for: .seconds(10))
+        await step("map", 4) { withAnimation(.screen) { m.go(.map) } }
+        await step("grove", 5) { withAnimation(.screen) { m.go(.realm(.grove)) } }
+        await step("map2", 3) { withAnimation(.screen) { m.go(.map) } }
+        await step("forge (first visit)", 6) { withAnimation(.screen) { m.go(.realm(.forge)) } }
+        await step("home", 4) { withAnimation(.screen) { m.go(.home) } }
+        await step("highlands (first visit)", 6) { withAnimation(.screen) { m.go(.realm(.highlands)) } }
+        await step("home2", 4) { withAnimation(.screen) { m.go(.home) } }
+        m.perfStep = "home sheets"; print("TOUR sheets")
+    }
+}
+
+/// Task 6: the screen's own frame counter (CADisplayLink), independent of the 3D: real frames per second, every 2 s.
+@MainActor final class ScreenFPS: NSObject {
+    static let shared = ScreenFPS()
+    private var link: CADisplayLink?, last: CFTimeInterval = 0, frames = 0, worst: CFTimeInterval = 0, since: CFTimeInterval = 0
+    var updates = 0                       // the 3D's update events in the same window (counted by ShellModel.tick)
+    func start() {
+        guard link == nil else { return }
+        link = CADisplayLink(target: self, selector: #selector(step(_:))); link?.add(to: .main, forMode: .common)
+    }
+    @objc private func step(_ l: CADisplayLink) {
+        let t = l.timestamp
+        if last > 0 { worst = max(worst, t - last) }
+        last = t; frames += 1
+        if since == 0 { since = t }
+        if t - since >= 2 {
+            print(String(format: "SCREEN fps %.1f worst %.0f ms | 3D updates/s %.1f | max %d Hz", Double(frames) / (t - since), worst * 1000, Double(updates) / (t - since), UIScreen.main.maximumFramesPerSecond))
+            frames = 0; worst = 0; since = t; updates = 0
+        }
+    }
+}
+

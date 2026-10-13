@@ -81,6 +81,7 @@ struct WorldLayer: View {
                 print(String(format: "LAUNCH world ready %.0f ms after the 3D view (build %.0f ms)", (CACurrentMediaTime() - AppTimer.start) * 1000, (CACurrentMediaTime() - t0) * 1000))
             }
             model.showActive()
+            if PerfTour.on { ScreenFPS.shared.start(); Task { await PerfTour.run(model) } }          // (task 6: the self-running tour)
             model.updates = content.subscribe(to: SceneEvents.Update.self) { e in model.tick(Float(e.deltaTime)) }
         }
         .ignoresSafeArea()

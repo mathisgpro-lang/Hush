@@ -174,6 +174,7 @@ struct HomeView: View {
             meter.start(); setUpWorld()
             if CommandLine.arguments.contains("-satchel") { satchelOpen = true }      // (test)
         }
+        .task { await homeTour() }
         .onPreferenceChange(EmberTargetKey.self) { p in if let p { coinTarget = p } }
         .onReceive(NotificationCenter.default.publisher(for: .perfCommand)) { n in       // (-uitest)
             switch n.object as? String {
@@ -330,6 +331,22 @@ struct HomeView: View {
 
     /// Decision 162: the Flame sits in the middle of the free space between the streak panel (with its line) and the
     /// quests, on every screen; its feet go about half a Flame below that middle.
+    /// The performance tour's end, at home (-perftour, task 6): each sheet opens and closes, then a quest is ticked.
+    private func homeTour() async {
+        guard PerfTour.on, world == .sanctuary else { return }
+        while model.perfStep != "home sheets" { try? await Task.sleep(for: .milliseconds(400)) }
+        func step(_ name: String, _ s: Double, _ f: () -> Void) async { model.perfStep = name; print("TOUR \(name)"); f(); try? await Task.sleep(for: .seconds(s)) }
+        if model.dailyGift > 0 { await step("collect gift", 2) { withAnimation { model.dailyGift = 0 } } }
+        await step("satchel open", 3) { withAnimation(.sheet) { satchelOpen = true } }
+        await step("satchel close", 2) { withAnimation(.sheet) { satchelOpen = false } }
+        await step("book open", 3) { withAnimation(.sheet) { bookOpen = true } }
+        await step("book close", 2) { withAnimation(.sheet) { bookOpen = false } }
+        await step("flame open", 3) { withAnimation(.sheet) { flameOpen = true } }
+        await step("flame close", 2) { withAnimation(.sheet) { flameOpen = false } }
+        if let c = today.first(where: { !$0.done }) { await step("tick", 4) { finish(c, size: UIScreen.main.bounds.size) } }
+        model.perfStep = "done"; print("TOUR done")
+    }
+
     private func placeFlame() {
         let h = UIScreen.main.bounds.height
         guard bandTop > 0, bandBottom > bandTop, h > 0 else { return }
