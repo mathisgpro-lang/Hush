@@ -19,6 +19,8 @@ struct QuestBoard: View {
     @GestureState private var drag: CGFloat = 0
 
     private var left: Int { calls.filter { !$0.done }.count }
+    /// Four quests or more: the cards tighten a little so the sheet doesn't crowd the world (Mathis).
+    private var tight: Bool { calls.count >= 4 }
     private static let rowH: CGFloat = 72, gap: CGFloat = 11, peek: CGFloat = 9   // airy cards (Mathis, after Finch)
 
     var body: some View {
@@ -59,14 +61,14 @@ struct QuestBoard: View {
                 }
             } else if alwaysOpen {
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: Self.gap) {
-                        ForEach(calls) { c in QuestRow(call: c, streak: streakOf(c.title), open: { open(c) }, tick: { p in tick(c, p) }) }
+                    VStack(spacing: tight ? 8 : Self.gap) {
+                        ForEach(calls) { c in QuestRow(call: c, streak: streakOf(c.title), open: { open(c) }, tick: { p in tick(c, p) }, tight: tight) }
                     }
                     .padding(.bottom, 4)
                 }
                 .scrollBounceBehavior(.basedOnSize)
                 // Exactly as tall as its quests (up to four, then it scrolls): the sheet hugs them, right above the bar.
-                .frame(height: CGFloat(min(n, 4)) * Self.rowH + CGFloat(max(0, min(n, 4) - 1)) * Self.gap + 4)
+                .frame(height: CGFloat(min(n, 4)) * (tight ? 64 : Self.rowH) + CGFloat(max(0, min(n, 4) - 1)) * (tight ? 8 : Self.gap) + 4)
             } else {
                 ZStack(alignment: .top) {
                     ForEach(Array(calls.enumerated()), id: \.element.id) { i, c in
@@ -108,6 +110,7 @@ struct QuestRow: View {
     var streak: Int = 0                   // days in a row for this quest
     let open: () -> Void
     let tick: (CGPoint) -> Void
+    var tight = false                      // a little shorter when four or more are on the list
     @State private var tickCenter: CGPoint = .zero
     @State private var pressed = false
     @State private var popped = 0          // bumps when the quest is done: the tick pops, a ring ripples, the card bounces
@@ -117,8 +120,8 @@ struct QuestRow: View {
             Button(action: open) {
                 HStack(spacing: 14) {
                     ZStack {
-                        Circle().fill(call.realm.color.opacity(0.22)).frame(width: 50, height: 50)
-                        Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage(named: "\(call.prop.replacingOccurrences(of: "px-", with: "")).png") ?? UIImage()).resizable().interpolation(.none).scaledToFit().frame(width: 36, height: 36)
+                        Circle().fill(call.realm.color.opacity(0.22)).frame(width: tight ? 44 : 50, height: tight ? 44 : 50)
+                        Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage(named: "\(call.prop.replacingOccurrences(of: "px-", with: "")).png") ?? UIImage()).resizable().interpolation(.none).scaledToFit().frame(width: tight ? 32 : 36, height: tight ? 32 : 36)
                     }
                     VStack(alignment: .leading, spacing: 3) {
                         Text(call.title).font(.story(18.5, .semibold)).foregroundStyle(Theme.ink.opacity(call.done ? 0.4 : 1))
@@ -155,7 +158,7 @@ struct QuestRow: View {
                         .foregroundStyle(call.done ? .white : Color(red: 0.42, green: 0.62, blue: 0.3))
                         .scaleEffect(call.done ? 1.1 : 1)
                 }
-                .frame(width: 52, height: 46)
+                .frame(width: 52, height: tight ? 42 : 46)
                 .keyframeAnimator(initialValue: CGFloat(1), trigger: popped) { v, s in v.scaleEffect(s) } keyframes: { _ in
                     KeyframeTrack {
                         CubicKeyframe(0.82, duration: 0.07)
@@ -176,7 +179,7 @@ struct QuestRow: View {
             .buttonStyle(PressableStyle())
             .disabled(call.done)
         }
-        .padding(.leading, 10).padding(.trailing, 12).frame(height: 72)
+        .padding(.leading, 10).padding(.trailing, 12).frame(height: tight ? 64 : 72)
         .keyframeAnimator(initialValue: CGFloat(1), trigger: popped) { v, s in v.scaleEffect(s) } keyframes: { _ in
             KeyframeTrack { SpringKeyframe(1.035, duration: 0.14, spring: .snappy); SpringKeyframe(1, duration: 0.45, spring: .bouncy) }
         }
