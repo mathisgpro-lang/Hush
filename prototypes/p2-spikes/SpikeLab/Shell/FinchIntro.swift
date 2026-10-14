@@ -1,5 +1,5 @@
 // The introduction (decision 140, docs/plan-2.0/p26-intro-redesign.md, after studying Finch, Duolingo, Headspace,
-// Calm, Life Reset and Fabulous): the Hush → choose your ember → warm it, it hatches → the Spark comes alive and
+// Calm, Life Reset and Fabulous): the Hush → warm the ember (the same for everyone), it hatches → the Spark comes alive and
 // asks your name → the glimpse of what it will become, in shadow → why you're here → where you stand (your Day 1
 // rating) → your daily moment → preparing your path → your starting light (first quests picked) → the first light,
 // done together → a small promise → your mornings → home. No account, no paywall, data only after the bond.
@@ -7,7 +7,7 @@ import SwiftUI
 import RealityKit
 import UserNotifications
 
-enum IntroStep: Int, CaseIterable { case welcome, chooseEmber, warm, born, hello, growing, why, stand, moment, preparing, startingLight, firstDeed, promise, mornings }
+enum IntroStep: Int, CaseIterable { case welcome, warm, born, hello, growing, why, stand, moment, preparing, startingLight, firstDeed, promise, mornings }
 
 struct EmberChoice: Identifiable, Hashable {
     let id: String, word: String, pillar: String, color: Color, realm: RealmID, interest: String
@@ -47,7 +47,6 @@ private let cream = Color(red: 1.0, green: 0.95, blue: 0.86)
 struct FinchIntro: View {
     let model: ShellModel
     @State private var step: IntroStep = .welcome
-    @State private var ember: EmberChoice?
     @State private var name = ""
     @State private var warmth: CGFloat = 0           // coarse (for the words and the hatch); the ember itself uses warmAt
     /// Warming follows time, frame by frame (no steps): it rises while you hold and cools gently when you let go.
@@ -108,7 +107,7 @@ struct FinchIntro: View {
                                 WarmRing(warmth: w, holding: holding, size: eggSize * 1.55)
                                     .position(x: f.feet.x, y: f.feet.y - eggSize * 0.5)
                             }
-                            EggView(color: ember?.color ?? gold, size: eggSize, warmth: w)
+                            EggView(color: gold, size: eggSize, warmth: w)
                                 .scaleEffect((holding ? 1.06 + w * 0.08 : 1) * (1 + emberGone * 0.6))
                                 .opacity(1 - emberGone)
                                 .offset(x: holding ? sin(tl.date.timeIntervalSinceReferenceDate * 47) * w * 2.5 : 0)   // a smooth tremble
@@ -116,7 +115,7 @@ struct FinchIntro: View {
                                 .gesture(DragGesture(minimumDistance: 0).onChanged { _ in if !holding { startWarming() } }.onEnded { _ in stopWarming() })
                         }
                         if let hs = hatchStart {
-                            HatchBurst(start: hs, center: CGPoint(x: f.feet.x, y: f.feet.y - max(60, f.height * 0.55) * 0.5), color: ember?.color ?? gold)
+                            HatchBurst(start: hs, center: CGPoint(x: f.feet.x, y: f.feet.y - max(60, f.height * 0.55) * 0.5), color: gold)
                         }
                         if let m = morph {
                             let h = f.height * Self.stageHeights[m] / Self.stageHeights[0] * 0.95
@@ -170,7 +169,7 @@ struct FinchIntro: View {
             if CommandLine.arguments.contains("-autointro") { autoplay() }
             let a = CommandLine.arguments                        // (test: -introstep <beat> opens the intro on that beat)
             if let i = a.firstIndex(of: "-introstep"), i + 1 < a.count, let st = IntroStep.allCases.first(where: { "\($0)" == a[i + 1] }) {
-                ember = emberChoices[0]; name = "Mathis"; scene.flameTarget = 1; scene.setVitality(0.5)
+                name = "Mathis"; scene.flameTarget = 1; scene.setVitality(0.5)
                 if st.rawValue > IntroStep.stand.rawValue { for p in Pillar6.allCases { rating[p] = 1 } ; rating[.body] = 0 }
                 go(st)
             }
@@ -194,19 +193,12 @@ struct FinchIntro: View {
                 body2("The world went quiet. One ember still waits.")
                     .opacity(opened ? 1 : 0).animation(.easeOut(duration: 1.2).delay(1.4), value: opened)
                 Spacer().frame(height: 26)
-                primary("Wake it") { go(.chooseEmber) }
+                primary("Wake it") { go(.warm) }          // straight to the egg: the same Flame for everyone (decision 167)
                     .opacity(opened ? 1 : 0).offset(y: opened ? 0 : 12).animation(.spring(duration: 0.8).delay(2.3), value: opened)
                 Text("Private test · for adults 18+").font(.caption2).foregroundStyle(cream.opacity(0.4)).padding(.top, 6)
                     .opacity(opened ? 1 : 0).animation(.easeOut.delay(2.6), value: opened)
             }
             .onAppear { opened = true }
-        case .chooseEmber:
-            VStack(spacing: 14) {
-                title("Which light calls you?")
-                body2("Your Flame will carry its color. Every light can grow later.")
-                emberRing.frame(height: 380)
-                primary("Warm this ember", disabled: ember == nil) { go(.warm) }
-            }
         case .warm:
             VStack(spacing: 16) {
                 title(warmth > 0.66 ? "Almost…" : "Keep it warm")
@@ -401,13 +393,12 @@ struct FinchIntro: View {
         }
     }
 
-    /// Where you stand: the pillar you feel best in, and the one we'll start with (the lowest; ties go to your
-    /// ember's pillar, then the order of the pillars).
+    /// Where you stand: the pillar you feel best in, and the one we'll start with (the lowest; ties go to the order
+    /// of the pillars).
     private var strongest: Pillar6 { Pillar6.allCases.max { (rating[$0] ?? 1) < (rating[$1] ?? 1) } ?? .heart }
     private var weakest: Pillar6 {
         let low = Pillar6.allCases.map { rating[$0] ?? 1 }.min() ?? 1
         let ties = Pillar6.allCases.filter { (rating[$0] ?? 1) == low }
-        if let e = ember, let mine = ties.first(where: { $0.rawValue == e.pillar }) { return mine }
         return ties.first ?? .spirit
     }
     private var meetWord: String { (meetWhen ?? "Morning").lowercased() }
@@ -530,45 +521,6 @@ struct FinchIntro: View {
             .padding(.horizontal, 90)
     }
 
-    private var emberRing: some View {
-        GeometryReader { g in
-            let c = CGPoint(x: g.size.width / 2, y: g.size.height / 2), r = min(g.size.width, g.size.height) * 0.38
-            ZStack {
-                Group {                                       // your chosen ember, larger, at the centre
-                    if let e = ember, let img = UIImage(named: "ember-\(e.id).png") {
-                        ZStack {
-                            Circle().fill(RadialGradient(colors: [e.color.opacity(0.45), .clear], center: .center, startRadius: 4, endRadius: 70)).frame(width: 150, height: 150)
-                            Image(uiImage: img).resizable().scaledToFit().frame(width: 84, height: 84)
-                        }
-                        .id(e.id).transition(.scale(scale: 0.6).combined(with: .opacity))
-                    } else if ember != nil {
-                        EmberOrb(color: ember?.color ?? gold, size: 74, warmth: 0.35, cracks: 0)
-                    }
-                }
-                .position(c).animation(Motion.soft, value: ember)
-                ForEach(Array(emberChoices.enumerated()), id: \.element.id) { i, e in
-                    let a = Double(i) / 6 * 2 * .pi - .pi / 2
-                    Button {
-                        withAnimation(.spring(duration: 0.4)) { ember = e }
-                        FeelHaptics.shared.nudge(); FeelSound.shared.chime(i)
-                    } label: {
-                        VStack(spacing: 6) {
-                            if let img = UIImage(named: "ember-\(e.id).png") {       // Codex's painted ember
-                                Image(uiImage: img).resizable().scaledToFit().frame(width: ember == e ? 58 : 42, height: ember == e ? 58 : 42)
-                                    .shadow(color: e.color.opacity(ember == e ? 0.8 : 0.35), radius: ember == e ? 14 : 6)
-                                    .opacity(ember == nil || ember == e ? 1 : 0.6)
-                            } else {
-                                EmberOrb(color: e.color, size: ember == e ? 54 : 44, warmth: ember == e ? 0.6 : 0.25, cracks: 0)
-                            }
-                            Text(e.word).font(.story(14, .medium).italic()).foregroundStyle(cream).opacity(ember == e ? 1 : 0)
-                        }
-                    }
-                    .position(x: c.x + CGFloat(cos(a)) * r, y: c.y + CGFloat(sin(a)) * r)
-                }
-            }
-        }
-    }
-
     private var stageStrip: some View {
         HStack(spacing: 2) {
             ForEach(0..<5, id: \.self) { i in
@@ -583,21 +535,6 @@ struct FinchIntro: View {
         }
         .padding(.vertical, 10).padding(.horizontal, 8)
         .background(RoundedRectangle(cornerRadius: 18).fill(.white.opacity(0.07)))
-    }
-
-    private var worldWindow: some View {
-        ZStack {
-            Image(uiImage: UIImage(named: "world-window.png") ?? UIImage()).resizable().scaledToFit()
-            Image(uiImage: UIImage(named: "world-window-color.png") ?? UIImage()).resizable().scaledToFit()
-                .mask(RadialGradient(colors: [.white, .clear], center: ember.map(realmSpot) ?? .center, startRadius: 4, endRadius: 70))
-            Circle().stroke(gold.opacity(0.5), lineWidth: 2)
-        }
-        .shadow(color: .black.opacity(0.35), radius: 14)
-    }
-    /// Where each realm sits inside the world window (the window shows map rows 560–1363).
-    private func realmSpot(_ e: EmberChoice) -> UnitPoint {
-        let p = e.realm.mapPoint
-        return UnitPoint(x: min(0.92, max(0.08, p.x / 803)), y: min(0.92, max(0.08, (p.y - 560) / 803)))
     }
 
     private func speech(_ s: String) -> some View {
@@ -646,9 +583,9 @@ struct FinchIntro: View {
         case .preparing: say("Give me a moment…"); scene.focus = scene.flameFocus
         case .startingLight:
             // You exist from here: your ember, your Day 1 rating, your moment, your first quests (never a blank day).
-            if let e = ember { model.chose(e.interest); model.setEmber(e.id) }
+            if let why = answers[1]?.first { model.chose(why) }                // why you came (the question, not a colour)
             pickFirstQuests()
-            if model.journey.pages.isEmpty { model.journey.born(name: name.trimmingCharacters(in: .whitespaces), ember: ember?.word ?? "light") }
+            if model.journey.pages.isEmpty { model.journey.born(name: name.trimmingCharacters(in: .whitespaces), ember: "light") }
             model.journey.setUp(dayOne: Dictionary(uniqueKeysWithValues: rating.map { ($0.key.rawValue, $0.value) }), meetHour: meetHour, promise: nil)
             say("Here's where we begin.")
         case .firstDeed: say(weakest == .body ? "Let's do one together. Five squats, with me." : "Let's do one together. Breathe with me.")
@@ -706,7 +643,6 @@ struct FinchIntro: View {
         hatchStart = Date()                                         // the burst: flash, shockwave, shards, embers
         Task { try? await Task.sleep(for: .seconds(2.7)); hatchStart = nil }
         withAnimation(.easeOut(duration: 0.7)) { emberGone = 1 }
-        if let e = ember { model.setEmber(e.id); scene.hero.tint = SparkTint.shift(e.id) }   // born in your ember's color
         go(.born)
         // Your Flame is born on the stone circle, and color floods back into the Sanctuary.
         scene.flameTarget = 1
@@ -763,7 +699,7 @@ struct FinchIntro: View {
     private func autoplay() {
         Task { @MainActor in
             func w(_ s: Double) async { try? await Task.sleep(for: .seconds(s)) }
-            await w(2); go(.chooseEmber); await w(1.5); ember = emberChoices[0]; await w(1.5); go(.warm)
+            await w(2); go(.warm)
             await w(1); startWarming(); await w(6)
             await w(3); name = "Mathis"; await w(1); go(.growing)
             await w(12); go(.why)

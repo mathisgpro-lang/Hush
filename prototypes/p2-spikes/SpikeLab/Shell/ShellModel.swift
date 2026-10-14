@@ -361,8 +361,8 @@ final class ShellModel {
     }
     func preloadLater() {}
     /// The ember you chose in the introduction: your Spark burns in its color (Mathis, 2026-10-03).
-    var emberID: String = UserDefaults.standard.string(forKey: "ember.id") ?? "craft"
-    func setEmber(_ id: String) { emberID = id; UserDefaults.standard.set(id, forKey: "ember.id"); SparkTint.warmUp(ember: id) }
+    /// The same Flame for everyone (decision 167, Mathis): no colour of your own, the painted gold of the art.
+    let emberID = "flame"
     /// Set when a realm is entered by the map's dive: the realm then opens out of the dive's light.
     var arrivingByDive = false
     /// The guided tour right after the introduction: the Sanctuary's options, the world map, the Grove.
@@ -370,9 +370,7 @@ final class ShellModel {
     var tour: TourStep?
 
     init() {
-        SparkTint.warmUp(ember: UserDefaults.standard.string(forKey: "ember.id") ?? "craft")
         for e in Set(Friend.samples.map(\.ember)) { SparkTint.warmUp(ember: e) }      // friends' Sparks, ready too
-        if let i = CommandLine.arguments.firstIndex(of: "-ember"), i + 1 < CommandLine.arguments.count { setEmber(CommandLine.arguments[i + 1]) }   // (test)
         makeCalls()
         if (journey.checkIn() || CommandLine.arguments.contains("-gift")) && journey.bornOn != nil { dailyGift = Journey.dailyGift }   // the daily pouch (decision 141; -gift: test)
         journey.grant(200, id: "beta-purse")              // the test's starter purse: enough to buy a world right away

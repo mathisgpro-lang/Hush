@@ -29,21 +29,21 @@ struct Friend: Identifiable {
 
     /// Sample friends (P5 brings real ones through iCloud sharing).
     static let samples: [Friend] = [
-        Friend(id: "lea", name: "Léa", ember: "heart", stage: "Flame", level: 6, streak: 23, best: 23,
+        Friend(id: "lea", name: "Léa", ember: "flame", stage: "Flame", level: 6, streak: 23, best: 23,
                week: [true, true, true, true, true, false, false], worlds: 4, strongest: .heart,
                done: [Done(title: "Text a friend", realm: .grove, daysAgo: 0, streak: 12),
                       Done(title: "10 slow breaths", realm: .stillwater, daysAgo: 0, streak: 23),
                       Done(title: "Read 10 pages", realm: .library, daysAgo: 1, streak: 5)]),
-        Friend(id: "sam", name: "Sam", ember: "body", stage: "Spark", level: 3, streak: 6, best: 14,
+        Friend(id: "sam", name: "Sam", ember: "flame", stage: "Spark", level: 3, streak: 6, best: 14,
                week: [true, false, true, true, true, false, false], worlds: 2, strongest: .body,
                done: [Done(title: "15-min brisk walk", realm: .highlands, daysAgo: 0, streak: 6),
                       Done(title: "10 push-ups", realm: .highlands, daysAgo: 2, streak: 3)]),
-        Friend(id: "noor", name: "Noor", ember: "mind", stage: "Flame", level: 9, streak: 41, best: 41,
+        Friend(id: "noor", name: "Noor", ember: "flame", stage: "Flame", level: 9, streak: 41, best: 41,
                week: [true, true, true, true, true, false, false], worlds: 6, strongest: .mind,
                done: [Done(title: "25-min focus", realm: .forge, daysAgo: 0, streak: 41),
                       Done(title: "Read 10 pages", realm: .library, daysAgo: 0, streak: 30),
                       Done(title: "Meat-free day", realm: .wilds, daysAgo: 1, streak: 8)]),
-        Friend(id: "tom", name: "Tom", ember: "spirit", stage: "Spark", level: 2, streak: 0, best: 9,
+        Friend(id: "tom", name: "Tom", ember: "flame", stage: "Spark", level: 2, streak: 0, best: 9,
                week: [false, true, false, false, false, false, false], worlds: 1, strongest: .spirit,
                done: [Done(title: "10 slow breaths", realm: .stillwater, daysAgo: 4, streak: 1)]),
     ]

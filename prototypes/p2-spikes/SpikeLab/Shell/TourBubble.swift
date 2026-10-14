@@ -4,7 +4,7 @@ import SwiftUI
 
 struct TourBubble: View {
     let text: String
-    var ember: String = UserDefaults.standard.string(forKey: "ember.id") ?? "craft"
+    var ember = "flame"                                   // the same Flame for everyone (decision 167)
     let button: String
     var pointsDown = true
     let next: () -> Void
