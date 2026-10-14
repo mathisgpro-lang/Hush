@@ -493,7 +493,13 @@ struct HomeView: View {
                 .multilineTextAlignment(.center)
                 QuestMeta(call: call, streak: model.journey.questStreak(call.title), ink: ink)
                 let live = model.calls.first { $0.id == call.id } ?? call
-                if live.counted {
+                if let p = live.pillar {
+                    // Your way counts; ideas only if you want one (decision 166).
+                    IntentionIdeas(ideas: QuestLibrary.ideas(for: p, journey: model.journey), picked: live.idea, ink: ink, tint: call.realm.color) { idea in
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { model.setIdea(call.id, idea) }
+                    }
+                    .padding(.top, 2)
+                } else if live.counted {
                     // Progress inside the quest (reps, pages, minutes): tap to count, it fills as you go.
                     VStack(spacing: 8) {
                         HStack {
@@ -721,7 +727,7 @@ struct QuestMeta: View {
             }
             Label(call.frequency, systemImage: "arrow.triangle.2.circlepath")
             Label(call.difficulty, systemImage: call.difficulty == "Hard" ? "cellularbars" : call.difficulty == "Medium" ? "chart.bar.fill" : "chart.bar")
-            Text(call.counted ? "\(call.progress) / \(call.target) \(call.unit)" : "\(call.minutes) min")
+            if call.pillar == nil { Text(call.counted ? "\(call.progress) / \(call.target) \(call.unit)" : "\(call.minutes) min") }
         }
         .font(.ui(11, .bold)).foregroundStyle(ink.opacity(0.65)).labelStyle(.titleAndIcon)
     }

@@ -124,7 +124,9 @@ struct QuestRow: View {
                         Text(call.title).font(.story(18.5, .semibold)).foregroundStyle(Theme.ink.opacity(call.done ? 0.4 : 1))
                             .strikethrough(call.done, color: Theme.ink.opacity(0.4)).lineLimit(1)
                         HStack(spacing: 6) {
-                            Text(call.counted && !call.done ? "\(call.progress)/\(call.target) \(call.unit)" : "\(call.minutes) min")
+                            // An intention: your way, or the idea you picked (decision 166).
+                            Text(call.pillar != nil ? (call.idea.map { "Idea: \($0)" } ?? "Your way") : call.counted && !call.done ? "\(call.progress)/\(call.target) \(call.unit)" : "\(call.minutes) min")
+                                .lineLimit(1)
                             if streak > 0 {                                  // its own unbroken run: what counts
                                 Text("·")
                                 HStack(spacing: 2) { Image(systemName: "flame.fill").font(.system(size: 9)); Text("\(streak)d") }
@@ -203,3 +205,46 @@ struct CardPress: ButtonStyle {
             .onChange(of: configuration.isPressed) { _, down in if down { Haptic.touch() } }
     }
 }
+
+/// Inside a daily intention (decision 166): your own way counts; if you don't know where to start, your Flame offers
+/// three ideas at your level (they climb slowly with the days you keep this pillar), or picks one for you.
+struct IntentionIdeas: View {
+    let ideas: [QuestDef]
+    let picked: String?
+    let ink: Color, tint: Color
+    let pick: (String?) -> Void
+    @State private var open = false
+    var body: some View {
+        VStack(spacing: 8) {
+            if !open && picked == nil {
+                Button { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { open = true } } label: {
+                    HStack(spacing: 6) { Image(systemName: "sparkles"); Text("Need an idea?") }
+                        .font(.story(16, .medium)).foregroundStyle(ink)
+                        .padding(.horizontal, 18).frame(height: 40)
+                        .background(Capsule().fill(tint.opacity(0.18))).overlay(Capsule().stroke(tint.opacity(0.6), lineWidth: 1))
+                }
+                .buttonStyle(PressableStyle())
+            } else {
+                Text("Ideas from your Flame").font(.story(14, .medium)).foregroundStyle(ink.opacity(0.7))
+                ForEach(ideas) { q in
+                    Button { pick(picked == q.title ? nil : q.title) } label: { ParchmentChoice(text: q.title, selected: picked == q.title) }
+                        .buttonStyle(PressableStyle())
+                }
+                if let q = ideas.first(where: { $0.title == picked }) {
+                    Text(q.detail).font(.ui(13)).multilineTextAlignment(.center).foregroundStyle(ink.opacity(0.75)).fixedSize(horizontal: false, vertical: true)
+                    Text(q.why).font(.story(13).italic()).multilineTextAlignment(.center).foregroundStyle(ink.opacity(0.6)).fixedSize(horizontal: false, vertical: true)
+                }
+                Button {
+                    let others = ideas.filter { $0.title != picked }
+                    if let q = others.randomElement() { pick(q.title) }
+                } label: {
+                    HStack(spacing: 5) { Image(systemName: "dice.fill"); Text(picked == nil ? "Choose for me" : "Another one") }
+                        .font(.ui(14, .semibold)).foregroundStyle(ink.opacity(0.75))
+                }
+                .buttonStyle(PressableStyle()).padding(.top, 2)
+            }
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+    }
+}
+

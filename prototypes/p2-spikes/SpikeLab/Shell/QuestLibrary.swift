@@ -95,46 +95,61 @@ enum QuestLibrary {
         Pillar6.of(emberChoices.first { $0.interest == i }?.realm ?? .grove)
     }
 
-    /// Builds today's offer. Deterministic for a given day (the same list all day).
+    // MARK: Daily intentions (decision 166, Mathis: "showing up every day for tasks which participate to all pillars,
+    // regardless of what they are"). Each pillar is one intention you fulfil your own way (your sport counts); the
+    // library above becomes its ideas, for when you don't know where to start, and they climb slowly with the days
+    // you keep that pillar (the ladder lives in the ideas, not in the quest).
+    struct Intention { let pillar: Pillar6; let title, detail, why, symbol: String }
+    static let intentions: [Intention] = [
+        .init(pillar: .body, title: "Move your body", detail: "Any movement counts: your sport, the gym, a walk, a ride, a dance.", why: "Moving every day, in any way, is the strongest habit there is for body and mood.", symbol: "figure.run"),
+        .init(pillar: .mind, title: "Feed your mind", detail: "Read, learn, practise: anything that makes you think.", why: "A mind fed a little every day stays sharp and curious for life.", symbol: "book.fill"),
+        .init(pillar: .spirit, title: "Find your calm", detail: "Meditate, breathe, journal, or walk without your phone.", why: "A few calm minutes every day lower stress and steady you for everything else.", symbol: "figure.mind.and.body"),
+        .init(pillar: .world, title: "One for the planet", detail: "One sustainable act: refuse plastic, walk instead of driving, eat plants, pick up litter.", why: "Small acts, repeated every day by many people, are how the planet heals.", symbol: "leaf.fill"),
+        .init(pillar: .heart, title: "Reach out", detail: "Someone you love, a friend, a stranger: one real moment of connection.", why: "Close relationships are the strongest predictor of a long, happy life.", symbol: "heart.fill"),
+        .init(pillar: .craft, title: "Work on your craft", detail: "Time on the thing you're building or getting better at.", why: "A little focused work every day is how skills and projects grow.", symbol: "hammer.fill"),
+    ]
+    /// On your list every day: the four core pillars (Body, Mind, Spirit, the planet) and any milestone challenge.
+    static func onTheList(_ id: String) -> Bool { core.map(\.rawValue).contains(id) || id.hasPrefix("special-") }
+    /// Days you've kept a pillar (one per day, whatever you did).
+    static func daysKept(_ p: Pillar6, _ j: Journey) -> Int {
+        Set(j.deeds.filter { Pillar6.of(RealmID(rawValue: $0.realm) ?? .grove) == p }.map { Calendar.current.startOfDay(for: $0.date) }).count
+    }
+    /// The level of a pillar's ideas: easy for the first two weeks kept, steady until ~45 days, then stretch.
+    static func ideaLevel(_ p: Pillar6, _ j: Journey) -> Int { let d = daysKept(p, j); return d < 14 ? 1 : d < 45 ? 2 : 3 }
+    /// Three ideas for a pillar today, at your level (the same three all day).
+    static func ideas(for p: Pillar6, journey j: Journey, on date: Date = Date()) -> [QuestDef] {
+        let lv = ideaLevel(p, j)
+        let usable = all.filter { q in q.pillar == p && !(q.once && j.deeds.contains { $0.title == q.title }) }
+        var pool = usable.filter { $0.level == lv }
+        if pool.count < 3 { pool += usable.filter { $0.level == lv - 1 || $0.level == lv + 1 } }
+        let salt = UInt64(p.rawValue.unicodeScalars.reduce(0) { $0 + Int($1.value) })      // (stable across launches)
+        var rng = SeededRandom(seed: UInt64(max(1, j.dayNumber(of: date))) &* 7919 &+ salt)
+        return Array(pool.shuffled(using: &rng).prefix(3))
+    }
+    /// Milestone challenges (Mathis): offered once they've opened (by the days you've kept their pillar), until done.
+    static let specials: [(id: String, quest: String, pillar: Pillar6, afterDays: Int)] = [
+        ("special-opal", "mind-opal", .mind, 6),
+        ("special-bedroom", "spirit-bedroom", .spirit, 20),
+    ]
+
+    /// Today's list (deterministic for the day): the six intentions (four on your list, Heart and Craft in the
+    /// satchel), any milestone challenge that has opened, and a surprise from the world in the satchel.
     static func today(journey j: Journey, interest: String, on date: Date = Date()) -> [Call] {
         var rng = SeededRandom(seed: UInt64(max(1, j.dayNumber(of: date))) &* 2654435761)
-        let main = pillar(forInterest: interest)
-        let done = Dictionary(grouping: j.deeds, by: { Pillar6.of(RealmID(rawValue: $0.realm) ?? .grove) })
-        func experience(_ p: Pillar6) -> Int { done[p]?.count ?? 0 }
-        func lastDone(_ p: Pillar6) -> Date { done[p]?.map(\.date).max() ?? .distantPast }
-        func level(for p: Pillar6) -> Int { experience(p) < 6 ? 1 : experience(p) < 20 ? 2 : 3 }
-        func pick(_ p: Pillar6, avoid: Set<String>, stable: Bool) -> QuestDef {
-            var lv = level(for: p)
-            var pool = all.filter { q in q.pillar == p && !avoid.contains(q.id) && !(q.once && j.deeds.contains { $0.title == q.title }) }
-            // Skipped three times in two weeks: one level easier (never shamed, just lighter).
-            if let hard = pool.first(where: { j.skipCount($0.title, days: 14) >= 3 }) { lv = max(1, hard.level - 1) }
-            pool = pool.filter { j.skipCount($0.title, days: 14) < 3 }
-            let atLevel = pool.filter { $0.level == lv }
-            let choices = atLevel.isEmpty ? pool : atLevel
-            if stable, let habit = choices.first(where: { j.questStreak($0.title) > 0 }) ?? choices.first { return habit }   // the habit stays the same
-            return choices.isEmpty ? all.first { $0.pillar == p }! : choices[Int(rng.next() % UInt64(choices.count))]
+        var calls: [Call] = intentions.map { i in
+            var c = Call(id: i.pillar.rawValue, title: i.title, detail: i.detail, symbol: i.symbol, realm: i.pillar.realm, minutes: 10,
+                         difficulty: "Your way", reason: i.why)
+            c.pillar = i.pillar
+            return c
         }
-        // The pillar you rated lowest on Day 1, or lived least lately.
-        let weakest = core.filter { $0 != main }.min { a, b in
-            let ra = j.dayOne[a.rawValue] ?? 1, rb = j.dayOne[b.rawValue] ?? 1
-            return ra != rb ? ra < rb : experience(a) < experience(b)
-        } ?? .spirit
-        let explore = core.filter { $0 != main && $0 != weakest }.min { lastDone($0) < lastDone($1) } ?? .world
-        var used: Set<String> = []
-        func take(_ p: Pillar6, stable: Bool = false) -> QuestDef { let q = pick(p, avoid: used, stable: stable); used.insert(q.id); return q }
-        let a = take(main, stable: true), c = take(weakest), d = take(explore)
-        let rest = core.filter { ![main, weakest, explore].contains($0) }.shuffled(using: &rng)        // the core four first,
-            + [Pillar6.heart, .craft].filter { $0 != main }.shuffled(using: &rng)                   // then the Grove and the Forge
-        let e = take(rest.first ?? .mind), f = take(rest.dropFirst().first ?? .body)
+        for s in specials where daysKept(s.pillar, j) >= s.afterDays {
+            guard let q = all.first(where: { $0.id == s.quest }), !j.deeds.contains(where: { $0.title == q.title }) else { continue }
+            calls.append(Call(id: s.id, title: q.title, detail: q.detail, symbol: q.symbol, realm: q.realm, minutes: q.minutes,
+                              difficulty: "Challenge", reason: "A new challenge has opened. " + q.why))
+        }
         let s = surprises[Int(rng.next() % UInt64(surprises.count))]
-        func call(_ q: QuestDef, _ id: String, reason: String = "") -> Call {
-            Call(id: id, title: q.title, detail: q.detail, symbol: q.symbol, realm: q.realm, minutes: q.minutes,
-                 difficulty: ["Easy", "Steady", "Stretch"][max(0, min(2, q.level - 1))], target: q.target, unit: q.unit,
-                 reason: reason.isEmpty ? q.why : reason)
-        }
-        return [call(a, "a", reason: "Your habit for \(main.rawValue.lowercased()). " + a.why),
-                Call(id: "b", title: s.0, detail: s.1, symbol: "sparkle", realm: .grove, minutes: 5, reason: "A surprise from the world."),
-                call(c, "c"), call(d, "d"), call(e, "e"), call(f, "f")]
+        calls.append(Call(id: "b", title: s.0, detail: s.1, symbol: "sparkle", realm: .grove, minutes: 5, reason: "A surprise from the world."))
+        return calls
     }
 }
 

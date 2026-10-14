@@ -115,6 +115,10 @@ struct Call: Identifiable, Equatable {
     /// Why the Companion suggests it (shown on the suggested card).
     var reason = ""
     var skipped = false
+    /// A daily intention for a pillar (decision 166): done your way; the quest's ideas are only there if you want one.
+    var pillar: Pillar6? = nil
+    /// The idea you picked for today (or the Flame picked for you), shown on the card. Your own way counts the same.
+    var idea: String? = nil
     var counted: Bool { target > 1 }
     /// The painted object it becomes in the world (Codex's props, iteration 2).
     var prop: String {
@@ -383,10 +387,16 @@ final class ShellModel {
         makeCalls()
         planDay()
     }
-    /// Your day is never empty (the list on home): three quests are taken for you; swap any in the satchel.
+    /// Your day is never empty (decision 166): the four pillars' intentions (and a milestone challenge, when one has
+    /// opened) are on your list; the others wait in the satchel.
     func planDay() {
         guard !calls.contains(where: { $0.chosen || $0.done }) else { return }
-        for c in calls.prefix(4) where chosenCount < Self.maxChosen && c.id != "b" { toggleChosen(c.id) }
+        for c in calls where QuestLibrary.onTheList(c.id) && chosenCount < Self.maxChosen { toggleChosen(c.id) }
+    }
+    /// The idea for an intention: one you picked, the Flame's pick, or none (your own way).
+    func setIdea(_ id: String, _ idea: String?) {
+        guard let i = calls.firstIndex(where: { $0.id == id }) else { return }
+        calls[i].idea = idea
     }
 
     /// Today's quests from the library, picked for you (decision 154).
@@ -394,7 +404,7 @@ final class ShellModel {
         calls = QuestLibrary.today(journey: journey, interest: interest)
     }
 
-    static let maxChosen = 3
+    static let maxChosen = 6
     var chosenCount: Int { calls.filter { $0.chosen && !$0.done }.count }
     func toggleChosen(_ id: String) {
         guard let i = calls.firstIndex(where: { $0.id == id }), !calls[i].done else { return }
@@ -411,7 +421,8 @@ final class ShellModel {
         calls[i].done = true
         calls[i].progress = calls[i].target
         light += 1
-        return journey.did(calls[i].title, detail: calls[i].detail, realm: calls[i].realm, minutes: calls[i].minutes)
+        let what = calls[i].pillar != nil ? (calls[i].idea ?? "Your own way") : calls[i].detail   // the Book remembers what you did
+        return journey.did(calls[i].title, detail: what, realm: calls[i].realm, minutes: calls[i].minutes)
     }
     /// Progress inside a quest (reps, pages, minutes): one step further.
     func step(_ id: String, by n: Int = 1) {
