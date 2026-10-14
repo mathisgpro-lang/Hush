@@ -109,7 +109,9 @@ struct HomeView: View {
                         cockpitBar
                     }
                     .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { bandBottom = $0; placeFlame() }
-                    .shadow(color: .black.opacity(0.7), radius: 3, y: 1)          // legible over the world
+                    // (No soft shadow over the sheet: redrawn over the moving world every frame, it halved the frame
+                    // rate on the iPhone, 30 → 60 fps without it. Task 6.)
+                    .opacity(PerfTest.hideSheet ? 0 : 1)
                     .padding(.top, 18).padding(.bottom, 2)
                     .background(alignment: .top) {
                         // Always open, and see-through (Mathis, decision 161): a light veil with rounded shoulders, the
@@ -322,10 +324,11 @@ struct HomeView: View {
             // Your Flame's line of the day (from your last days).
             Text("“\(flameLine(model.journey))”")
                 .font(.story(14).italic()).foregroundStyle(Theme.cream.opacity(0.9)).multilineTextAlignment(.center)
-                .shadow(color: .black.opacity(0.9), radius: 5).shadow(color: .black.opacity(0.5), radius: 10)
+                .shadow(color: .black.opacity(PerfTest.noShadows ? 0 : 0.9), radius: 5).shadow(color: .black.opacity(PerfTest.noShadows ? 0 : 0.5), radius: 10)
                 .padding(.horizontal, 30).padding(.top, 2)
         }
         .padding(.top, 8)
+        .opacity(PerfTest.hideTop ? 0 : 1)
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { bandTop = $0; placeFlame() }
     }
 

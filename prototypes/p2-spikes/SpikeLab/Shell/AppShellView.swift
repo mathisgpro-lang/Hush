@@ -69,7 +69,7 @@ struct DiveArrival: View {
 struct WorldLayer: View {
     let model: ShellModel
     var body: some View {
-        if CommandLine.arguments.contains("-no3d") { Color(red: 0.2, green: 0.15, blue: 0.2).ignoresSafeArea() } else {
+        if CommandLine.arguments.contains("-no3d") { Color(red: 0.2, green: 0.15, blue: 0.2).ignoresSafeArea().onAppear { if ScreenFPS.on { ScreenFPS.shared.start() } } } else {
         RealityView { content in
             content.camera = .virtual
             content.add(model.worldRoot)
@@ -81,7 +81,8 @@ struct WorldLayer: View {
                 print(String(format: "LAUNCH world ready %.0f ms after the 3D view (build %.0f ms)", (CACurrentMediaTime() - AppTimer.start) * 1000, (CACurrentMediaTime() - t0) * 1000))
             }
             model.showActive()
-            if PerfTour.on { ScreenFPS.shared.start(); Task { await PerfTour.run(model) } }          // (task 6: the self-running tour)
+            if ScreenFPS.on { ScreenFPS.shared.start() }
+            if PerfTour.on { Task { await PerfTour.run(model) } }          // (task 6: the self-running tour)
             model.updates = content.subscribe(to: SceneEvents.Update.self) { e in model.tick(Float(e.deltaTime)) }
         }
         .ignoresSafeArea()

@@ -299,7 +299,7 @@ final class ShellModel {
     func tick(_ dt: Float) {
         let t0 = CACurrentMediaTime()
         if PerfTour.on, dt > 0.025 { print(String(format: "HITCH %.0f ms [%@]", dt * 1000, perfStep)) }
-        if PerfTour.on { ScreenFPS.shared.updates += 1 }
+        if ScreenFPS.on { ScreenFPS.shared.updates += 1 }
         defer {
             if CommandLine.arguments.contains("-perf") {
                 let c = (CACurrentMediaTime() - t0) * 1000
@@ -450,7 +450,7 @@ final class ShellModel {
 /// Task 6: a tour that walks the app by itself on the phone (-perftour) and logs every slow frame with its moment:
 /// the measurements behind the smoothness work. Home opens its sheets and ticks a quest at the end (HomeView).
 enum PerfTour {
-    static let on = CommandLine.arguments.contains("-perftour")
+    nonisolated static let on = CommandLine.arguments.contains("-perftour")
     @MainActor static func run(_ m: ShellModel) async {
         func step(_ name: String, _ seconds: Double, _ action: () -> Void) async {
             m.perfStep = name; print("TOUR \(name)"); action()
@@ -471,6 +471,7 @@ enum PerfTour {
 /// Task 6: the screen's own frame counter (CADisplayLink), independent of the 3D: real frames per second, every 2 s.
 @MainActor final class ScreenFPS: NSObject {
     static let shared = ScreenFPS()
+    nonisolated static let on = PerfTour.on || CommandLine.arguments.contains("-fps")
     private var link: CADisplayLink?, last: CFTimeInterval = 0, frames = 0, worst: CFTimeInterval = 0, since: CFTimeInterval = 0
     var updates = 0                       // the 3D's update events in the same window (counted by ShellModel.tick)
     func start() {
@@ -487,5 +488,12 @@ enum PerfTour {
             frames = 0; worst = 0; since = t; updates = 0
         }
     }
+}
+
+/// Task 6 test switches (measuring what costs frames): -hidetop, -hidesheet, -noshadows.
+enum PerfTest {
+    nonisolated static let hideTop = CommandLine.arguments.contains("-hidetop")
+    nonisolated static let hideSheet = CommandLine.arguments.contains("-hidesheet")
+    nonisolated static let noShadows = CommandLine.arguments.contains("-noshadows")
 }
 

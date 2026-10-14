@@ -182,7 +182,9 @@ struct QuestRow: View {
             .fill(LinearGradient(colors: [Color(red: 1, green: 0.98, blue: 0.93), Theme.paperTop], startPoint: .top, endPoint: .bottom))
             .opacity(call.done ? 0.82 : 1))
         .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Theme.paperEdge.opacity(0.35), lineWidth: 0.75))
-        .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
+        // A crisp lip under the card instead of a soft shadow (after Finch): it costs nothing to draw, while blurred
+        // shadows over the moving world cost half the frame rate (task 6).
+        .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Color.black.opacity(0.28)).offset(y: 4))
         .animation(.spring(response: 0.35, dampingFraction: 0.6), value: call.done)
         .onChange(of: call.done) { _, done in if done { popped += 1 } }
     }
