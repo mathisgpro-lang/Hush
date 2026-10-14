@@ -29,7 +29,7 @@ enum PixelMode {
     @MainActor static func apply(to root: Entity, on: Bool) {
         visit(root) { e in
             // Decision 169: preserve the character's painted volume and alpha; only worlds use the pixel grid.
-            guard !e.name.hasPrefix("depth-flame") else { return }
+            guard !e.name.hasPrefix("depth-") else { return }
             guard var comp = e.model else { return }
             var changed = false
             comp.materials = comp.materials.map { mat in

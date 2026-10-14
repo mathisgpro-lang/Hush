@@ -18,7 +18,7 @@ final class SanctuaryScene {
     /// The swipeable world (decision 120): when the stitched world exists, the home image is a window in its middle.
     private struct WorldLayout: Decodable { let total: Float; let height: Float; let homeX0: Float; let homeW: Float; let backdropW: Float; let backdropH: Float }
     private lazy var layout: WorldLayout? = {
-        guard !PixelMode.world else { return nil }                 // the pixel Sanctuary is a single picture
+        guard !PixelMode.world && !composedStage else { return nil }                 // the pixel Sanctuary is a single picture
         guard let url = Bundle.main.url(forResource: "world-layout", withExtension: "json"),
               let data = try? Data(contentsOf: url) else { return nil }
         return try? JSONDecoder().decode(WorldLayout.self, from: data)
@@ -44,7 +44,10 @@ final class SanctuaryScene {
     var homeRatio: Float { layout.map { $0.homeW / $0.total } ?? 1 }
     private let heroScale: Float = 0.62     // small and cute on the circle, like the First Words frame
     /// The stone circle's center in the painting (uv, v up): the Flame's stage.
-    private lazy var circle: SIMD2<Float> = {                     // the true center of the rune circle (measured on the painting)
+    var stageCircle: SIMD2<Float> { circle }
+    private var composedStage: Bool { Bundle.main.url(forResource: "stage-home-paint", withExtension: "png") != nil }
+    private lazy var circle: SIMD2<Float> = {
+        if composedStage { return [0.5, 0.515] }                     // the true center of the rune circle (measured on the painting)
         if PixelMode.world, let u = Bundle.main.url(forResource: "px-home-features", withExtension: "json"), let d = try? Data(contentsOf: u),
            let j = try? JSONSerialization.jsonObject(with: d) as? [String: Double], let cu = j["circleU"], let cv = j["circleV"] { return [Float(cu), Float(cv)] }
         return [0.493, 0.501]
@@ -125,13 +128,17 @@ final class SanctuaryScene {
     /// stretched, blurry waterfall pixels when the camera moved. The sky and sea layers now give most of the depth.
     private func relief(_ g: Float) -> Float { layers == nil ? 0.45 * pow(g, 0.6) - 0.15 : 0.2 * pow(g, 0.6) - 0.065 }
 
+    func fitFlame(heightFraction: Float, growth: Float) {
+        heroWorldScale = heightFraction * Self.visibleHeight * (-heroFeet.z / Self.distance) / (0.27 * max(1, growth) * WorldLayer.overscan)
+    }
+
     func build() async throws {
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
-        let prefix = PixelMode.world ? "px-home" : layout == nil ? "home" : "world"
+        let prefix = composedStage ? "stage-home" : PixelMode.world ? "px-home" : layout == nil ? "home" : "world"
         let tex = try await TextureResource(named: layers == nil ? "\(prefix)-paint.png" : "world-land.png")
         let motion = try await TextureResource(named: "\(prefix)-motion.png", options: .init(semantic: .raw))
         loadDepth("\(prefix)-depth.png")
-        let visibleH = 2 * Self.distance * tan(Self.paintFov / 2 * .pi / 180)
+        let visibleH = 2 * Self.distance * tan((composedStage ? Self.fov : Self.paintFov) / 2 * .pi / 180)
         let aspect = Float(tex.width) / Float(tex.height)
         let (w, h) = (visibleH * aspect * 1.08, visibleH * 1.08)     // a little overscan so parallax never shows edges
         paintingW = w; paintingH = h
@@ -169,7 +176,7 @@ final class SanctuaryScene {
         unlit.color = .init(tint: .white, texture: .init(tex))
         var material: any RealityKit.Material = unlit
         if let lib {
-            var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: "stoneLive", in: lib))
+            var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: composedStage ? "stageWorld" : "stoneLive", in: lib))
             if let lut = await SolarClock.lut() { m.emissiveColor = .init(texture: .init(lut)) }   // the looks of the hour
             m.custom.texture = .init(motion)
             m.custom.value = [1, 0.5, 0.5, 0]
@@ -179,11 +186,13 @@ final class SanctuaryScene {
             material = m
         }
         let p = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
+        if composedStage { p.name = "depth-stage-world" }
         root.addChild(p); painting = p
         if PixelMode.world, let pm = material as? CustomMaterial,
            let g = await WorldGround.make(asset: prefix, mask: "motion", from: pm, paintTexH: tex.height, width: w, height: h,
                                           distance: Self.distance,
                                           bottomDistance: { u in Self.distance - (self.depth == nil ? Self.depthOffset(0) : self.relief(self.depthAt(u, 0))) }) {
+            if composedStage { g.name = "depth-stage-ground" }
             root.addChild(g); ground = g
         }
 
@@ -228,10 +237,10 @@ final class SanctuaryScene {
         // The world doesn't end at the painting's edge: a softly continued backdrop behind it, much larger,
         // graded by the same light (time of day, the Hush), so no edge or black can ever show.
         // (Not needed with the living layers: the sky covers everything behind the land.)
-        if let lib, layers == nil, let bTex = try? await TextureResource(named: "\(prefix)-backdrop.png") {
+        if let lib, layers == nil, let bTex = try? await TextureResource(named: composedStage ? "stage-home-paint.png" : "\(prefix)-backdrop.png") {
             let blank = try await TextureResource(named: "blank-mask.png", options: .init(semantic: .raw))
             var u = UnlitMaterial(); u.color = .init(tint: .white, texture: .init(bTex))
-            var m = try CustomMaterial(from: u, surfaceShader: .init(named: "stoneLive", in: lib))
+            var m = try CustomMaterial(from: u, surfaceShader: .init(named: composedStage ? "stageWorld" : "stoneLive", in: lib))
             if let lut = await SolarClock.lut() { m.emissiveColor = .init(texture: .init(lut)) }   // the looks of the hour
             m.custom.texture = .init(blank); m.custom.value = [1, 0.5, 0.5, 0]
             let back: Float = layers == nil ? 0.5 : 3.0, k = (Self.distance + back) / Self.distance   // behind the sky when it exists
@@ -239,6 +248,7 @@ final class SanctuaryScene {
             let bh = layout.map { h * $0.backdropH / $0.height * k } ?? h * (2768.0 / 1846.0) * k
             let b = ModelEntity(mesh: .generatePlane(width: bw, height: bh), materials: [m])
             b.position = [0, 0, -(Self.distance + back)]
+            if composedStage { b.name = "depth-stage-backdrop" }
             root.addChild(b); backdrop = b
         }
 
@@ -273,7 +283,7 @@ final class SanctuaryScene {
         let d = Self.distance - relief(depthAt(hx(circle.x), circle.y)) - 0.01
         let k = d / Self.distance
         // Exactly as in the root frame: the cutout is 426 of the painting's 1846 px tall (its mesh is 0.27 tall).
-        let scale = (PixelMode.world ? 0.10 : 0.105) * h * k / 0.27   // the Spark: small, a newborn spirit (smaller in the pixel Sanctuary)
+        let scale = (composedStage ? 0.145 : PixelMode.world ? 0.10 : 0.105) * h * k / 0.27   // the Spark: small, a newborn spirit (smaller in the pixel Sanctuary)
         let feet = SIMD3<Float>((hx(circle.x) - 0.5) * w * k, (circle.y + 0 - 0.5) * h * k, -d)   // feet on the centre
         hero.leanPivot.scale = .init(repeating: scale)
         hero.leanPivot.position = feet + SIMD3(0, (PixelMode.world ? 0.0 : 0.09) * scale, 0)   // (pixel: in the middle of the circle)
@@ -302,8 +312,8 @@ final class SanctuaryScene {
         root.addChild(petals)
 
         try await life.build()
-        root.addChild(life.root)
-        if !CommandLine.arguments.contains("-noelements") {      // (test flag: the world without particles)
+        if !composedStage { root.addChild(life.root) }
+        if !composedStage && !CommandLine.arguments.contains("-noelements") {      // (test flag: the world without particles)
             try await elements.build(spot: { [unowned self] u, v in self.spot(self.hx(u), v) }, paintingW: w, withClouds: layers == nil && !PixelMode.world, painted: !PixelMode.world)
             root.addChild(elements.root)
         }

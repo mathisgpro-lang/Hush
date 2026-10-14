@@ -7,6 +7,7 @@ import simd
 @MainActor
 protocol LivingWorld: AnyObject {
     var hero: HeroRig { get }
+    func fitFlame(heightFraction: Float, growth: Float)
     var pan: SIMD2<Float> { get }
     var panTarget: SIMD2<Float> { get set }
     var panLimit: SIMD2<Float> { get }
@@ -25,7 +26,7 @@ protocol LivingWorld: AnyObject {
 extension SanctuaryScene: LivingWorld {
     var pointsPerMeterScale: Float { 1 / SanctuaryScene.visibleHeight * 0.98 }
     func screenPoint(world uv: SIMD2<Float>, in size: CGSize) -> CGPoint { screenPoint(homeUV: uv, in: size) }
-    var flameUV: SIMD2<Float> { [0.493, 0.56] }
+    var flameUV: SIMD2<Float> { stageCircle + SIMD2(0, 0.07) }
     var questSpots: [SIMD2<Float>] { [[0.30, 0.425], [0.775, 0.44], [0.42, 0.33]] }
 }
 

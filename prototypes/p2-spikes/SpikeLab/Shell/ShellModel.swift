@@ -72,14 +72,14 @@ enum RealmID: String, CaseIterable, Identifiable {
     /// Where it sits on Codex's world map (pixels of the 803 × 1958 painting).
     var mapPoint: CGPoint {
         switch self {
-        case .sanctuary: CGPoint(x: 400, y: 1555)
-        case .grove: CGPoint(x: 160, y: 905)
-        case .stillwater: CGPoint(x: 690, y: 1005)
-        case .highlands: CGPoint(x: 610, y: 640)
-        case .library: CGPoint(x: 170, y: 470)
-        case .wilds: CGPoint(x: 680, y: 400)
-        case .forge: CGPoint(x: 450, y: 225)
-        case .veil: CGPoint(x: 560, y: 70)
+        case .sanctuary: CGPoint(x: 255, y: 1800)
+        case .grove: CGPoint(x: 555, y: 1570)
+        case .stillwater: CGPoint(x: 255, y: 1340)
+        case .highlands: CGPoint(x: 555, y: 1110)
+        case .library: CGPoint(x: 255, y: 880)
+        case .wilds: CGPoint(x: 555, y: 650)
+        case .forge: CGPoint(x: 255, y: 420)
+        case .veil: CGPoint(x: 555, y: 190)
         }
     }
     /// What opens it (shown on locked nodes; Act I and the plan's conditions).
@@ -288,6 +288,9 @@ final class ShellModel {
     /// Where the Flame's feet belong on screen (a share of its height), measured by home: midway between the streak
     /// panel and the quests, plus half the Flame's height (decision 162).
     @ObservationIgnored var feetTarget: Float?
+    /// The quest list is open, or folded down to its header (the toggle is back, Mathis 2026-10-14). Always open at
+    /// launch: your day comes first, and the Flame's place is measured from the open list.
+    var questsUp = true
     var worldLift: CGFloat {
         guard PixelMode.world else { return 0 }
         switch screen { case .home, .realm: return 0.215; default: return 0 }

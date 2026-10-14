@@ -928,7 +928,6 @@ void sparkFire(realitykit::surface_parameters params)
 [[visible]]
 void depthLive(realitykit::geometry_parameters params) {
     float2 uv = params.geometry().uv0();
-    float3 p = params.geometry().model_position();
     float t = params.uniforms().time();
     float4 c = params.uniforms().custom_parameter();
     float crown = smoothstep(0.70, 1.0, uv.y);
@@ -964,8 +963,28 @@ void depthFire(realitykit::surface_parameters params) {
 [[visible]]
 void depthContact(realitykit::surface_parameters params) {
     float2 d = (params.geometry().uv0() - 0.5) * 2.0;
-    float a = exp(-dot(d, d) * 4.0) * 0.30 * (1.0 - smoothstep(0.7, 1.0, length(d)));
+    float a = exp(-dot(d, d) * 4.0) * 0.52 * (1.0 - smoothstep(0.7, 1.0, length(d)));
     params.surface().set_base_color(half3(0));
     params.surface().set_emissive_color(half3(0.085, 0.035, 0.018));
     params.surface().set_opacity(half(a));
+}
+
+// The composed Sanctuary keeps the approved painting's palette and perspective intact.
+[[visible]]
+void stageWorld(realitykit::surface_parameters params) {
+    float2 uv = params.geometry().uv0();
+    float2 tuv = float2(uv.x, 1.0 - uv.y);
+    float t = params.uniforms().time();
+    float4 c = params.uniforms().custom_parameter();
+    constexpr sampler s(address::clamp_to_edge, filter::linear, mip_filter::linear);
+    float4 mask = float4(params.textures().custom().sample(s, tuv));
+    float2 flow = float2(sin(tuv.y * 190.0 - t * 1.4) * 0.0007, sin(t * 1.7 + tuv.x * 90.0) * 0.0004) * mask.r;
+    float3 rgb = float3(params.textures().base_color().sample(s, tuv + flow).rgb);
+    rgb *= 1.0 + mask.b * (0.025 * sin(t * 3.1) + 0.015 * sin(t * 6.7));
+    float night = s2night(params.material_constants().metallic_scale() * 24.0);
+    rgb *= mix(float3(1.0), float3(0.76, 0.8, 0.96), night * 0.55);
+    rgb = depthStoneLight(rgb, uv, c.yz, c.w * 0.45, t);
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(half3(rgb));
+    params.surface().set_opacity(1.0);
 }

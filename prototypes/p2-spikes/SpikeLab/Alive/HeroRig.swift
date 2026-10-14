@@ -42,7 +42,7 @@ final class HeroRig: FlameRig {
     private var growth: Float = 1
     private var dimensional: Bool { base.hasPrefix("depth-") }
     private var groundY: Float { dimensional ? 0 : Self.feetY }
-    private var floating: Bool { base == "depth-spark" || base == "depth-radiant" || base == "depth-beyond" }
+    private var floating: Bool { base == "depth-spark" }
     private var faceHeight: Float { base == "depth-spark" ? 0.30 : (base == "depth-flame" || base == "depth-blaze" ? 0.48 : 0.58) }
     /// The Spark (decision 125): a pure spirit with no legs. It hovers and bobs above the ground, its flame tip
     /// sways, and the hour lights it (sparkFire/sparkLive shaders).

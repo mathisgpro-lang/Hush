@@ -109,26 +109,36 @@ struct HomeView: View {
                                        add: { withAnimation(.sheet) { satchelOpen = true } },
                                        open: { c in withAnimation(.sheet) { open = c } },
                                        tick: { c, p in finish(c, size: geo.size, from: p) },
-                                       streakOf: { model.journey.questStreak($0) }, alwaysOpen: true)
+                                       streakOf: { model.journey.questStreak($0) }, alwaysOpen: true,
+                                       sheetUp: model.questsUp, toggleSheet: { withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) { model.questsUp.toggle() } })
                                 .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
                         cockpitBar
                     }
-                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { bandBottom = $0; placeFlame() }
+                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: {
+                        // Measured only while the list is open: folding it never moves the world (decision 158).
+                        guard model.questsUp else { return }
+                        bandBottom = $0; placeFlame()
+                    }
                     // (No soft shadow over the sheet: redrawn over the moving world every frame, it halved the frame
                     // rate on the iPhone, 30 → 60 fps without it. Task 6.)
                     .opacity(PerfTest.hideSheet ? 0 : 1)
-                    .padding(.top, 18).padding(.bottom, 2)
+                    .padding(.top, 12).padding(.bottom, 2)
                     .background(alignment: .top) {
                         // Always open, and see-through (Mathis, decision 161): a light veil with rounded shoulders, the
                         // world (painted all the way down, 160) shows behind your quests; the cards themselves are solid.
                         UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28, style: .continuous)
-                            .fill(Theme.floor.opacity(0.42))
+                            .fill(Theme.floor.opacity(0.70))
                             .overlay(UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28, style: .continuous)
-                                .stroke(Theme.cream.opacity(0.12), lineWidth: 0.75))
+                                .stroke(Theme.champagne.opacity(0.28), lineWidth: 0.75))
                             .padding(.horizontal, -16).padding(.top, -4)
                             .ignoresSafeArea(edges: .bottom)
                     }
+                    .contentShape(Rectangle())
+                    .gesture(DragGesture(minimumDistance: 16).onEnded { v in          // swipe the list down or up too
+                        if v.translation.height > 40, model.questsUp { withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) { model.questsUp = false } }
+                        else if v.translation.height < -40, !model.questsUp { withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) { model.questsUp = true } }
+                    })
                 }
                 .padding(.horizontal, 16)
                 .opacity(flameOpen || CommandLine.arguments.contains("-worldonly") ? 0 : 1)   // Your Flame is its own quiet page (-worldonly: test, the world alone)
@@ -319,20 +329,12 @@ struct HomeView: View {
 
     private var topBar: some View {
         VStack(spacing: 4) {
-            Text(world == .sanctuary ? "Sanctuary" : world.name).font(.story(world == .sanctuary ? 36 : 30, .medium)).foregroundStyle(.white)
+            Text(world == .sanctuary ? "Sanctuary" : world.name).font(.story(world == .sanctuary ? 32 : 26, .medium)).foregroundStyle(.white)
                 .shadow(color: .black.opacity(0.4), radius: 6)
-            if let rs = realmScene {                                     // how awake this realm is
-                Text("\(world.pillar) · \(Restoration.names[Restoration.level(depth: rs.heartDepth)]) · \(rs.litCount) \(RealmContent.lights(world)) lit")
-                    .font(.ui(12, .semibold)).foregroundStyle(world.color)
-                    .padding(.horizontal, 10).padding(.vertical, 3).background(Capsule().fill(.black.opacity(0.45)))
-            }
+                .lineLimit(1).minimumScaleFactor(0.8)
             HUDBar(journey: model.journey, embers: shownEmbers ?? model.journey.embers)   // streak, day, Embers (134, 141, 146)
                 .padding(.top, 4)
-            // Your Flame's line of the day (from your last days).
-            Text("“\(flameLine(model.journey))”")
-                .font(.story(14).italic()).foregroundStyle(Theme.cream.opacity(0.9)).multilineTextAlignment(.center)
-                .shadow(color: .black.opacity(PerfTest.noShadows ? 0 : 0.9), radius: 5).shadow(color: .black.opacity(PerfTest.noShadows ? 0 : 0.5), radius: 10)
-                .padding(.horizontal, 30).padding(.top, 2)
+
         }
         .padding(.top, 8)
         .opacity(PerfTest.hideTop ? 0 : 1)
@@ -360,9 +362,12 @@ struct HomeView: View {
     private func placeFlame() {
         let h = UIScreen.main.bounds.height
         guard bandTop > 0, bandBottom > bandTop, h > 0 else { return }
-        let mid = (bandTop + bandBottom) / 2
-        let bodyHeight = min(bandBottom - bandTop - 24, h * 0.136 * CGFloat(model.form.growth))
-        model.feetTarget = Float((mid + max(40, bodyHeight) * 0.47) / h)          // (calibrated on screen: the sprite's visible feet)
+        // One ground anchor in every form; growth rises into the available space, never into the quests/header.
+        let feet = bandBottom - 34
+        let available = max(48, feet - bandTop - 14)
+        let bodyHeight = min(available, h * 0.16 * CGFloat(model.form.growth))
+        scene.fitFlame(heightFraction: Float(bodyHeight / h), growth: model.form.growth)
+        model.feetTarget = Float(feet / h)
     }
 
     /// The tour's first stops: the satchel, then the world.

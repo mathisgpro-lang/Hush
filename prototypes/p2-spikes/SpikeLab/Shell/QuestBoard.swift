@@ -13,6 +13,9 @@ struct QuestBoard: View {
     var streakOf: (String) -> Int = { _ in 0 }
     /// The quest floor shows every quest as a list (decision 157); the stack is for small spaces.
     var alwaysOpen = false
+    /// (Quest floor) the list is shown, or folded down to its header (Mathis: the toggle is back).
+    var sheetUp = true
+    var toggleSheet: () -> Void = {}
     /// Like notifications on the lock screen (Mathis): one quest in front, the others stacked behind it; swipe up to
     /// fan them out into the full list, swipe down to gather them again.
     @State private var expanded = false
@@ -21,16 +24,18 @@ struct QuestBoard: View {
     private var left: Int { calls.filter { !$0.done }.count }
     /// Four quests or more: the cards tighten a little so the sheet doesn't crowd the world (Mathis).
     private var tight: Bool { calls.count >= 4 }
-    private static let rowH: CGFloat = 72, gap: CGFloat = 11, peek: CGFloat = 9   // airy cards (Mathis, after Finch)
+    private static let rowH: CGFloat = 60, gap: CGFloat = 8, peek: CGFloat = 9   // sleek cards (Mathis, 2026-10-14)
+    private var rowHeight: CGFloat { tight ? 56 : Self.rowH }
+    private var rowGap: CGFloat { tight ? 6 : Self.gap }
 
     var body: some View {
         let n = calls.count
         let stackH = n == 0 ? Self.rowH : expanded ? CGFloat(n) * Self.rowH + CGFloat(max(0, n - 1)) * Self.gap
                                               : Self.rowH + CGFloat(min(2, max(0, n - 1))) * Self.peek
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: sheetUp || !alwaysOpen ? 9 : 0) {
             HStack(alignment: .center, spacing: 8) {
                 Text(left == 0 ? (calls.isEmpty ? "Your day is ready" : "Your Flame feels good today") : "Your Flame needs today")
-                    .font(.story(18, .medium)).foregroundStyle(Theme.cream)
+                    .font(.story(16.5, .medium)).foregroundStyle(Theme.cream)
                 Spacer()
                 if n > 1 && !alwaysOpen {
                     Button { withAnimation(Motion.soft) { expanded.toggle() } } label: {
@@ -42,6 +47,14 @@ struct QuestBoard: View {
                         .padding(.horizontal, 10).frame(height: 28)
                         .background(Capsule().fill(.white.opacity(0.1)))
                         .contentShape(Capsule())
+                    }
+                    .buttonStyle(PressableStyle())
+                }
+                if alwaysOpen && !calls.isEmpty {                       // fold the list away, or bring it back
+                    Button(action: toggleSheet) {
+                        Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.cream)
+                            .rotationEffect(.degrees(sheetUp ? 0 : 180))
+                            .frame(width: 28, height: 28).background(Circle().fill(.white.opacity(0.1))).contentShape(Circle())
                     }
                     .buttonStyle(PressableStyle())
                 }
@@ -59,16 +72,19 @@ struct QuestBoard: View {
                         .frame(maxWidth: .infinity).frame(height: Self.rowH)
                         .background(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.champagne.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
                 }
+            } else if alwaysOpen && !sheetUp {
+                EmptyView()                                          // folded: just the header
             } else if alwaysOpen {
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: tight ? 8 : Self.gap) {
+                    VStack(spacing: rowGap) {
                         ForEach(calls) { c in QuestRow(call: c, streak: streakOf(c.title), open: { open(c) }, tick: { p in tick(c, p) }, tight: tight) }
                     }
                     .padding(.bottom, 4)
                 }
                 .scrollBounceBehavior(.basedOnSize)
                 // Exactly as tall as its quests (up to four, then it scrolls): the sheet hugs them, right above the bar.
-                .frame(height: CGFloat(min(n, 4)) * (tight ? 64 : Self.rowH) + CGFloat(max(0, min(n, 4) - 1)) * (tight ? 8 : Self.gap) + 4)
+                .frame(height: CGFloat(min(n, 4)) * rowHeight + CGFloat(max(0, min(n, 4) - 1)) * rowGap + 4)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             } else {
                 ZStack(alignment: .top) {
                     ForEach(Array(calls.enumerated()), id: \.element.id) { i, c in
@@ -116,15 +132,15 @@ struct QuestRow: View {
     @State private var popped = 0          // bumps when the quest is done: the tick pops, a ring ripples, the card bounces
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Button(action: open) {
-                HStack(spacing: 14) {
+                HStack(spacing: 12) {
                     ZStack {
-                        Circle().fill(call.realm.color.opacity(0.22)).frame(width: tight ? 44 : 50, height: tight ? 44 : 50)
-                        Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage(named: "\(call.prop.replacingOccurrences(of: "px-", with: "")).png") ?? UIImage()).resizable().interpolation(.none).scaledToFit().frame(width: tight ? 32 : 36, height: tight ? 32 : 36)
+                        Circle().fill(call.realm.color.opacity(0.22)).frame(width: tight ? 38 : 42, height: tight ? 38 : 42)
+                        Image(uiImage: UIImage(named: "\(call.prop).png") ?? UIImage(named: "\(call.prop.replacingOccurrences(of: "px-", with: "")).png") ?? UIImage()).resizable().interpolation(.none).scaledToFit().frame(width: tight ? 27 : 30, height: tight ? 27 : 30)
                     }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(call.title).font(.story(18.5, .semibold)).foregroundStyle(Theme.ink.opacity(call.done ? 0.4 : 1))
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(call.title).font(.story(17, .semibold)).foregroundStyle(Theme.ink.opacity(call.done ? 0.4 : 1))
                             .strikethrough(call.done, color: Theme.ink.opacity(0.4)).lineLimit(1)
                         HStack(spacing: 6) {
                             // An intention: your way, or the idea you picked (decision 166).
@@ -138,7 +154,7 @@ struct QuestRow: View {
                             Text("·")
                             HStack(spacing: 3) { EmberCoin(size: 11); Text("+10") }
                         }
-                        .font(.ui(13, .semibold)).foregroundStyle(Theme.ink.opacity(call.done ? 0.35 : 0.65))
+                        .font(.ui(12, .semibold)).foregroundStyle(Theme.ink.opacity(call.done ? 0.35 : 0.65))
                     }
                     Spacer(minLength: 0)
                 }
@@ -151,14 +167,14 @@ struct QuestRow: View {
                 tick(tickCenter)
             } label: {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(call.done ? AnyShapeStyle(LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.4), Color(red: 0.93, green: 0.55, blue: 0.22)], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(Color.white))
-                    RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(call.done ? .clear : Theme.paperEdge.opacity(0.55), lineWidth: 1.2)
-                    Image(systemName: "checkmark").font(.system(size: 21, weight: .heavy))
+                    RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(call.done ? .clear : Theme.paperEdge.opacity(0.55), lineWidth: 1.2)
+                    Image(systemName: "checkmark").font(.system(size: 18, weight: .heavy))
                         .foregroundStyle(call.done ? .white : Color(red: 0.42, green: 0.62, blue: 0.3))
                         .scaleEffect(call.done ? 1.1 : 1)
                 }
-                .frame(width: 52, height: tight ? 42 : 46)
+                .frame(width: 46, height: tight ? 36 : 40)
                 .keyframeAnimator(initialValue: CGFloat(1), trigger: popped) { v, s in v.scaleEffect(s) } keyframes: { _ in
                     KeyframeTrack {
                         CubicKeyframe(0.82, duration: 0.07)
@@ -179,17 +195,17 @@ struct QuestRow: View {
             .buttonStyle(PressableStyle())
             .disabled(call.done)
         }
-        .padding(.leading, 10).padding(.trailing, 12).frame(height: tight ? 64 : 72)
+        .padding(.leading, 9).padding(.trailing, 10).frame(height: tight ? 56 : 60)
         .keyframeAnimator(initialValue: CGFloat(1), trigger: popped) { v, s in v.scaleEffect(s) } keyframes: { _ in
             KeyframeTrack { SpringKeyframe(1.035, duration: 0.14, spring: .snappy); SpringKeyframe(1, duration: 0.45, spring: .bouncy) }
         }
-        .background(RoundedRectangle(cornerRadius: 22, style: .continuous)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous)
             .fill(LinearGradient(colors: [Color(red: 1, green: 0.98, blue: 0.93), Theme.paperTop], startPoint: .top, endPoint: .bottom))
             .opacity(call.done ? 0.82 : 1))
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Theme.paperEdge.opacity(0.35), lineWidth: 0.75))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Theme.paperEdge.opacity(0.35), lineWidth: 0.75))
         // A crisp lip under the card instead of a soft shadow (after Finch): it costs nothing to draw, while blurred
         // shadows over the moving world cost half the frame rate (task 6).
-        .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Color.black.opacity(0.28)).offset(y: 4))
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.black.opacity(0.28)).offset(y: 3))
         .animation(.spring(response: 0.35, dampingFraction: 0.6), value: call.done)
         .onChange(of: call.done) { _, done in if done { popped += 1 } }
     }

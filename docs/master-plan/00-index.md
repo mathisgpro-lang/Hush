@@ -78,14 +78,15 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-13, decisions 144–161)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-14, decisions 169–170)
 
-**Current work: P3.0, the game loop on the pixel route** (`docs/plan-2.0/p30-next-steps.md`). Home = the world as a stage in the top half (camera lifted, 158/160), today's quests always open on a see-through sheet (161), bigger bar icons; rounds of 7/14/30 days replace the 66-day arc (159).
-- ✅ All seven worlds painted to the bottom of the screen (decision 160; `tools/build_ext.py`). Test flag `-worldonly` shows a world without the interface.
-- **Now: `docs/plan-2.0/p32-steps.md`** (one step at a time, ticked only with Mathis's OK). Priority 1 = step 6, the new Flame: Codex painted the six forms (`docs/design/p32/flame-*.png`); **next, when Codex is back (after 22:00 on 2026-10-14): Codex does phase B, the faces and the integration in the app** (no design by Claude, Mathis). Then the tired poses for step 3 (its rule is done), the icon (step 4, name Hush done), the streak screen (5), the map (7). Steps 1–2 await Mathis's OK.
-- **Next (P3.0 step 1):** timers and counters inside quests, Apple Health auto-ticks, how a lost streak feels, reminders. Offered and pending Mathis's word: a "living world" shader pass (water, torch light, mist, evolution dissolve) without the third-party Shader Techniques skill (judged thin, Unity-only).
-- Test flags: `-skipintro`, `-freshjourney`, `-autointro -stoppromise` (intro up to the round choice), `-seedjourney`, `-allopen`, `-realm <id>`, `-map`.
-- Phone: Release build to `dd-spikelab-dev`, `devicectl device install app`, device `00008120-001411043639A01E` (it must be unlocked to launch).
+**Current work: dimensional Flame, coherent home composition and readable discovery map.** Mathis authorized implementation and direct iPhone installation; plan: `docs/plan-2.0/p32-flame-presence.md`.
+- Full-screen visual target: `docs/design/flame-depth/sanctuary-screen-v1.png`. Runtime background: `live/sanctuary-stage.png`; six production characters: `live/evolutions-atlas-v2.png`. Other realm paintings and angles remain unchanged.
+- Code now shares the ground anchor, fits Flame size between compact header and quests, keeps named dark onboarding silhouettes, and shows distinct map realm boundaries/nameplates along a spaced route. Final checks/install status is in the presence plan.
+- Priorities: Mathis checks the actual iPhone result; refine composition first, then facial/character animation. Do not resume the older hard-outline atlas or delayed phase-B job. The latest user authorization supersedes those stale resume steps.
+- Other P3.2 work stays in `docs/plan-2.0/p32-steps.md`; do not mark those steps approved without Mathis.
+- Test flags: `-skipintro`, `-form <stage>`, `-realm <id>`, `-map`, `-locked`, `-introstep growing -previewform <stage>`. Never send `-freshjourney` or `-seedjourney` to the real phone for a visual update.
+- Phone: Release `prototypes/p2-spikes/dd-spikelab-dev`, device `00008120-001411043639A01E`, bundle `com.mathis.lifegamified.spikelab`.
 
 ---
 

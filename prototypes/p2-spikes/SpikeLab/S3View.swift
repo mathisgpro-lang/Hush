@@ -132,6 +132,12 @@ final class RealmScene {
         return Float(sum) / Float(n * 255)
     }
 
+    func fitFlame(heightFraction: Float, growth: Float) {
+        let visibleH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180)
+        heroScale = heightFraction * visibleH * (-heroFeet.z / Self.distance) / (0.27 * max(1, growth) * WorldLayer.overscan)
+        hero.leanPivot.scale = .init(repeating: heroScale)
+    }
+
     func build() async throws {
         let lib = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary()
         let wide = layout != nil
