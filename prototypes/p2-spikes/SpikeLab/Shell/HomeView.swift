@@ -13,6 +13,9 @@ struct HomeView: View {
     private var built: Bool { world == .sanctuary ? model.sanctuaryBuilt : model.realmsBuilt.contains(world) }
     @State private var bandTop: CGFloat = 0          // the free space around the Flame (162): its top…
     @State private var bandBottom: CGFloat = 0       // …and its bottom (the quests)
+    @State private var sheetTop: CGFloat = .infinity  // where the quest panel starts now (open or folded)
+    @State private var dragOnSheet = false            // this swipe began on the quest panel: it's the panel's, not the world's
+    @State private var dragBegan: CGPoint?            // where the current swipe began (a new start = a new swipe)
     @State private var focused: Spot?
     @State private var reward: DeedOutcome?
     @State private var backdrop: Double = 0           // the blurred world behind full sheets (0 = live world)
@@ -116,6 +119,7 @@ struct HomeView: View {
                         cockpitBar
                     }
                     .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: {
+                        sheetTop = $0
                         // Measured only while the list is open: folding it never moves the world (decision 158).
                         guard model.questsUp else { return }
                         bandBottom = $0; placeFlame()
@@ -306,13 +310,23 @@ struct HomeView: View {
     /// Drag to look around the Sanctuary, a little in any direction (Clash of Clans–style): past the limit the
     /// world resists like a rubber band, and letting go glides on (momentum), then settles back inside.
     private func lookAround(_ size: CGSize) -> some Gesture {
-        DragGesture(minimumDistance: 6)
+        DragGesture(minimumDistance: 6, coordinateSpace: .global)
             .onChanged { v in
-                if dragStartPan == nil { dragStartPan = scene.pan; scene.fingerDown = true }
+                // A swipe that starts on the quest panel scrolls or folds the quests; the world stays still (Mathis).
+                // Decided once per swipe, from where it began (the list may take over a swipe without ending ours).
+                if v.startLocation != dragBegan {
+                    dragBegan = v.startLocation
+                    dragOnSheet = v.startLocation.y >= sheetTop - 8
+                    dragStartPan = dragOnSheet ? nil : scene.pan
+                    scene.fingerDown = !dragOnSheet
+                }
+                if dragOnSheet { return }
                 let raw = (dragStartPan ?? .zero) + SIMD2(-Float(v.translation.width), Float(v.translation.height)) / Float(ppm(size))
                 scene.panTarget = SIMD2(EdgeSafety.rubberBand(raw.x, scene.panLimit.x), EdgeSafety.rubberBand(raw.y, scene.panLimit.y))
             }
             .onEnded { v in
+                dragBegan = nil
+                if dragOnSheet { dragOnSheet = false; return }
                 let projected = (dragStartPan ?? .zero) + SIMD2(-Float(v.predictedEndTranslation.width), Float(v.predictedEndTranslation.height)) / Float(ppm(size))
                 scene.panTarget = simd_clamp(projected, -scene.panLimit, scene.panLimit)
                 dragStartPan = nil; scene.fingerDown = false
