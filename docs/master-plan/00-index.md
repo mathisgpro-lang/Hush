@@ -85,6 +85,7 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 - Code now shares the ground anchor, fits Flame size between compact header and quests, keeps named dark onboarding silhouettes, and shows distinct map realm boundaries/nameplates along a spaced route. Final checks/install status is in the presence plan.
 - Priorities: Mathis checks the actual iPhone result; refine composition first, then facial/character animation. Do not resume the older hard-outline atlas or delayed phase-B job. The latest user authorization supersedes those stale resume steps.
 - Other P3.2 work stays in `docs/plan-2.0/p32-steps.md`; do not mark those steps approved without Mathis.
+- **Waiting on Codex** (credits reset 2026-10-15 03:00; `scripts/resume-codex.sh` runs it): `scripts/p32-sanctuary-look.sh`, the Sanctuary's look-around back (Mathis said yes; the composed stage left it no range). Then check it in the simulator (`-push left` / `-push right`), commit, install. Also done 2026-10-14 by Claude (no design): quest panel fold toggle, three quests visible then scroll, quest-panel swipes never move the world.
 - Test flags: `-skipintro`, `-form <stage>`, `-realm <id>`, `-map`, `-locked`, `-introstep growing -previewform <stage>`. Never send `-freshjourney` or `-seedjourney` to the real phone for a visual update.
 - Phone: Release `prototypes/p2-spikes/dd-spikelab-dev`, device `00008120-001411043639A01E`, bundle `com.mathis.lifegamified.spikelab`.
 
