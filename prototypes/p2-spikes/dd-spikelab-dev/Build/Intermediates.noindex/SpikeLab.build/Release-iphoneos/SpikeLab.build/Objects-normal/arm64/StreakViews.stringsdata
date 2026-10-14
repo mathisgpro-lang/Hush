@@ -1,0 +1,112 @@
+{
+  "source": "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/SpikeLab/Shell/StreakViews.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Day %lld / %lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 33
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 20
+        }
+      },
+      {
+        "comment": "",
+        "key": "+%lld XP",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 69
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your flame is lit",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 82
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld days in a row · this day counts as much as any",
+        "location": {
+          "startingColumn": 79,
+          "startingLine": 82
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 75
+        }
+      },
+      {
+        "comment": "",
+        "key": "You earned a shield: one missed day won't put your flame out.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 119
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 112
+        }
+      },
+      {
+        "comment": "",
+        "key": "How long for the next round?",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 224
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your first round is done",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 220
+        }
+      },
+      {
+        "comment": "",
+        "key": "Round %lld is done",
+        "location": {
+          "startingColumn": 60,
+          "startingLine": 220
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld days, and you came back every single one. That's the whole secret.",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 221
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld days. You came back on %lld of them, and your Flame remembers every one.",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 222
+        }
+      }
+    ]
+  },
+  "version": 1
+}

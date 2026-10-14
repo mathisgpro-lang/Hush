@@ -49,7 +49,7 @@ enum Evolution: Int, CaseIterable, Identifiable {
     var name: String { ["Spark", "Flame", "Blaze", "Kindled", "Radiant", "Beyond"][rawValue] }
     var days: Int { [0, 3, 7, 14, 30, 90][rawValue] }
     /// The sprite's base name (pixel art: <base>-keyed/-blink/-happy.png).
-    var base: String { self == .spark ? "px-spark" : "px-\(["", "flame", "blaze", "kindled", "radiant", "beyond"][rawValue])" }
+    var base: String { "depth-" + name.lowercased() }
     /// How tall it stands next to the Spark.
     var growth: Float { [1, 1.18, 1.32, 1.44, 1.55, 1.66][rawValue] }
     /// The art is in the app (Codex paints them one by one).
@@ -126,3 +126,13 @@ enum Progression {
         return n
     }
 }
+
+/// The Flame's vitality stages (P3.2 step 3): how much light it has, from the days since you last lived a quest.
+enum Vitality: Int, CaseIterable {
+    case full, dimmed, faded, almostOut
+    /// 1 day away: a first loss; 3 days: a second; 7 days: almost all lost (never zero).
+    static func after(daysAway d: Int) -> Vitality { d >= 7 ? .almostOut : d >= 3 ? .faded : d >= 1 ? .dimmed : .full }
+    /// How much light, 0…1 (what the world and the Flame will show).
+    var light: Float { [1.0, 0.7, 0.4, 0.12][rawValue] }
+}
+

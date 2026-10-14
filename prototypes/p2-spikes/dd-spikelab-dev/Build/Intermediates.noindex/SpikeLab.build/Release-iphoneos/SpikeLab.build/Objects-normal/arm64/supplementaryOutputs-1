@@ -1,0 +1,12 @@
+{
+  "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/SpikeLab/Alive/AliveDirector.swift" : {
+    "abi-baseline-json" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Build/Intermediates.noindex/SpikeLab.build/Release-iphoneos/SpikeLab.build/Objects-normal/arm64/SpikeLab.abi.json",
+    "const-values" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Build/Intermediates.noindex/SpikeLab.build/Release-iphoneos/SpikeLab.build/Objects-normal/arm64/SpikeLab-primary.swiftconstvalues",
+    "dependencies" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Build/Intermediates.noindex/SpikeLab.build/Release-iphoneos/SpikeLab.build/Objects-normal/arm64/SpikeLab-primary.d",
+    "diagnostics" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Build/Intermediates.noindex/SpikeLab.build/Release-iphoneos/SpikeLab.build/Objects-normal/arm64/SpikeLab-primary.dia",
+    "objc-header" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Build/Intermediates.noindex/SpikeLab.build/Release-iphoneos/SpikeLab.build/Objects-normal/arm64/SpikeLab-Swift.h",
+    "swiftdoc" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Build/Intermediates.noindex/SpikeLab.build/Release-iphoneos/SpikeLab.build/Objects-normal/arm64/SpikeLab.swiftdoc",
+    "swiftmodule" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Build/Intermediates.noindex/SpikeLab.build/Release-iphoneos/SpikeLab.build/Objects-normal/arm64/SpikeLab.swiftmodule",
+    "swiftsourceinfo" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Build/Intermediates.noindex/SpikeLab.build/Release-iphoneos/SpikeLab.build/Objects-normal/arm64/SpikeLab.swiftsourceinfo"
+  }
+}

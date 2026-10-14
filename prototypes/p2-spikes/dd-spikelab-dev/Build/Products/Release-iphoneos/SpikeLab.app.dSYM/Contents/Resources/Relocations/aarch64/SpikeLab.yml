@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Build/Products/Release-iphoneos/SpikeLab.app/SpikeLab'
+relocations:     []
+...

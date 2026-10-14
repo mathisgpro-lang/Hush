@@ -1,0 +1,32 @@
+{
+  "source": "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/SpikeLab/Shell/RealmView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Map",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 121
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ · %@ · %lld %@ lit",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 128
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tap a glowing spot to explore",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 138
+        }
+      }
+    ]
+  },
+  "version": 1
+}

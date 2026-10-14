@@ -1,0 +1,168 @@
+{
+  "source": "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/SpikeLab/Shell/HomeView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Find a quest for it in your satchel",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 282
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ · %@ · %lld %@ lit",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 325
+        }
+      },
+      {
+        "comment": "",
+        "key": "“%@”",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 332
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose today's quests from your satchel",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 408
+        }
+      },
+      {
+        "comment": "",
+        "key": "Something new in %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 420
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld / %lld %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 508
+        }
+      },
+      {
+        "comment": "",
+        "key": "+%lld",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 512
+        }
+      },
+      {
+        "comment": "",
+        "key": "+1",
+        "location": {
+          "startingColumn": 91,
+          "startingLine": 512
+        }
+      },
+      {
+        "comment": "",
+        "key": "Not today",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 530
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld of %lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 649
+        }
+      },
+      {
+        "comment": "",
+        "key": "Day %lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 643
+        }
+      },
+      {
+        "comment": "",
+        "key": " / %lld",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 644
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose what you'll do today. Each one waits for you in the world.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 645
+        }
+      },
+      {
+        "comment": "",
+        "key": "Nothing done yet today. The first one lights your flame.",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 660
+        }
+      },
+      {
+        "comment": "",
+        "key": "Nothing skipped. Skipping is allowed: it never costs you anything.",
+        "location": {
+          "startingColumn": 106,
+          "startingLine": 660
+        }
+      },
+      {
+        "comment": "",
+        "key": "Suggested for you",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 706
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lldd",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 728
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld / %lld %@",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 732
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld min",
+        "location": {
+          "startingColumn": 108,
+          "startingLine": 732
+        }
+      },
+      {
+        "comment": "",
+        "key": "Skip",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 783
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -117,7 +117,7 @@ struct FlameSheet: View {
                     .offset(x: cos(a) * 105, y: sin(a) * 105)
             }
             Image(uiImage: UIImage(named: model.form.base + "-keyed.png") ?? SparkTint.image(PixelMode.sparkImage, ember: model.emberID) ?? UIImage())
-                .resizable().interpolation(.none).scaledToFit()
+                .resizable().interpolation(.high).scaledToFit()
                 .frame(height: 110 * CGFloat(model.form.growth)).offset(y: bob ? -4 : 3)
                 .id(model.form).transition(.scale(scale: 0.7).combined(with: .opacity))
         }
@@ -142,7 +142,7 @@ struct FlameSheet: View {
                             Circle().fill(model.form == f ? Theme.champagne.opacity(0.22) : .white.opacity(0.05)).frame(width: 46, height: 46)
                             Circle().stroke(model.form == f ? Theme.champagne : Theme.champagne.opacity(0.15), lineWidth: model.form == f ? 1.2 : 0.5).frame(width: 46, height: 46)
                             if let img = UIImage(named: (f.available ? f.base : "px-spark") + "-keyed.png") {
-                                Image(uiImage: img).renderingMode(open ? .original : .template).resizable().interpolation(.none).scaledToFit()
+                                Image(uiImage: img).renderingMode(open ? .original : .template).resizable().interpolation(.high).scaledToFit()
                                     .frame(height: 22 + CGFloat(f.rawValue) * 2.5)
                                     .foregroundStyle(Color.black.opacity(0.7))
                                     .opacity(open ? 1 : 0.55)

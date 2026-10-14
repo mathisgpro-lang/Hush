@@ -1,0 +1,72 @@
+{
+  "buildCommand" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildOnly"
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "89872b71d368636c4953099d2f62a3914de11391c028875876a51dff1a2ca6b4"
+    }
+  ],
+  "containerPath" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/SpikeLab.xcodeproj",
+  "continueBuildingAfterErrors" : false,
+  "dependencyScope" : "workspace",
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "activeArchitecture" : "undefined_arch",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : true,
+      "hostTargetedPlatform" : null,
+      "platform" : "iphoneos",
+      "sdk" : "iphoneos27.0",
+      "sdkVariant" : "iphoneos",
+      "supportedArchitectures" : [
+        "armv4t",
+        "armv5",
+        "armv6",
+        "armv7",
+        "armv7f",
+        "armv7s",
+        "armv7k",
+        "arm64",
+        "arm64e"
+      ],
+      "targetArchitecture" : "undefined_arch"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Build/Products",
+      "derivedDataPath" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev",
+      "indexDataStoreFolderPath" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Index.noindex/PrecompiledHeaders",
+      "pchPath" : "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/dd-spikelab-dev/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Release",
+    "overrides" : {
+      "commandLine" : {
+        "table" : {
+
+        }
+      },
+      "synthesized" : {
+        "table" : {
+          "ACTION" : "build",
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "YES",
+          "ONLY_ACTIVE_ARCH" : "YES",
+          "TOOLCHAINS" : "com.apple.dt.toolchain.Metal.32023.921.5 $(inherited)"
+        }
+      }
+    }
+  },
+  "schemeCommand" : "launch",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}

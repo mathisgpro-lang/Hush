@@ -164,6 +164,16 @@ inline float3 s2pixelColor(float3 rgb, float2 uv, half3 tint, float2 unused)
 }
 
 float s2night(float hour);
+
+inline float3 depthStoneLight(float3 rgb, float2 uv, float2 center, float strength, float t) {
+    float2 d = (uv - center) / float2(0.12, 0.038);
+    float pool = exp(-dot(d, d) * 1.7) * strength;
+    float pulse = 0.94 + 0.04 * sin(t * 2.3) + 0.02 * sin(t * 5.1);
+    // Multiplication preserves stone joints and their shadows; a little bounced gold reaches dark stones.
+    return rgb * (1.0 + float3(0.40, 0.22, 0.04) * pool * pulse)
+         + float3(0.045, 0.021, 0.004) * pool * pulse;
+}
+
 float3 s2moods(float hour);
 float3 s2look(texture2d<half> lut, float3 c, float skyM, float3 m);
 float s2fbm(float2 p) { return s2noise(p) * 0.55 + s2noise(p * 2.1 + 3.7) * 0.3 + s2noise(p * 4.3 + 9.1) * 0.15; }
@@ -402,6 +412,8 @@ void groveRestore(realitykit::surface_parameters params)
         // no hour look, no palette); only its lights breathe, and only by brightness.
         graded = rgbRaw * (1.0 + pool * (flicker - 0.9) * 0.6 + core * max(0.0, flicker - 0.9) * 0.5);
     }
+    float3 anchor = float3(params.material_constants().base_color_tint().rgb);
+    if (anchor.b < 0.5) graded = depthStoneLight(graded, uv, anchor.rg, 1.0, t);
     params.surface().set_emissive_color(half3(graded));
     params.surface().set_opacity(1.0);
 }
@@ -709,6 +721,7 @@ void stoneLive(realitykit::surface_parameters params)
         rgb = float3(col.rgb) * (1.0 + saturate(fire * 1.5) * (fl - 0.92) * 2.0);
     }
 
+    rgb = depthStoneLight(rgb, uv, c.yz, c.w, t);
     params.surface().set_emissive_color(half3(rgb));
     if (s2isPixel(pxTint)) col.a = col.a > 0.5h ? 1.0h : 0.0h;          // crisp edges in pixel mode
     params.surface().set_opacity(col.a);      // the land layer is cut out where the sky and the sea show
@@ -906,5 +919,53 @@ void sparkFire(realitykit::surface_parameters params)
     // (pixel art: its own colours; no palette cut)
     if (s2isPixel(pxTint)) a = a > 0.5 ? 1.0 : 0.0;                   // crisp outline
     params.surface().set_emissive_color(half3(rgb * c.y));
+    params.surface().set_opacity(half(a));
+}
+
+
+// Decision 169: high-fidelity painted volume with an animated crown and independently phased outer flames.
+// The central face remains rigid; no second pixel grid or palette reduction.
+[[visible]]
+void depthLive(realitykit::geometry_parameters params) {
+    float2 uv = params.geometry().uv0();
+    float3 p = params.geometry().model_position();
+    float t = params.uniforms().time();
+    float4 c = params.uniforms().custom_parameter();
+    float crown = smoothstep(0.70, 1.0, uv.y);
+    float side = smoothstep(0.22, 0.43, abs(uv.x - 0.5)) * smoothstep(0.08, 0.25, uv.y);
+    float move = max(crown, side * 0.7);
+    float wave = sin(t * 2.2 + uv.y * 9.0 + uv.x * 7.0) + 0.35 * sin(t * 4.3 - uv.y * 14.0);
+    params.geometry().set_model_position_offset(float3(
+        wave * 0.004 * move + c.z * crown * 0.45,
+        sin(t * 2.8 + uv.x * 11.0) * 0.0025 * move + c.w * crown * 0.4,
+        sin(t * 1.7 + uv.x * 9.0) * 0.0015 * side));
+}
+
+[[visible]]
+void depthFire(realitykit::surface_parameters params) {
+    float2 uv = params.geometry().uv0();
+    float t = params.uniforms().time();
+    float4 c = params.uniforms().custom_parameter();
+    constexpr sampler s(address::clamp_to_edge, filter::linear, mip_filter::linear);
+    half4 col = params.textures().base_color().sample(s, float2(uv.x, 1.0 - uv.y));
+    float faceY = params.material_constants().roughness_scale();
+    float face = 1.0 - smoothstep(0.7, 1.0, length((uv - float2(0.52, faceY)) / float2(0.32, 0.16)));
+    float edge = smoothstep(0.2, 0.46, abs(uv.x - 0.5));
+    float fire = max(smoothstep(0.72, 1.0, uv.y), edge) * (1.0 - face);
+    float pulse = 1.0 + 0.025 * sin(t * 2.3) + 0.018 * sin(t * 5.1 + uv.y * 15.0) * fire;
+    float3 rgb = float3(col.rgb) * pulse * clamp(c.y, 0.7, 1.03);
+    float night = s2night(params.material_constants().metallic_scale() * 24.0);
+    rgb *= mix(float3(1.0), float3(0.98, 0.98, 1.025), night * edge * 0.4);
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(half3(rgb));
+    params.surface().set_opacity(col.a);
+}
+
+[[visible]]
+void depthContact(realitykit::surface_parameters params) {
+    float2 d = (params.geometry().uv0() - 0.5) * 2.0;
+    float a = exp(-dot(d, d) * 4.0) * 0.30 * (1.0 - smoothstep(0.7, 1.0, length(d)));
+    params.surface().set_base_color(half3(0));
+    params.surface().set_emissive_color(half3(0.085, 0.035, 0.018));
     params.surface().set_opacity(half(a));
 }

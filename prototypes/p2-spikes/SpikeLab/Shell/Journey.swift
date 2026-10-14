@@ -51,6 +51,8 @@ final class Journey {
     private(set) var roundStart: Int?                 // the day number the current round began on (nil: day 1)
     private(set) var roundsDone = 0
     static let roundChoices = [7, 14, 30]
+    /// When a round ends you may renew it for longer (P3.2 step 2): 7, 14, 30 or 90 days.
+    static let renewChoices = [7, 14, 30, 90]
     /// How long the current round lasts (the promise you chose; 7 until you choose).
     var roundLength: Int { promise ?? 7 }
     /// Today's day within the round (1…length).
@@ -81,6 +83,10 @@ final class Journey {
     var pickableForm: Evolution { Evolution.allOpen ? (Evolution.allCases.last { $0.available } ?? .spark) : reachedForm }
     /// The form your Flame shows: the one you chose (if you may), else the highest reached.
     var form: Evolution {
+        // Ephemeral visual-test override; never changes the user's saved form or progression.
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "-form"), i + 1 < args.count,
+           let f = Evolution.allCases.first(where: { $0.name.lowercased() == args[i + 1] }) { return f }
         let r = reachedForm
         guard let c = chosenForm, c.rawValue <= pickableForm.rawValue, c.available else { return Evolution.allCases.last { $0.rawValue <= r.rawValue && $0.available } ?? .spark }
         return c
@@ -266,6 +272,16 @@ final class Journey {
     }
     /// How many things you've done for each pillar (its light).
     func light(for realm: RealmID) -> Int { deeds.filter { $0.realm == realm.rawValue }.count }
+    /// Whole days since you last lived a quest (0 = today, or never started yet).
+    func daysAway(at date: Date = Date()) -> Int {
+        guard let last = deeds.map(\.date).max() else { return 0 }
+        let cal = Calendar.current
+        return max(0, cal.dateComponents([.day], from: cal.startOfDay(for: last), to: cal.startOfDay(for: date)).day ?? 0)
+    }
+    /// The Flame's vitality (P3.2 step 3, Mathis): full while you live your days; a first loss after one day away, a
+    /// second after three, almost all gone after seven. It never reaches zero (users never lose it all) and comes
+    /// straight back with the next quest. How it looks is the designers' part (Codex): this is only the rule.
+    var vitality: Vitality { Vitality.after(daysAway: daysAway()) }
     /// Days lived out of the last seven (Vitality).
     var lastSeven: Int {
         let cal = Calendar.current

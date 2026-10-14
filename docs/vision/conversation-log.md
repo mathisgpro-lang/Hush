@@ -295,3 +295,10 @@ Phase B conversation complete. Next: draft chapters 16, 17, 20 and 22 (first pas
 - **Phone:** installs failed (the iPhone refused the developer connection; it needs to be unlocked, on the cable, or restarted).
 - **Later the same day:** Mathis disliked the dark fade at the bottom. Asked one question (extend the worlds, a light sheet, or both); he chose extending the worlds. Codex painted all seven worlds taller, pixel-identical on top, so the new ground joins invisibly. Decision 160.
 
+
+## Session 2026-10-14 — Flame evolution depth study (Codex)
+
+- Mathis asked to try more dimensional evolutions, comparing a Gemini example with the current Beyond screenshot. He requested economical token use for the rest of this session.
+- Read the current six-stage assets and rendering. Thick contours, frontal symmetry and limited form shading contribute to the sticker effect; evolved open/blink/happy frames are currently identical.
+- Generated two concept sheets with the built-in image tool: a pixel pass, then a targeted volume pass using softer painted characters in the pixel Sanctuary. Outputs and exact prompts: `docs/design/flame-depth/2026-10-14-concept.md`.
+- Second pass better demonstrates rounded faces and overlapping flame layers; Kindled and Radiant still need differentiation. This is a visual experiment awaiting Mathis's feedback, not approval to replace art or change the pixel route. No product code or active assets changed. Decision 168.

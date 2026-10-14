@@ -217,7 +217,8 @@ struct HomeView: View {
                 }
             }
         }
-        .onChange(of: built) { _, _ in setUpWorld() }
+        .onChange(of: built) { _, _ in setUpWorld(); placeFlame() }
+        .onChange(of: model.form) { _, _ in placeFlame() }
         .onDisappear { meter.stop(); director?.stop(); model.overlayOpen = false; model.worldPaused = false }
     }
 
@@ -360,7 +361,8 @@ struct HomeView: View {
         let h = UIScreen.main.bounds.height
         guard bandTop > 0, bandBottom > bandTop, h > 0 else { return }
         let mid = (bandTop + bandBottom) / 2
-        model.feetTarget = Float((mid + h * 0.03) / h)          // (calibrated on screen: the sprite's visible feet)
+        let bodyHeight = min(bandBottom - bandTop - 24, h * 0.136 * CGFloat(model.form.growth))
+        model.feetTarget = Float((mid + max(40, bodyHeight) * 0.47) / h)          // (calibrated on screen: the sprite's visible feet)
     }
 
     /// The tour's first stops: the satchel, then the world.

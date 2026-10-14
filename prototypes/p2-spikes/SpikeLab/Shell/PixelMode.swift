@@ -13,7 +13,7 @@ enum PixelMode {
     /// The native pixel art is in the app (decision 149): the Sanctuary and the Spark are drawn as pixel art, not
     /// filtered paintings (the other worlds still use the filter until Codex repaints them).
     nonisolated static let world: Bool = on && Bundle.main.url(forResource: "px-home-paint", withExtension: "png") != nil
-    nonisolated static let sparkBase = world ? "px-spark" : "spark"
+    nonisolated static let sparkBase = "depth-spark"
     nonisolated static let sparkImage = sparkBase + "-keyed.png"
     /// The pixel world's native grid (art pixels), from tools/build_pixel_world.py.
     static let worldGrid: SIMD2<Float>? = {
@@ -28,6 +28,8 @@ enum PixelMode {
     /// textures span (so an art pixel is the same size everywhere); `sprite` = a small character (its own scale).
     @MainActor static func apply(to root: Entity, on: Bool) {
         visit(root) { e in
+            // Decision 169: preserve the character's painted volume and alpha; only worlds use the pixel grid.
+            guard !e.name.hasPrefix("depth-flame") else { return }
             guard var comp = e.model else { return }
             var changed = false
             comp.materials = comp.materials.map { mat in

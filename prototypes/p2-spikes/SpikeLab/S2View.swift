@@ -96,7 +96,7 @@ final class SanctuaryScene {
     /// The painting is sized for a 40° view; the camera looks a little closer (35°), which leaves room to peek
     /// up and down as well as sideways.
     static let paintFov: Float = 40
-    static let fov: Float = 35
+    static let fov: Float = 30
 
     /// Depth from Apple's Depth Anything V2 (tools/depthmap), white = near. Read once into memory.
     private var depth: (w: Int, h: Int, px: [UInt8])?
@@ -273,8 +273,8 @@ final class SanctuaryScene {
         let d = Self.distance - relief(depthAt(hx(circle.x), circle.y)) - 0.01
         let k = d / Self.distance
         // Exactly as in the root frame: the cutout is 426 of the painting's 1846 px tall (its mesh is 0.27 tall).
-        let scale = (PixelMode.world ? 0.07 : 0.105) * h * k / 0.27   // the Spark: small, a newborn spirit (smaller in the pixel Sanctuary)
-        let feet = SIMD3<Float>((hx(circle.x) - 0.5) * w * k, (circle.y + (PixelMode.world ? RealmScene.feetLift : 0) - 0.5) * h * k, -d)   // feet on the centre
+        let scale = (PixelMode.world ? 0.10 : 0.105) * h * k / 0.27   // the Spark: small, a newborn spirit (smaller in the pixel Sanctuary)
+        let feet = SIMD3<Float>((hx(circle.x) - 0.5) * w * k, (circle.y + 0 - 0.5) * h * k, -d)   // feet on the centre
         hero.leanPivot.scale = .init(repeating: scale)
         hero.leanPivot.position = feet + SIMD3(0, (PixelMode.world ? 0.0 : 0.09) * scale, 0)   // (pixel: in the middle of the circle)
         hero.stationary = true

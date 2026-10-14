@@ -1,0 +1,32 @@
+{
+  "source": "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/SpikeLab/ProbeView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Pipeline probe",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 200
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cheer",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 190
+        }
+      },
+      {
+        "comment": "",
+        "key": "Blink",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 191
+        }
+      }
+    ]
+  },
+  "version": 1
+}

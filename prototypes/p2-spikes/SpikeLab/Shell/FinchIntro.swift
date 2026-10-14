@@ -84,8 +84,8 @@ struct FinchIntro: View {
     @State private var meetFor: String?
     @State private var prepDone = 0
     @State private var reps = 0
-    private static let stages = ["stage-spark", "stage-flame", "stage-blaze", "stage-kindled", "stage-beyond"]
-    private static let stageHeights: [CGFloat] = [282, 464, 602, 681, 716]
+    private static let stages = Evolution.allCases
+    @State private var glimpseTask: Task<Void, Never>?
 
     private var flameVisible: Bool { step.rawValue >= IntroStep.born.rawValue }
 
@@ -118,18 +118,20 @@ struct FinchIntro: View {
                             HatchBurst(start: hs, center: CGPoint(x: f.feet.x, y: f.feet.y - max(60, f.height * 0.55) * 0.5), color: gold)
                         }
                         if let m = morph {
-                            let h = f.height * Self.stageHeights[m] / Self.stageHeights[0] * 0.95
-                            // In shadow: only the outline of what it will become, edged with a faint warm light
-                            // (the future stays a mystery until it's lived).
-                            Image(uiImage: UIImage(named: "\(Self.stages[m]).png") ?? UIImage()).resizable()
-                                .renderingMode(.template).scaledToFit()
-                                .foregroundStyle(LinearGradient(colors: [Color(red: 0.16, green: 0.1, blue: 0.2), Color(red: 0.07, green: 0.05, blue: 0.12)], startPoint: .top, endPoint: .bottom))
-                                .shadow(color: Color(red: 1, green: 0.7, blue: 0.4).opacity(0.85), radius: 2)
-                                .shadow(color: Color(red: 1, green: 0.55, blue: 0.25).opacity(0.5), radius: 18)
+                            let form = Self.stages[m]
+                            let h = min(g.size.height * 0.27, f.height * CGFloat(form.growth))
+                            // The exact same silhouette as the live form, including Radiant; no color is revealed.
+                            Image(uiImage: UIImage(named: form.base + "-keyed.png") ?? UIImage())
+                                .renderingMode(.template).resizable().interpolation(.high).scaledToFit()
+                                .foregroundStyle(Color(red: 0.025, green: 0.018, blue: 0.035))
                                 .frame(height: h)
-                                .position(x: f.feet.x, y: f.feet.y - h * 0.5 + f.height * 0.08)
-                                .id(m).transition(.scale(scale: 0.8).combined(with: .opacity))
-                                .allowsHitTesting(false)
+                                .position(x: f.feet.x, y: f.feet.y - h * 0.5)
+                                .id(m).transition(.opacity).allowsHitTesting(false)
+                            Text(form.name).font(.story(27, .semibold)).foregroundStyle(cream)
+                                .padding(.horizontal, 18).padding(.vertical, 5)
+                                .background(Capsule().fill(Color.black.opacity(0.60)))
+                                .position(x: f.feet.x, y: f.feet.y + 28)
+                                .id("name-\(m)").transition(.opacity).allowsHitTesting(false)
                         }
                         Circle().fill(RadialGradient(colors: [.white.opacity(morphFlash), Color(red: 1, green: 0.8, blue: 0.45).opacity(morphFlash * 0.6), .clear], center: .center, startRadius: 0, endRadius: f.height * 1.6))
                             .frame(width: f.height * 3.2, height: f.height * 3.2)
@@ -175,7 +177,7 @@ struct FinchIntro: View {
             }
         }
         .onChange(of: model.sanctuaryBuilt) { _, _ in scene.setVitality(worldVitality); setUpWorld() }
-        .onDisappear { meter.stop(); director?.stop() }     // home's own director takes over the same Spark
+        .onDisappear { meter.stop(); director?.stop(); glimpseTask?.cancel() }     // home's own director takes over the same Spark
     }
 
     // MARK: Screens
@@ -657,8 +659,14 @@ struct FinchIntro: View {
     /// A glimpse of what the Spark will become: light gathers, it transforms through its stages (a breath each),
     /// then settles back into the little Spark it is today.
     private func glimpse() {
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "-previewform"), i + 1 < args.count,
+           let form = Evolution.allCases.first(where: { $0.name.lowercased() == args[i + 1] }) {
+            scene.hideFlameInstantly(); morph = form.rawValue; glimpseDone = true; return
+        }
         glimpseDone = false
-        Task { @MainActor in
+        glimpseTask?.cancel()
+        glimpseTask = Task { @MainActor in
             func wait(_ s: Double) async { try? await Task.sleep(for: .seconds(s)) }
             await wait(1.6)
             FeelHaptics.shared.startCharge(duration: 1.0); FeelSound.shared.startCharge(duration: 1.0, pitch: 3)
@@ -666,13 +674,15 @@ struct FinchIntro: View {
             await wait(0.5)
             scene.flameTarget = 0                                     // the living Spark gives way to the vision
             FeelHaptics.shared.stopCharge(); FeelSound.shared.stopCharge()
-            for m in 1..<Self.stages.count {
+            for m in 0..<Self.stages.count {
+                guard !Task.isCancelled, step == .growing else { return }
                 withAnimation(.easeInOut(duration: 0.35)) { morph = m; morphFlash = 0.35 }
                 FeelHaptics.shared.nudge(); FeelSound.shared.chime(m + 1)
-                await wait(m == Self.stages.count - 1 ? 1.4 : 0.9)
+                await wait(1.25)
                 withAnimation(.easeIn(duration: 0.2)) { morphFlash = 0.8 }
                 await wait(0.2)
             }
+            guard !Task.isCancelled, step == .growing else { return }
             withAnimation(.easeOut(duration: 0.4)) { morph = nil; morphFlash = 0.9 }
             scene.flameTarget = 1                                     // back to the Spark, with its little spring
             FeelHaptics.shared.ignite(); FeelSound.shared.ignite(pitch: 3)

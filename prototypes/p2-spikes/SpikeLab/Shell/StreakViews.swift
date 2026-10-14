@@ -222,7 +222,7 @@ struct RoundComplete: View {
                  : "\(length) days. You came back on \(lived) of them, and your Flame remembers every one.")
                 .font(.ui(13)).foregroundStyle(Theme.ink.opacity(0.7)).multilineTextAlignment(.center)
             Text("How long for the next round?").font(.story(16, .medium)).foregroundStyle(Theme.ink).padding(.top, 4)
-            ForEach(Journey.roundChoices, id: \.self) { n in
+            ForEach(Journey.renewChoices, id: \.self) { n in
                 Button { UIImpactFeedbackGenerator(style: .medium).impactOccurred(); choose(n) } label: {
                     ParchmentChoice(text: n == length ? "\(n) days · again" : "\(n) days", selected: n == Self.suggested(after: length))
                 }
@@ -236,5 +236,5 @@ struct RoundComplete: View {
         .background(Color.black.opacity(0.35).ignoresSafeArea())
     }
     /// A gentle step up: after 7, suggest 14; after 14, 30; after 30, 30 again.
-    static func suggested(after n: Int) -> Int { Journey.roundChoices.first { $0 > n } ?? n }
+    static func suggested(after n: Int) -> Int { Journey.renewChoices.first { $0 > n } ?? n }   // 7 → 14 → 30 → 90
 }

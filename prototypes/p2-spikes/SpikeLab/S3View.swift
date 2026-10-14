@@ -91,7 +91,7 @@ final class RealmScene {
 
     /// As in the Sanctuary: the painting is laid out for a 40° view but seen through 35°, so it reaches past every
     /// edge of the screen and looking around never shows its end (Mathis, 2026-10-13: "no corners and no borders").
-    static let distance: Float = 1.2, fov: Float = 35, paintFov: Float = 40
+    static let distance: Float = 1.2, fov: Float = 30, paintFov: Float = 40
 
     /// Which realm this is (one engine for every realm: the Grove, the Stillwater, the Highlands…). Its assets are
     /// named after it: <id>-world-paint/-lights/-depth.png and <id>-layout.json (tools/build_realm.py).
@@ -194,6 +194,9 @@ final class RealmScene {
             if let lut = await SolarClock.lut() { m.emissiveColor = .init(texture: .init(lut)) }   // the looks of the hour
             m.custom.texture = .init(lanternTex)
             m.custom.value = [0, 1, -1, 10]
+            func encoded(_ v: Float) -> CGFloat { CGFloat(v <= 0.0031308 ? v * 12.92 : 1.055 * pow(v, 1 / 2.4) - 0.055) }
+            m.baseColor.tint = UIColor(red: encoded(hx(circleUV.x)), green: encoded(circleUV.y), blue: 0, alpha: 1)
+
             m.metallic = .init(floatLiteral: hasWater ? 1 : 0)      // 1 = the water mask is in the lights map's alpha
             // Its life map (what breathes: foliage, cloth), when the tool has made one.
             if UIImage(named: "\(id)-world-life.png") != nil,
@@ -283,10 +286,10 @@ final class RealmScene {
 
         // The Flame on the stone circle.
         // The feet land exactly on the centre of the circle (Mathis): the sprite foot offset, calibrated on screen.
-        let circle = point(hx(circleUV.x), circleUV.y + (PixelMode.world ? Self.feetLift : 0), nearer: 0.012)
+        let circle = point(hx(circleUV.x), circleUV.y + 0, nearer: 0.012)
         try await hero.build()
         let k = -circle.z / Self.distance
-        heroScale = (PixelMode.world ? 0.07 : 0.105) * h * k / 0.27                            // the Spark's size, as in the Sanctuary
+        heroScale = (PixelMode.world ? 0.10 : 0.105) * h * k / 0.27                            // the Spark's size, as in the Sanctuary
         hero.leanPivot.scale = .init(repeating: heroScale)
         // Standing right in the middle of its circle (Mathis): feet on the centre stone, only a breath of hover.
         hero.leanPivot.position = circle + SIMD3(0, (PixelMode.world ? 0.0 : 0.09) * heroScale, 0)

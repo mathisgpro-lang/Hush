@@ -1,0 +1,40 @@
+{
+  "source": "/Users/mathis/AI Projects/Hush/prototypes/p2-spikes/SpikeLab/Shell/RoadMapView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "The Emberlands",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 74
+        }
+      },
+      {
+        "comment": "",
+        "key": "Home",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 70
+        }
+      },
+      {
+        "comment": "",
+        "key": "Opens with %@",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 123
+        }
+      },
+      {
+        "comment": "",
+        "key": "NEW",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 115
+        }
+      }
+    ]
+  },
+  "version": 1
+}
