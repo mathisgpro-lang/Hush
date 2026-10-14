@@ -17,7 +17,7 @@ struct EmberCoin: View {
                 Image(systemName: "flame.fill").font(.system(size: size * 0.5, weight: .bold)).foregroundStyle(Color(red: 0.7, green: 0.3, blue: 0.05).opacity(0.85))
             }
             .frame(width: size, height: size)
-            .shadow(color: .orange.opacity(0.5), radius: size * 0.2)
+            .shadow(color: .orange.opacity(PerfTest.noCoinGlow ? 0 : 0.5), radius: size * 0.2)
         }
     }
 }

@@ -14,8 +14,8 @@ struct GoldButtonLabel: View {
             .background(Capsule(style: .continuous).fill(LinearGradient(colors: [Color(red: 1, green: 0.93, blue: 0.78), Theme.champagne], startPoint: .top, endPoint: .bottom)))
             .overlay(Capsule(style: .continuous).stroke(Theme.champagneDeep.opacity(0.9), lineWidth: 0.75))
             .overlay(Capsule(style: .continuous).stroke(.white.opacity(0.7), lineWidth: 0.75).padding(1.5).mask(LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .center)))
-            .shadow(color: Theme.warmShadow.opacity(0.35), radius: 14, y: 6)
-            .shadow(color: Theme.champagne.opacity(0.25), radius: 20)
+            // A crisp lip, no soft shadows (they're redrawn every frame over the moving world, task 6).
+            .background(Capsule(style: .continuous).fill(Theme.warmShadow.opacity(0.4)).offset(y: 4))
     }
 }
 

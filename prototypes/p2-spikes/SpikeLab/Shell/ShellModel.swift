@@ -370,7 +370,7 @@ final class ShellModel {
         for e in Set(Friend.samples.map(\.ember)) { SparkTint.warmUp(ember: e) }      // friends' Sparks, ready too
         if let i = CommandLine.arguments.firstIndex(of: "-ember"), i + 1 < CommandLine.arguments.count { setEmber(CommandLine.arguments[i + 1]) }   // (test)
         makeCalls()
-        if journey.checkIn() && journey.bornOn != nil { dailyGift = Journey.dailyGift }   // the daily pouch (decision 141)
+        if (journey.checkIn() || CommandLine.arguments.contains("-gift")) && journey.bornOn != nil { dailyGift = Journey.dailyGift }   // the daily pouch (decision 141; -gift: test)
         journey.grant(200, id: "beta-purse")              // the test's starter purse: enough to buy a world right away
         if CommandLine.arguments.contains("-quests") { for id in ["a", "c", "d"] { toggleChosen(id) } }   // (test: three taken)
         planDay()
@@ -495,5 +495,8 @@ enum PerfTest {
     nonisolated static let hideTop = CommandLine.arguments.contains("-hidetop")
     nonisolated static let hideSheet = CommandLine.arguments.contains("-hidesheet")
     nonisolated static let noShadows = CommandLine.arguments.contains("-noshadows")
+    nonisolated static let noCoinGlow = CommandLine.arguments.contains("-nocoinglow")
+    nonisolated static let noGift = CommandLine.arguments.contains("-nogift")
+    nonisolated static let stillIcons = CommandLine.arguments.contains("-stillicons")
 }
 

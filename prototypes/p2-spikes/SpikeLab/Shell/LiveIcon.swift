@@ -44,6 +44,7 @@ struct LiveIcon: View {
             }
         }
         .onAppear {
+            if PerfTest.stillIcons { return }
             withAnimation(.easeInOut(duration: kind == .world ? 2.6 : 2.2).repeatForever(autoreverses: true)) { idle = true }
             if kind == .flame { withAnimation(.easeInOut(duration: 0.42).repeatForever(autoreverses: true)) { flicker = true } }
         }

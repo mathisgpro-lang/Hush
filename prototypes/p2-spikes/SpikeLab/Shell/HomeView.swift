@@ -36,7 +36,13 @@ struct HomeView: View {
     private var questSpots: [SIMD2<Float>] { scene.questSpots }
     /// Quests now live in the list on home (QuestBoard); the objects in the world are off.
     static let questObjects = false
-    private var today: [Call] { model.calls.filter { $0.chosen && !$0.skipped }.sorted { !$0.done && $1.done } }
+    /// Quests just ticked stay where they are for a moment (you see them turn gold, and the next one never slides
+    /// under your finger), then glide to the bottom (task 6).
+    @State private var settling: Set<String> = []
+    private var today: [Call] {
+        func down(_ c: Call) -> Bool { c.done && !settling.contains(c.id) }
+        return model.calls.filter { $0.chosen && !$0.skipped }.sorted { !down($0) && down($1) }
+    }
     private var chosen: [Call] { model.calls.filter { $0.chosen && !$0.done } }
     /// Each quest keeps its spot for the day (finishing one never moves the others).
     private func spotFor(_ call: Call) -> SIMD2<Float> {
@@ -139,7 +145,7 @@ struct HomeView: View {
                     }
                     .transition(.scale(scale: 0.85).combined(with: .opacity))       // springs in (task 5)
                 }
-                if model.dailyGift > 0 && model.tour == nil && built && open == nil && !(satchelOpen || bookOpen || flameOpen) {
+                if model.dailyGift > 0 && !PerfTest.noGift && model.tour == nil && built && open == nil && !(satchelOpen || bookOpen || flameOpen) {
                     DailyPouch(amount: model.dailyGift) { pt in
                         let a = model.dailyGift
                         withAnimation(.easeOut(duration: 0.25)) { model.dailyGift = 0 }
@@ -527,6 +533,8 @@ struct HomeView: View {
 
     private func finish(_ call: Call, size: CGSize, from given: CGPoint? = nil) {
         let from = given ?? scene.screenPoint(world: spotFor(call), in: fullSize)
+        settling.insert(call.id)
+        Task { try? await Task.sleep(for: .seconds(1.3)); _ = withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { settling.remove(call.id) } }
         withAnimation { open = nil }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         let outcome = withAnimation(.sheet) { model.complete(call.id) }

@@ -216,7 +216,7 @@ struct RoundComplete: View {
         VStack(spacing: 12) {
             Image(systemName: "flame.fill").font(.system(size: 40))
                 .foregroundStyle(LinearGradient(colors: [Color(red: 1, green: 0.88, blue: 0.55), Color(red: 1, green: 0.55, blue: 0.25)], startPoint: .top, endPoint: .bottom))
-                .shadow(color: Theme.gold.opacity(0.6), radius: 14)
+                .background(Circle().fill(RadialGradient(colors: [Theme.gold.opacity(0.55), .clear], center: .center, startRadius: 4, endRadius: 40)).frame(width: 80, height: 80))   // a glow, painted (no blur, task 6)
             Text(round == 1 ? "Your first round is done" : "Round \(round) is done").font(.story(22)).foregroundStyle(Theme.ink)
             Text(lived >= length ? "\(length) days, and you came back every single one. That's the whole secret."
                  : "\(length) days. You came back on \(lived) of them, and your Flame remembers every one.")

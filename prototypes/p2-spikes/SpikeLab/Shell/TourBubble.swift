@@ -26,7 +26,7 @@ struct TourBubble: View {
         }
         .padding(18)
         .background(SheetPaper(corner: 22))
-        .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
+        // (The paper carries its own crisp lip: no soft shadow over the moving world, task 6.)
         .transition(.scale(scale: 0.9).combined(with: .opacity))
     }
 }
