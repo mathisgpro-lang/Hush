@@ -167,17 +167,6 @@ struct FloatLayer: View {
 }
 
 /// The shared look of the XP cards: dark, a hairline of gold, a crisp lip (no blur, decision 165).
-private struct XPCardBackground: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .padding(.horizontal, 16).padding(.vertical, 12)
-            .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Theme.floor.opacity(0.95)))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Theme.champagne.opacity(0.32), lineWidth: 0.75))
-            .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color.black.opacity(0.3)).offset(y: 3))
-            .padding(.horizontal, 16)
-    }
-}
-
 /// Your Flame's bar, on top while XP lands: it fills toward everything earned this burst, level after level.
 struct FlameXPBanner: View {
     let startXP: Int          // the Flame's XP before the first of these quests
@@ -217,7 +206,7 @@ struct FlameXPBanner: View {
             LevelBadge(level: run.level, pop: pop, size: 28)
                 .overlay { FloatLayer(items: levelFloats, color: .white) }            // the "+1" rises out of its star
         }
-        .modifier(XPCardBackground())
+        .padding(.horizontal, 16).padding(.vertical, 11)        // (a row of the shared XP panel, XPStack)
         .onAppear {
             landed(targetXP - startXP)
             climb()
@@ -317,7 +306,7 @@ struct XPGainCard: View {
             LevelBadge(level: skill.level, pop: pop, size: 25)
                 .overlay { FloatLayer(items: levelFloats, color: .white) }            // the "+1" rises out of its star
         }
-        .modifier(XPCardBackground())
+        .padding(.horizontal, 16).padding(.vertical, 11)        // (a row of the shared XP panel, XPStack)
         .contentShape(Rectangle())
         .onTapGesture { dismiss() }
         .onAppear(perform: run)
@@ -523,23 +512,35 @@ struct XPItem: Identifiable { let id = UUID(); let outcome: DeedOutcome }
 struct XPStack: View {
     let items: [XPItem]
     let done: (XPItem) -> Void
-    private static let enter = AnyTransition.asymmetric(
-        insertion: .offset(y: -36).combined(with: .scale(scale: 0.92, anchor: .top)).combined(with: .opacity),
-        removal: .offset(y: -20).combined(with: .scale(scale: 0.9, anchor: .top)).combined(with: .opacity))
+    private static let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
             if let first = items.first {
-                FlameXPBanner(startXP: first.outcome.totalXPBefore, targetXP: items.map(\.outcome.totalXPAfter).max() ?? 0)
-                    .transition(Self.enter)
-                    .zIndex(1)
-            }
-            ForEach(items) { item in
-                XPGainCard(outcome: item.outcome) { done(item) }
-                    .transition(Self.enter)
+                // One panel (Mathis: "all part of the same one"): Your Flame on top, then one row per quest's skill,
+                // separated by hairlines; it grows downward as quests are done and shrinks as each row finishes.
+                VStack(spacing: 0) {
+                    FlameXPBanner(startXP: first.outcome.totalXPBefore, targetXP: items.map(\.outcome.totalXPAfter).max() ?? 0)
+                    ForEach(items) { item in
+                        VStack(spacing: 0) {
+                            Rectangle().fill(Theme.cream.opacity(0.1)).frame(height: 0.5).padding(.horizontal, 16)
+                            XPGainCard(outcome: item.outcome) { done(item) }
+                        }
+                        .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity),
+                                                removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .top))))
+                    }
+                }
+                .background(Self.shape.fill(Theme.floor.opacity(0.95)))
+                .clipShape(Self.shape)
+                .overlay(Self.shape.stroke(Theme.champagne.opacity(0.32), lineWidth: 0.75))
+                .background(Self.shape.fill(Color.black.opacity(0.3)).offset(y: 3))      // a crisp lip, no blur (165)
+                .padding(.horizontal, 16)
+                .transition(.asymmetric(
+                    insertion: .offset(y: -36).combined(with: .scale(scale: 0.94, anchor: .top)).combined(with: .opacity),
+                    removal: .offset(y: -20).combined(with: .scale(scale: 0.92, anchor: .top)).combined(with: .opacity)))
             }
             Spacer(minLength: 0)
         }
         .padding(.top, 6)
-        .animation(.spring(response: 0.5, dampingFraction: 0.82), value: items.map(\.id))
+        .animation(.spring(response: 0.5, dampingFraction: 0.84), value: items.map(\.id))
     }
 }
