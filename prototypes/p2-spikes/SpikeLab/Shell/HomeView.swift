@@ -164,7 +164,7 @@ struct HomeView: View {
                 if let l = levelUp {
                     LevelUpScreen(outcome: l, journey: model.journey) { from in
                         let bonus = Progression.levelBonus(l.levelAfter)
-                        model.journey.grant(bonus, id: "level-\(l.levelAfter)")
+                        if !CommandLine.arguments.contains("-xpdemo") { model.journey.grant(bonus, id: "level-\(l.levelAfter)") }   // (the demo pays nothing)
                         coins(from: from, amount: bonus)
                         withAnimation(.easeOut(duration: 0.3)) { levelUp = nil }
                         if l.evolvedTo != nil || l.milestone != nil {

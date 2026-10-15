@@ -102,19 +102,21 @@ final class Journey {
         save()
     }
     private let key = "journey.v1"
-    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil; var dayOne: [String: Int]? = nil; var meetHour: Int? = nil; var promise: Int? = nil; var grants: [String: Int]? = nil; var form: Int? = nil; var skipLog: [String: [Date]]? = nil; var roundStart: Int? = nil; var roundsDone: Int? = nil }
+    private struct Saved: Codable { var bornOn: Date?; var name: String; var ember: String; var pages: [BookPage]; var deeds: [Deed]; var checkIns: [Date]? = nil; var bought: [String]? = nil; var dayOne: [String: Int]? = nil; var meetHour: Int? = nil; var promise: Int? = nil; var grants: [String: Int]? = nil; var form: Int? = nil; var skipLog: [String: [Date]]? = nil; var roundStart: Int? = nil; var roundsDone: Int? = nil; var xpBase: Int? = nil }
 
     init() {
         if CommandLine.arguments.contains("-freshjourney") { UserDefaults.standard.removeObject(forKey: key) }
         if let d = UserDefaults.standard.data(forKey: key), let s = try? JSONDecoder().decode(Saved.self, from: d) {
             bornOn = s.bornOn; name = s.name; ember = s.ember; pages = s.pages; deeds = s.deeds
             checkIns = s.checkIns ?? []; bought = Set(s.bought ?? []); dayOne = s.dayOne ?? [:]; meetHour = s.meetHour; promise = s.promise; grants = s.grants ?? [:]; chosenForm = s.form.flatMap(Evolution.init(rawValue:)); skipLog = s.skipLog ?? [:]; roundStart = s.roundStart; roundsDone = s.roundsDone ?? 0
+            xpBase = s.xpBase ?? 0
         }
         if CommandLine.arguments.contains("-seedjourney") { seedForTesting() }
+        if CommandLine.arguments.contains("-resetlevel") { resetLevel() }          // (once, at Mathis's request)
     }
 
     private func save() {
-        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought), dayOne: dayOne, meetHour: meetHour, promise: promise, grants: grants, form: chosenForm?.rawValue, skipLog: skipLog, roundStart: roundStart, roundsDone: roundsDone)
+        let s = Saved(bornOn: bornOn, name: name, ember: ember, pages: pages, deeds: deeds, checkIns: checkIns, bought: Array(bought), dayOne: dayOne, meetHour: meetHour, promise: promise, grants: grants, form: chosenForm?.rawValue, skipLog: skipLog, roundStart: roundStart, roundsDone: roundsDone, xpBase: xpBase)
         if let d = try? JSONEncoder().encode(s) { UserDefaults.standard.set(d, forKey: key) }
     }
 
@@ -229,7 +231,16 @@ final class Journey {
     }
 
     func streak(at date: Date = Date()) -> StreakStatus { Progression.streak(deeds: deeds, now: date) }
-    var totalXP: Int { deeds.reduce(0) { $0 + ($1.xp ?? 20) } }
+    /// Your Flame's XP: everything your quests earned, minus a reset point (Mathis asked to replay level 1 → 2;
+    /// the record itself is never touched).
+    var totalXP: Int { max(0, deeds.reduce(0) { $0 + ($1.xp ?? 20) } - xpBase) }
+    private(set) var xpBase = 0
+    /// Your Flame back to level 1 (its streak, days, quests, skills and Book stay); its level-up gifts can be earned again.
+    func resetLevel() {
+        xpBase = deeds.reduce(0) { $0 + ($1.xp ?? 20) }
+        grants = grants.filter { !$0.key.hasPrefix("level-") }
+        save()
+    }
     /// A pillar's attribute: the XP its quests have earned (Strength, Wisdom, Warmth, Calm, Focus, Care).
     func attribute(_ p: Pillar6) -> Int { deeds.filter { Pillar6.of(RealmID(rawValue: $0.realm) ?? .grove) == p }.reduce(0) { $0 + ($1.xp ?? 20) } }
     func questStreak(_ title: String) -> Int { Progression.questStreak(title: title, deeds: deeds) }

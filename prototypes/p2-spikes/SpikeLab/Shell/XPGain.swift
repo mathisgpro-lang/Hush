@@ -75,7 +75,6 @@ struct XPBar: View {
     var height: CGFloat = 8
     var colors: [Color] = [Theme.champagne, Theme.gold]
     var flash = 0
-    @State private var sweep = false
     var body: some View {
         GeometryReader { g in
             let w = max(fill > 0.001 ? height : 0, g.size.width * min(1, max(0, fill)))
@@ -86,9 +85,12 @@ struct XPBar: View {
                         Capsule().fill(.white.opacity(0.38)).frame(height: max(1.5, height * 0.3))
                             .padding(.horizontal, height * 0.45).padding(.top, height * 0.14)
                     }
-                    .overlay(alignment: .leading) {                   // light running along the filled part
+                    .overlay(alignment: .leading) {                   // light running along the filled part (its own clock)
                         LinearGradient(colors: [.clear, .white.opacity(0.6), .clear], startPoint: .leading, endPoint: .trailing)
-                            .frame(width: 34).offset(x: sweep ? w + 10 : -44)
+                            .frame(width: 34)
+                            .keyframeAnimator(initialValue: 0.0, repeating: true) { v, ph in v.offset(x: -44 + ph * (w + 54)) } keyframes: { _ in
+                                KeyframeTrack { LinearKeyframe(0, duration: 0.5); LinearKeyframe(1, duration: 1.6) }
+                            }
                     }
                     .clipShape(Capsule())
                     .frame(width: w)
@@ -106,7 +108,6 @@ struct XPBar: View {
             }
         }
         .frame(height: height)
-        .onAppear { withAnimation(.linear(duration: 1.5).delay(0.4).repeatForever(autoreverses: false)) { sweep = true } }
     }
 }
 
@@ -181,15 +182,22 @@ private struct XPCardBackground: ViewModifier {
 struct FlameXPBanner: View {
     let startXP: Int          // the Flame's XP before the first of these quests
     let targetXP: Int         // its XP after the latest one
-    @State private var at = -1                  // the XP the bar shows (it climbs toward the goal)
-    @State private var goal = 0
+    @State private var at: Int                  // the XP the bar shows (it climbs toward the goal)
+    @State private var goal: Int
     @State private var busy = false
-    @State private var run = BarRun(level: 1, fill: 0)
+    @State private var run: BarRun              // set from the start XP before the first frame (never a stray "1")
     @State private var pop = 0
     @State private var leveled = false
     @State private var gained = 0               // the total shown (+105 XP)
     @State private var xpFloats: [FloatNum] = []
     @State private var levelFloats: [FloatNum] = []
+
+    init(startXP: Int, targetXP: Int) {
+        self.startXP = startXP; self.targetXP = targetXP
+        let l = Progression.level(xp: startXP)
+        _at = State(initialValue: startXP); _goal = State(initialValue: targetXP)
+        _run = State(initialValue: BarRun(level: l.level, fill: fraction(l)))
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -211,9 +219,6 @@ struct FlameXPBanner: View {
         }
         .modifier(XPCardBackground())
         .onAppear {
-            at = startXP; goal = targetXP
-            let l = Progression.level(xp: startXP)
-            run = BarRun(level: l.level, fill: fraction(l))
             landed(targetXP - startXP)
             climb()
         }
@@ -242,9 +247,9 @@ struct FlameXPBanner: View {
             while at < goal {
                 let from = Progression.level(xp: at), to = Progression.level(xp: goal)
                 if to.level > from.level {
-                    XPHaptics.fill(ticks: 5, over: 0.45)
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.9)) { run = BarRun(level: from.level, fill: 1) }
-                    try? await Task.sleep(for: .milliseconds(480))
+                    XPHaptics.fill(ticks: 7, over: 0.85)
+                    withAnimation(.easeInOut(duration: 0.9)) { run = BarRun(level: from.level, fill: 1) }
+                    try? await Task.sleep(for: .milliseconds(920))
                     XPHaptics.levelUp()
                     var t = Transaction(); t.disablesAnimations = true
                     withTransaction(t) { run = BarRun(level: from.level, fill: 0) }
@@ -254,12 +259,12 @@ struct FlameXPBanner: View {
                     levelFloats.append(f)
                     Task { @MainActor in try? await Task.sleep(for: .seconds(1.2)); levelFloats.removeAll { $0.id == f.id } }
                     at += from.span - from.into
-                    try? await Task.sleep(for: .milliseconds(260))
+                    try? await Task.sleep(for: .milliseconds(450))
                 } else {
-                    XPHaptics.fill(ticks: 5, over: 0.6)
-                    withAnimation(.spring(response: 0.7, dampingFraction: 0.86)) { run = BarRun(level: to.level, fill: fraction(to)) }
+                    XPHaptics.fill(ticks: 8, over: 1.1)
+                    withAnimation(.easeInOut(duration: 1.15)) { run = BarRun(level: to.level, fill: fraction(to)) }
                     at = goal
-                    try? await Task.sleep(for: .milliseconds(620))
+                    try? await Task.sleep(for: .milliseconds(1150))
                 }
             }
             busy = false
@@ -279,7 +284,7 @@ struct LevelUpChip: View {
 struct XPGainCard: View {
     let outcome: DeedOutcome
     let done: () -> Void
-    @State private var skill = BarRun(level: 1, fill: 0)
+    @State private var skill: BarRun                 // set from the skill's XP before the first frame (never a stray "1")
     @State private var xpShown = 0
     @State private var pop = 0
     @State private var leveled = false
@@ -288,6 +293,12 @@ struct XPGainCard: View {
     @State private var task: Task<Void, Never>?
 
     private var tint: Color { outcome.pillar.realm.color }
+
+    init(outcome: DeedOutcome, done: @escaping () -> Void) {
+        self.outcome = outcome; self.done = done
+        let b = Progression.skill(xp: outcome.attributeBefore)
+        _skill = State(initialValue: BarRun(level: b.level, fill: fraction(b)))
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -315,15 +326,14 @@ struct XPGainCard: View {
 
     private func run() {
         let b = Progression.skill(xp: outcome.attributeBefore), a = Progression.skill(xp: outcome.attributeAfter)
-        skill = BarRun(level: b.level, fill: fraction(b))
         task = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(320))
             if Task.isCancelled { return }
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { xpShown = outcome.xp }
             if a.level > b.level {
-                XPHaptics.fill(ticks: 5, over: 0.45)
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.9)) { skill = BarRun(level: b.level, fill: 1) }
-                try? await Task.sleep(for: .milliseconds(480))
+                XPHaptics.fill(ticks: 7, over: 0.85)
+                withAnimation(.easeInOut(duration: 0.9)) { skill = BarRun(level: b.level, fill: 1) }
+                try? await Task.sleep(for: .milliseconds(920))
                 if Task.isCancelled { return }
                 XPHaptics.levelUp()
                 var t = Transaction(); t.disablesAnimations = true
@@ -332,13 +342,13 @@ struct XPGainCard: View {
                 pop += 1
                 let f = FloatNum(text: "+1")
                 levelFloats.append(f)
-                try? await Task.sleep(for: .milliseconds(240))
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.86)) { skill = BarRun(level: a.level, fill: fraction(a)) }
-                try? await Task.sleep(for: .milliseconds(1700))
+                try? await Task.sleep(for: .milliseconds(400))
+                withAnimation(.easeInOut(duration: 1.0)) { skill = BarRun(level: a.level, fill: fraction(a)) }
+                try? await Task.sleep(for: .milliseconds(3600))       // a level-up stays a while (Mathis)
             } else {
-                XPHaptics.fill(ticks: 5, over: 0.6)
-                withAnimation(.spring(response: 0.7, dampingFraction: 0.86)) { skill = BarRun(level: a.level, fill: fraction(a)) }
-                try? await Task.sleep(for: .milliseconds(2000))
+                XPHaptics.fill(ticks: 8, over: 1.1)
+                withAnimation(.easeInOut(duration: 1.15)) { skill = BarRun(level: a.level, fill: fraction(a)) }
+                try? await Task.sleep(for: .milliseconds(2600))
             }
             if Task.isCancelled { return }
             dismiss()
@@ -364,7 +374,6 @@ struct LevelUpScreen: View {
     @State private var barFill: CGFloat = 0
     @State private var rowsIn = 0
     @State private var pop = 0
-    @State private var twinkle = false
     @State private var collected = false
 
     private var level: Int { outcome.levelAfter }
@@ -380,14 +389,23 @@ struct LevelUpScreen: View {
             VStack(spacing: 0) {
                 // The badge: a big gold star with the level, sparks twinkling around it.
                 ZStack {
-                    ForEach(0..<6, id: \.self) { i in
-                        let a = Double(i) / 6 * 2 * .pi + 0.4, r: CGFloat = i.isMultiple(of: 2) ? 92 : 78
-                        Image(systemName: "sparkle").font(.system(size: i.isMultiple(of: 2) ? 14 : 10, weight: .bold))
-                            .foregroundStyle(Theme.champagne)
-                            .offset(x: cos(a) * r, y: sin(a) * r)
-                            .opacity(badgeIn ? (twinkle == i.isMultiple(of: 2) ? 1 : 0.35) : 0)
-                            .scaleEffect(twinkle == i.isMultiple(of: 2) ? 1.15 : 0.8)
+                    // The sparkles twinkle on their own clock (no repeating animation near the badge: it made the
+                    // big number flicker on the phone, Mathis 2026-10-15).
+                    TimelineView(.animation) { tl in
+                        let t = tl.date.timeIntervalSinceReferenceDate
+                        ZStack {
+                            ForEach(0..<6, id: \.self) { i in
+                                let a = Double(i) / 6 * 2 * .pi + 0.4, r: CGFloat = i.isMultiple(of: 2) ? 92 : 78
+                                let k = 0.5 + 0.5 * sin(t * 2.6 + Double(i) * 1.7)
+                                Image(systemName: "sparkle").font(.system(size: i.isMultiple(of: 2) ? 14 : 10, weight: .bold))
+                                    .foregroundStyle(Theme.champagne)
+                                    .scaleEffect(0.8 + 0.35 * k)
+                                    .opacity(0.35 + 0.65 * k)
+                                    .offset(x: cos(a) * r, y: sin(a) * r)
+                            }
+                        }
                     }
+                    .opacity(badgeIn ? 1 : 0)
                     StarBurst(points: 12, inner: 0.82)
                         .fill(LinearGradient(colors: [Color(red: 1, green: 0.95, blue: 0.78), Theme.gold, Color(red: 0.9, green: 0.55, blue: 0.2)], startPoint: .top, endPoint: .bottom))
                         .frame(width: 150, height: 150)
@@ -485,7 +503,6 @@ struct LevelUpScreen: View {
             try? await Task.sleep(for: .milliseconds(260))
             pop += 1
             withAnimation(.spring(response: 0.4, dampingFraction: 0.65)) { titleIn = true }
-            withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) { twinkle = true }
             try? await Task.sleep(for: .milliseconds(300))
             XPHaptics.fill(ticks: 5, over: 0.7)
             withAnimation(.easeOut(duration: 0.7)) { barFill = CGFloat(l.into) / CGFloat(max(1, l.span)) }
