@@ -201,8 +201,8 @@ struct FlameXPBanner: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(uiImage: UIImage(named: PixelMode.world ? "px-icon-flame.png" : "icon-flame-v2.png") ?? UIImage())
-                .resizable().interpolation(.none).scaledToFit().frame(width: 30, height: 30)
+            Image(uiImage: FlameArt.spark ?? UIImage())
+                .resizable().interpolation(.high).scaledToFit().frame(width: 30, height: 30)
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
                     Text("Your Flame").font(.story(16, .medium)).foregroundStyle(Theme.cream)
@@ -446,7 +446,7 @@ struct LevelUpScreen: View {
                     reward(1, icon: AnyView(Image(uiImage: UIImage(named: "pillar-\(outcome.pillar.rawValue.lowercased()).png") ?? UIImage()).resizable().scaledToFit().frame(width: 36, height: 36)),
                            title: skillAfter > skillBefore ? "\(outcome.pillar.attribute.uppercased()) LEVEL \(skillAfter)" : "\(outcome.pillar.attribute.uppercased()) +\(outcome.xp)",
                            line: skillAfter > skillBefore ? "Your \(outcome.pillar.attribute.lowercased()) reached a new level too." : "Level \(skillAfter), a little closer to the next.")
-                    reward(2, icon: AnyView(Image(uiImage: UIImage(named: PixelMode.world ? "px-icon-flame.png" : "icon-flame-v2.png") ?? UIImage()).resizable().interpolation(.none).scaledToFit().frame(width: 34, height: 34)),
+                    reward(2, icon: AnyView(Image(uiImage: FlameArt.spark ?? UIImage()).resizable().interpolation(.high).scaledToFit().frame(width: 34, height: 34)),
                            title: nextFormTitle, line: nextFormLine)
                 }
                 .padding(.horizontal, 34)

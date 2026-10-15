@@ -384,9 +384,7 @@ final class MapScene {
         }
 
         // Your Spark, hovering where you are.
-        let sparkTex: TextureResource = if let cg = SparkTint.image(PixelMode.sparkImage, ember: ember)?.cgImage {
-            try await TextureResource(image: cg, options: .init(semantic: .color))
-        } else { try await TextureResource(named: "spark-keyed.png") }
+        let sparkTex = try await TextureResource(named: FlameArt.sparkName)      // Codex's painted Spark (2026-10-15)
         var su = UnlitMaterial(); su.color = .init(tint: .white, texture: .init(sparkTex))
         su.blending = .transparent(opacity: .init(floatLiteral: 1.0)); su.writesDepth = false
         let sp = ModelEntity(mesh: .generatePlane(width: 0.03, height: 0.03 * Float(sparkTex.height) / Float(sparkTex.width)), materials: [su])

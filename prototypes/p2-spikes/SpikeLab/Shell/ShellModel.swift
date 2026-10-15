@@ -267,8 +267,7 @@ final class ShellModel {
     /// The form shown everywhere; set when you choose one, or when a new one is reached.
     var form: Evolution = .spark
     private func wearForm(_ hero: HeroRig, root: Entity) async {
-        let f = journey.form
-        guard f != .spark else { return }
+        let f = journey.form                                  // (the Spark too: Codex's painted Spark, not the old pixel one)
         await hero.switchForm(base: f.base, growth: f.growth)
         PixelMode.apply(to: root, on: PixelMode.on)            // its pixel grid follows the new sprite
     }
@@ -373,6 +372,9 @@ final class ShellModel {
     var tour: TourStep?
 
     init() {
+        // Opening the app from its icon: a returning player goes straight home; only a first launch has the intro.
+        let a = CommandLine.arguments
+        if screen == .intro, journey.bornOn != nil, !a.contains("-introstep"), !a.contains("-autointro") { screen = .home }
         for e in Set(Friend.samples.map(\.ember)) { SparkTint.warmUp(ember: e) }      // friends' Sparks, ready too
         makeCalls()
         if (journey.checkIn() || CommandLine.arguments.contains("-gift")) && journey.bornOn != nil { dailyGift = Journey.dailyGift }   // the daily pouch (decision 141; -gift: test)
@@ -388,6 +390,29 @@ final class ShellModel {
         makeCalls()
         planDay()
     }
+    /// Test control: tomorrow arrives (new quests, the daily gift, the streak moves on or breaks).
+    func nextDay() {
+        journey.passDay()
+        light = 0
+        makeCalls(); planDay()
+        if journey.checkIn() { dailyGift = Journey.dailyGift }
+        form = journey.form
+    }
+    /// Test control: start fresh at level 1, still at home.
+    func resetProgress() {
+        journey.resetProgress()
+        light = 0; dailyGift = 0
+        makeCalls(); planDay()
+        if journey.checkIn() { dailyGift = Journey.dailyGift }
+        showForm(.spark)
+    }
+    /// Test control: erase everything; the app closes and the next launch starts with the introduction.
+    func startOver() {
+        journey.eraseAll()
+        for k in ["interest", "questsUp", "ember.id", "intro.done"] { UserDefaults.standard.removeObject(forKey: k) }
+        exit(0)
+    }
+
     /// Your day is never empty (decision 166): the four pillars' intentions (and a milestone challenge, when one has
     /// opened) are on your list; the others wait in the satchel.
     func planDay() {

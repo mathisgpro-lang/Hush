@@ -14,7 +14,7 @@ struct TourBubble: View {
         // A parchment scroll in the Spark's voice, as in the introduction (one look for every dialogue).
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 10) {
-                Image(uiImage: SparkTint.image(PixelMode.sparkImage, ember: ember) ?? UIImage()).resizable().scaledToFit().frame(width: 34, height: 44)
+                Image(uiImage: FlameArt.spark ?? UIImage()).resizable().scaledToFit().frame(width: 34, height: 44)
                     .shadow(color: .orange.opacity(0.6), radius: 6)
                 Text(text).font(.story(17)).foregroundStyle(Theme.ink).fixedSize(horizontal: false, vertical: true)
             }

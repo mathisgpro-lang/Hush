@@ -44,6 +44,7 @@ struct HomeView: View {
     /// Quests just ticked stay where they are for a moment (you see them turn gold, and the next one never slides
     /// under your finger), then glide to the bottom (task 6).
     @State private var settling: Set<String> = []
+    @State private var confirmReset = false           // the test controls' reset (asks first)
     private var today: [Call] {
         func down(_ c: Call) -> Bool { c.done && !settling.contains(c.id) }
         return model.calls.filter { $0.chosen && !$0.skipped }.sorted { !down($0) && down($1) }
@@ -174,6 +175,7 @@ struct HomeView: View {
                     .transition(.opacity)
                 }
                 if let c = celebrate { RewardBurst(outcome: c, celebrationOnly: true) { withAnimation { celebrate = nil } } }
+                if confirmReset { resetCard.transition(.opacity.combined(with: .scale(scale: 0.94))).zIndex(50) }
                 tourLayer
                 if model.journey.roundComplete && model.dailyGift == 0 && model.tour == nil && built && open == nil && rewards.isEmpty && !(satchelOpen || bookOpen || flameOpen) {
                     let j = model.journey
@@ -396,8 +398,57 @@ struct HomeView: View {
 
         }
         .padding(.top, 8)
+        .frame(maxWidth: .infinity)
+        .overlay(alignment: .topTrailing) { if world == .sanctuary { testControls } }
         .opacity(PerfTest.hideTop ? 0 : 1)
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { bandTop = $0; placeFlame() }
+    }
+
+    /// Test controls (Mathis, 2026-10-15, "so that I can experiment more"): the next day, and a reset. Remove for launch.
+    private var testControls: some View {
+        VStack(spacing: 8) {
+            Button {
+                withAnimation(.sheet) { model.nextDay() }
+                flash("A new day · day \(model.journey.dayNumber())")
+            } label: { testIcon("sun.max.fill") }
+            Button { withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { confirmReset = true } } label: { testIcon("arrow.counterclockwise") }
+        }
+        .buttonStyle(PressableStyle())
+        .padding(.trailing, 14).padding(.top, 10)
+    }
+    /// The reset's choice (the app's own card: the system dialog doesn't show over the world).
+    private var resetCard: some View {
+        ZStack {
+            Color.black.opacity(0.4).ignoresSafeArea().onTapGesture { withAnimation { confirmReset = false } }
+            VStack(spacing: 12) {
+                Text("Reset").font(.story(24, .medium)).foregroundStyle(Theme.ink)
+                Text("For testing. Reset progress: level 1, no streak, no worlds bought, your name stays. Start over: everything is erased and the app closes; open it again for the intro.")
+                    .font(.ui(13)).foregroundStyle(Theme.ink.opacity(0.7)).multilineTextAlignment(.center)
+                Button {
+                    withAnimation(.sheet) { confirmReset = false; model.resetProgress() }
+                    flash("A fresh start · level 1")
+                } label: { GoldButtonLabel(text: "Reset progress") }
+                .buttonStyle(PressableStyle()).padding(.top, 6)
+                Button { model.startOver() } label: {
+                    Text("Start over from the intro").font(.ui(15, .semibold)).foregroundStyle(Color(red: 0.7, green: 0.2, blue: 0.15))
+                }
+                .buttonStyle(PressableStyle())
+                Button { withAnimation { confirmReset = false } } label: {
+                    Text("Cancel").font(.ui(14)).foregroundStyle(Theme.ink.opacity(0.6))
+                }
+            }
+            .padding(22)
+            .background(SheetPaper(corner: 24))
+            .padding(.horizontal, 34)
+        }
+    }
+
+    private func testIcon(_ name: String) -> some View {
+        Image(systemName: name).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.cream)
+            .frame(width: 34, height: 34)
+            .background(Circle().fill(Color.black.opacity(0.42)))
+            .overlay(Circle().stroke(Theme.champagne.opacity(0.35), lineWidth: 0.75))
+            .contentShape(Circle())
     }
 
     /// Decision 162: the Flame sits in the middle of the free space between the streak panel (with its line) and the
@@ -505,7 +556,7 @@ struct HomeView: View {
             barButton(.book, "Book", badge: model.journey.newPages > 0, image: UIImage(named: PixelMode.world ? "px-icon-book.png" : "icon-book.png")) {
                 withAnimation(.sheet) { bookOpen = true }
             }
-            barButton(.flame, "Your Flame", badge: false, image: UIImage(named: PixelMode.world ? "px-icon-flame.png" : "icon-flame-v2.png") ?? SparkTint.image(PixelMode.sparkImage, ember: model.emberID)) {   // your Spark, free (no cage)
+            barButton(.flame, "Your Flame", badge: false, image: FlameArt.spark) {   // your Spark, free (no cage)
                 if PerfProbe.on { print("TAP flame button") }
                 director?.tapped()
                 withAnimation(.sheet) { flameOpen = true }

@@ -31,63 +31,60 @@ struct FlameSheet: View {
             LinearGradient(colors: [Color(red: 0.06, green: 0.04, blue: 0.035).opacity(0.9), Color(red: 0.09, green: 0.055, blue: 0.04).opacity(0.97)], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
                 .onTapGesture { }
-            VStack(spacing: 0) {
-                Spacer(minLength: 24)
-                spark
-                VStack(spacing: 4) {
-                    Text(j.name.isEmpty ? "Your Spark" : "\(j.name)'s Spark").font(.story(26, .medium).italic()).foregroundStyle(Theme.cream)
-                    Text("\(model.form.name.uppercased()) · DAY \(j.dayNumber())").font(.ui(11, .semibold)).tracking(2).foregroundStyle(Theme.champagne.opacity(0.8))
-                }
-                .padding(.top, 6)
-                formsRow.padding(.top, 12)
-                Spacer(minLength: 22)
-                // Three quiet numbers.
-                HStack(spacing: 0) {
-                    figure("\(l.level)", "level")
-                    Rectangle().fill(Theme.cream.opacity(0.15)).frame(width: 0.5, height: 34)
-                    figure("\(s.current)", s.current == 1 ? "day in a row" : "days in a row")
-                    Rectangle().fill(Theme.cream.opacity(0.15)).frame(width: 0.5, height: 34)
-                    figure("\(j.embers)", "Embers")
-                }
-                // Your Flame's level: its badge and its bar (the same as the XP moment after a quest, 2026-10-15).
-                HStack(spacing: 12) {
-                    LevelBadge(level: l.level, pop: 0, size: 34)
-                    VStack(alignment: .leading, spacing: 5) {
-                        XPBar(fill: CGFloat(l.into) / CGFloat(max(1, l.span)), height: 8)
-                        Text("\(l.into) / \(l.span) XP · \(l.span - l.into) to level \(l.level + 1)").font(.ui(11, .semibold)).foregroundStyle(Theme.cream.opacity(0.6))
+            // A page you scroll, with room to breathe (Mathis, 2026-10-15: "scrollable, to feel more spaced out").
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    spark.padding(.top, 36)
+                    VStack(spacing: 6) {
+                        Text(j.name.isEmpty ? "Your Spark" : "\(j.name)'s Spark").font(.story(28, .medium).italic()).foregroundStyle(Theme.cream)
+                        Text("\(model.form.name.uppercased()) · DAY \(j.dayNumber())").font(.ui(11, .semibold)).tracking(2).foregroundStyle(Theme.champagne.opacity(0.8))
                     }
-                }
-                .padding(.horizontal, 44).padding(.top, 14)
-                Spacer(minLength: 22)
-                tabsRow
-                Group {
-                    switch tab {
-                    case 0: characterPanel
-                    case 1: journeyPanel
-                    default: FriendsStrip(friends: Friend.samples, onDark: true) { f in withAnimation(Motion.soft) { friend = f } }
+                    .padding(.top, 10)
+                    formsRow.padding(.top, 26)
+                    // Three quiet numbers.
+                    HStack(spacing: 0) {
+                        figure("\(l.level)", "level")
+                        Rectangle().fill(Theme.cream.opacity(0.15)).frame(width: 0.5, height: 34)
+                        figure("\(s.current)", s.current == 1 ? "day in a row" : "days in a row")
+                        Rectangle().fill(Theme.cream.opacity(0.15)).frame(width: 0.5, height: 34)
+                        figure("\(j.embers)", "Embers")
                     }
-                }
-                .frame(height: 150)
-                .padding(.horizontal, 24).padding(.top, 14)
-                .transition(.opacity)
-                .id(tab)
-                Spacer(minLength: 18)
-            }
-            // The look of the worlds (a trial): painted or pixel.
-            VStack {
-                Spacer()
-                HStack(spacing: 18) {
-                    ForEach([("Painted", false), ("Pixel", true)], id: \.0) { t, v in
-                        Button { withAnimation(Motion.soft) { model.setPixel(v) } } label: {
-                            Text(t).font(.story(14, model.pixel == v ? .medium : .regular).italic())
-                                .foregroundStyle(Theme.cream.opacity(model.pixel == v ? 1 : 0.4))
-                                .overlay(alignment: .bottom) { if model.pixel == v { Capsule().fill(Theme.champagne).frame(height: 1).offset(y: 4) } }
+                    .padding(.top, 44)
+                    // Your Flame's level: its badge and its bar (the same as the XP moment after a quest, 2026-10-15).
+                    HStack(spacing: 12) {
+                        LevelBadge(level: l.level, pop: 0, size: 34)
+                        VStack(alignment: .leading, spacing: 5) {
+                            XPBar(fill: CGFloat(l.into) / CGFloat(max(1, l.span)), height: 8)
+                            Text("\(l.into) / \(l.span) XP · \(l.span - l.into) to level \(l.level + 1)").font(.ui(11, .semibold)).foregroundStyle(Theme.cream.opacity(0.6))
                         }
                     }
+                    .padding(.horizontal, 40).padding(.top, 26)
+                    tabsRow.padding(.top, 48)
+                    Group {
+                        switch tab {
+                        case 0: characterPanel
+                        case 1: journeyPanel
+                        default: FriendsStrip(friends: Friend.samples, onDark: true) { f in withAnimation(Motion.soft) { friend = f } }
+                        }
+                    }
+                    .frame(minHeight: 150, alignment: .top)
+                    .padding(.horizontal, 24).padding(.top, 22)
+                    .transition(.opacity)
+                    .id(tab)
+                    // The look of the worlds (a trial): painted or pixel.
+                HStack(spacing: 18) {
+                        ForEach([("Painted", false), ("Pixel", true)], id: \.0) { t, v in
+                            Button { withAnimation(Motion.soft) { model.setPixel(v) } } label: {
+                                Text(t).font(.story(14, model.pixel == v ? .medium : .regular).italic())
+                                    .foregroundStyle(Theme.cream.opacity(model.pixel == v ? 1 : 0.4))
+                                    .overlay(alignment: .bottom) { if model.pixel == v { Capsule().fill(Theme.champagne).frame(height: 1).offset(y: 4) } }
+                            }
+                        }
+                    }
+                    .padding(.top, 48).padding(.bottom, 44)
                 }
-                .padding(.bottom, 14)
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
             Button { close() } label: {
                 Image(systemName: "xmark").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.cream.opacity(0.8))
                     .frame(width: 34, height: 34).background(Circle().fill(.white.opacity(0.08)))

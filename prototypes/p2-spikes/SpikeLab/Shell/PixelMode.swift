@@ -4,6 +4,12 @@
 import RealityKit
 import UIKit
 
+/// The Flame's art for icons (Mathis, 2026-10-15): Codex's painted Spark, the same Flame for everyone.
+enum FlameArt {
+    static let sparkName = "depth-spark-keyed.png"
+    static var spark: UIImage? { UIImage(named: sparkName) }
+}
+
 enum PixelMode {
     nonisolated static let key = "look.pixel"
     nonisolated static var on: Bool {

@@ -140,6 +140,33 @@ final class Journey {
               "\(who) came to the Sanctuary while it slept in the Hush, and held an ember of \(self.ember) close until it cracked. A small Spark rose above the stone circle, blinked, and said hello. For the first time in a long while, the runes glowed.", on: date)
     }
 
+    // MARK: Test controls (Mathis, 2026-10-15: "a reset button and move to the next day button so that I can experiment")
+
+    /// Tomorrow, now: the whole history moves one day into the past (exactly what a real night does to it).
+    func passDay() {
+        let back: (Date) -> Date = { Calendar.current.date(byAdding: .day, value: -1, to: $0) ?? $0 }
+        bornOn = bornOn.map(back)
+        deeds = deeds.map { Deed(date: back($0.date), realm: $0.realm, title: $0.title, xp: $0.xp) }
+        pages = pages.map { BookPage(id: $0.id, world: $0.world, date: back($0.date), title: $0.title, text: $0.text) }
+        checkIns = checkIns.map(back)
+        skipLog = skipLog.mapValues { $0.map(back) }
+        skippedToday = []
+        save()
+    }
+    /// A fresh start without the introduction: born today, level 1, no streak, no worlds bought; your name, why you
+    /// came and your Day 1 answers stay. (The beta's starter purse stays too.)
+    func resetProgress() {
+        let keepName = name, keepEmber = ember
+        deeds = []; pages = []; checkIns = []; bought = []; newPages = 0
+        grants = grants.filter { $0.key == "beta-purse" }
+        roundStart = nil; roundsDone = 0; chosenForm = nil; skipLog = [:]; skippedToday = []; xpBase = 0
+        bornOn = nil
+        born(name: keepName, ember: keepEmber)
+        save()
+    }
+    /// Everything erased (the next launch starts with the introduction).
+    func eraseAll() { UserDefaults.standard.removeObject(forKey: key) }
+
     /// You took quests from the satchel for the first time.
     func firstQuests(_ titles: [String]) {
         guard !titles.isEmpty else { return }
