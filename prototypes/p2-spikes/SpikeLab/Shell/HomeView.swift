@@ -17,7 +17,7 @@ struct HomeView: View {
     @State private var dragOnSheet = false            // this swipe began on the quest panel: it's the panel's, not the world's
     @State private var dragBegan: CGPoint?            // where the current swipe began (a new start = a new swipe)
     @State private var focused: Spot?
-    @State private var reward: DeedOutcome?
+    @State private var rewards: [XPItem] = []                 // the XP cards on screen, one per quest just done
     @State private var levelUp: DeedOutcome?               // a new Flame level: its full screen (after the XP card)
     @State private var celebrate: DeedOutcome?             // a new form or a streak milestone: its card
     @State private var backdrop: Double = 0           // the blurred world behind full sheets (0 = live world)
@@ -152,13 +152,12 @@ struct HomeView: View {
 
                 if let s = focused { VStack { Spacer(); spotCard(s).padding(.horizontal, 16) } }
                 if let call = open { card(call, size: geo.size) }
-                if let r = reward {                                     // the XP card, after every quest (2026-10-15)
-                    XPGainCard(outcome: r) {
-                        reward = nil
-                        if r.levelAfter > r.levelBefore { withAnimation(.easeOut(duration: 0.25)) { levelUp = r } }
-                        else if r.evolvedTo != nil || r.milestone != nil { withAnimation(.spring(response: 0.4)) { celebrate = r } }
-                    }
-                    .id(r.xp ^ r.streakAfter << 8 ^ r.attributeAfter << 16 ^ r.totalXPAfter << 4)
+                // The XP cards, after every quest (2026-10-15): several quests done quickly pile up and fill together.
+                XPStack(items: rewards) { item in
+                    rewards.removeAll { $0.id == item.id }
+                    let r = item.outcome
+                    if r.levelAfter > r.levelBefore, levelUp == nil { withAnimation(.easeOut(duration: 0.25)) { levelUp = r } }
+                    else if r.evolvedTo != nil || r.milestone != nil, celebrate == nil { withAnimation(.spring(response: 0.4)) { celebrate = r } }
                 }
                 if let l = levelUp {
                     LevelUpScreen(outcome: l, journey: model.journey) { from in
@@ -174,7 +173,7 @@ struct HomeView: View {
                 }
                 if let c = celebrate { RewardBurst(outcome: c, celebrationOnly: true) { withAnimation { celebrate = nil } } }
                 tourLayer
-                if model.journey.roundComplete && model.dailyGift == 0 && model.tour == nil && built && open == nil && reward == nil && !(satchelOpen || bookOpen || flameOpen) {
+                if model.journey.roundComplete && model.dailyGift == 0 && model.tour == nil && built && open == nil && rewards.isEmpty && !(satchelOpen || bookOpen || flameOpen) {
                     let j = model.journey
                     RoundComplete(length: j.roundLength, lived: j.roundDaysLived, round: j.roundsDone + 1) { n in
                         withAnimation(.sheet) { j.startRound(n) }
@@ -221,13 +220,24 @@ struct HomeView: View {
         .task { await homeTour() }
         .task {                                                    // (test: -xpdemo / -xpsmall show the XP moment)
             let a = CommandLine.arguments
-            guard world == .sanctuary, a.contains("-xpdemo") || a.contains("-xpsmall") else { return }
+            guard world == .sanctuary, a.contains("-xpdemo") || a.contains("-xpsmall") || a.contains("-xpstack") else { return }
             while !built { try? await Task.sleep(for: .milliseconds(300)) }
             try? await Task.sleep(for: .seconds(3))
+            if a.contains("-xpstack") {                              // (test: three quests done in a row, quickly)
+                for (i, p) in [Pillar6.body, .spirit, .world].enumerated() {
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) {
+                        rewards.append(XPItem(outcome: DeedOutcome(xp: 30, pillar: p, attributeBefore: 40 + i * 10, attributeAfter: 70 + i * 10,
+                                       levelBefore: 2, levelAfter: 2, streakBefore: 9, streakAfter: 9, milestone: nil, shieldEarned: false,
+                                       totalXPBefore: 140 + i * 30, totalXPAfter: 170 + i * 30)))
+                    }
+                    try? await Task.sleep(for: .milliseconds(450))
+                }
+                return
+            }
             let big = a.contains("-xpdemo")
-            reward = DeedOutcome(xp: 34, pillar: .body, attributeBefore: big ? 130 : 60, attributeAfter: big ? 164 : 94,
+            rewards.append(XPItem(outcome: DeedOutcome(xp: 34, pillar: .body, attributeBefore: big ? 130 : 60, attributeAfter: big ? 164 : 94,
                                  levelBefore: big ? 3 : 2, levelAfter: big ? 4 : 2, streakBefore: 9, streakAfter: 9,
-                                 milestone: nil, shieldEarned: false, totalXPBefore: big ? 580 : 140, totalXPAfter: big ? 614 : 174)
+                                 milestone: nil, shieldEarned: false, totalXPBefore: big ? 580 : 140, totalXPAfter: big ? 614 : 174)))
         }
         .onPreferenceChange(EmberTargetKey.self) { p in if let p { coinTarget = p } }
         .onReceive(NotificationCenter.default.publisher(for: .perfCommand)) { n in       // (-uitest)
@@ -597,13 +607,20 @@ struct HomeView: View {
         withAnimation { open = nil }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         let outcome = withAnimation(.sheet) { model.complete(call.id) }
-        strand = (from, Date())
+        let started = Date()
+        strand = (from, started)
         if let e = outcome?.embers, e > 0 { coins(from: from, amount: e) }      // the Embers burst out and fly up
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(900))
-            strand = nil
+            try? await Task.sleep(for: .milliseconds(300))                     // the XP card follows the tick at once
             UINotificationFeedbackGenerator().notificationOccurred(.success)
-            if let outcome { withAnimation(.spring(response: 0.4)) { reward = outcome } }   // +XP, the number climbs, milestones
+            if let outcome {
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) {
+                    rewards.append(XPItem(outcome: outcome))
+                    if rewards.count > 4 { rewards.removeFirst() }             // never more than four at once
+                }
+            }
+            try? await Task.sleep(for: .milliseconds(600))
+            if strand?.start == started { strand = nil }                       // (only this quest's light trail)
             if let f = outcome?.evolvedTo { model.showForm(f) }                              // a new form, everywhere (decision 152)
             if call.realm == world { realmScene?.act() }        // done here, for this realm: its next lights relight
             director?.actionCompleted(call.realm == .grove ? .heart : call.realm == .library ? .mind : call.realm == .highlands ? .body : .spirit)

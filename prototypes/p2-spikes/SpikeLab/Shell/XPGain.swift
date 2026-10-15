@@ -129,7 +129,6 @@ struct LevelBadge: View {
 struct XPGainCard: View {
     let outcome: DeedOutcome
     let done: () -> Void
-    @State private var shown = false
     @State private var skill = BarRun(level: 1, fill: 0)
     @State private var flame = BarRun(level: 1, fill: 0)
     @State private var xpShown = 0
@@ -138,11 +137,11 @@ struct XPGainCard: View {
     @State private var skillLeveled = false
     @State private var flameLeveled = false
     @State private var finished = false
+    @State private var task: Task<Void, Never>?
 
     private var tint: Color { outcome.pillar.realm.color }
 
     var body: some View {
-        VStack {
             VStack(spacing: 12) {
                 row(icon: Image(uiImage: UIImage(named: "pillar-\(outcome.pillar.rawValue.lowercased()).png") ?? UIImage()),
                     name: outcome.pillar.attribute, leveled: skillLeveled, run: skill, pop: skillPop, barHeight: 10,
@@ -157,13 +156,10 @@ struct XPGainCard: View {
             .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Theme.champagne.opacity(0.32), lineWidth: 0.75))
             .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Color.black.opacity(0.3)).offset(y: 4))
             .padding(.horizontal, 16)
-            .offset(y: shown ? 0 : -190)
-            .opacity(shown ? 1 : 0)
+            .contentShape(Rectangle())
             .onTapGesture { dismiss() }
-            Spacer()
-        }
-        .padding(.top, 6)
-        .onAppear(perform: run)
+            .onAppear(perform: run)
+            .onDisappear { task?.cancel() }
     }
 
     private func row(icon: Image, name: String, leveled: Bool, run: BarRun, pop: Int, barHeight: CGFloat,
@@ -196,14 +192,15 @@ struct XPGainCard: View {
         let fb = Progression.level(xp: outcome.totalXPBefore), fa = Progression.level(xp: outcome.totalXPAfter)
         skill = BarRun(level: sb.level, fill: fraction(sb))
         flame = BarRun(level: fb.level, fill: fraction(fb))
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) { shown = true }
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(330))
+        task = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(280))
+            if Task.isCancelled { return }
             withAnimation(.easeOut(duration: 0.6)) { xpShown = outcome.xp }
             await fill(from: sb, to: sa, set: { skill = $0 }) {
                 skillPop += 1
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) { skillLeveled = true }
             }
+            if Task.isCancelled { return }
             try? await Task.sleep(for: .milliseconds(140))
             await fill(from: fb, to: fa, set: { flame = $0 }) {
                 flamePop += 1
@@ -211,12 +208,14 @@ struct XPGainCard: View {
             }
             // A new Flame level hands over quickly to its full screen; otherwise the card lingers a moment.
             try? await Task.sleep(for: .milliseconds(fa.level > fb.level ? 650 : 1400))
+            if Task.isCancelled { return }
             dismiss()
         }
     }
 
     /// Fills a bar from one level-state to another; at a level-up it fills to the end, bursts, rolls over and goes on.
     private func fill(from b: LevelSpan, to a: LevelSpan, set: @escaping (BarRun) -> Void, levelUp: @escaping () -> Void) async {
+        if Task.isCancelled { return }
         if a.level > b.level {
             XPHaptics.fill(ticks: 6, over: 0.45)
             withAnimation(.easeIn(duration: 0.45)) { set(BarRun(level: b.level, fill: 1)) }
@@ -240,8 +239,7 @@ struct XPGainCard: View {
     private func dismiss() {
         guard !finished else { return }
         finished = true
-        withAnimation(.easeIn(duration: 0.28)) { shown = false }
-        Task { @MainActor in try? await Task.sleep(for: .milliseconds(300)); done() }
+        done()                                    // the stack removes this card (and only this one), sliding it away
     }
 }
 
@@ -391,3 +389,25 @@ struct LevelUpScreen: View {
         }
     }
 }
+
+/// One XP card in the stack on home (a quest just done).
+struct XPItem: Identifiable { let id = UUID(); let outcome: DeedOutcome }
+
+/// The XP cards, one per quest just done, piled from the top of the screen: they fill together, and each slides away
+/// by itself (Mathis: "if you click on more than one quest completed, the xp bars should quickly pile up").
+struct XPStack: View {
+    let items: [XPItem]
+    let done: (XPItem) -> Void
+    var body: some View {
+        VStack(spacing: 8) {
+            ForEach(items) { item in
+                XPGainCard(outcome: item.outcome) { done(item) }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 6)
+        .animation(.spring(response: 0.42, dampingFraction: 0.8), value: items.map(\.id))
+    }
+}
+
