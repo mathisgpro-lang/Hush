@@ -78,14 +78,14 @@ Status key: ⬜ not started · 💬 in discussion · 🔬 research · 📝 draft
 | 26 | Success metrics | ⬜ | |
 | 27 | Risks and open questions | ⬜ | |
 
-## ▶ Where we left off: RESUME HERE (updated 2026-10-14, decisions 169–170)
+## ▶ Where we left off: RESUME HERE (updated 2026-10-15, decisions 169–171)
 
 **Current work: dimensional Flame, coherent home composition and readable discovery map.** Mathis authorized implementation and direct iPhone installation; plan: `docs/plan-2.0/p32-flame-presence.md`.
 - Full-screen visual target: `docs/design/flame-depth/sanctuary-screen-v1.png`. Runtime background: `live/sanctuary-stage.png`; six production characters: `live/evolutions-atlas-v2.png`. Other realm paintings and angles remain unchanged.
 - Code now shares the ground anchor, fits Flame size between compact header and quests, keeps named dark onboarding silhouettes, and shows distinct map realm boundaries/nameplates along a spaced route. Final checks/install status is in the presence plan.
 - Priorities: Mathis checks the actual iPhone result; refine composition first, then facial/character animation. Do not resume the older hard-outline atlas or delayed phase-B job. The latest user authorization supersedes those stale resume steps.
 - Other P3.2 work stays in `docs/plan-2.0/p32-steps.md`; do not mark those steps approved without Mathis.
-- **Waiting on Codex** (credits reset 2026-10-15 03:00; `scripts/resume-codex.sh` runs it): `scripts/p32-sanctuary-look.sh`, the Sanctuary's look-around back (Mathis said yes; the composed stage left it no range). Then check it in the simulator (`-push left` / `-push right`), commit, install. Also done 2026-10-14 by Claude (no design): quest panel fold toggle, three quests visible then scroll, quest-panel swipes never move the world.
+- **Sanctuary look-around delivered 2026-10-15:** extended scenery, matching spring/range, corrected vertical camera framing; checked left/right/up/down/rest in the simulator. Signed Release installed and opened on Mathis’s iPhone (installation sequence 13896), with progress preserved. Full animated interface measured 60.1 fps after removing screen blending from the navigation glints. Report: `docs/plan-2.0/p32-sanctuary-look.md`; the queued script now skips this completed job. No commit made. Claude’s quest fold toggle, three visible quests and quest-swipe isolation are unchanged. Next: Mathis’s feel check; no automatic rerun needed.
 - Test flags: `-skipintro`, `-form <stage>`, `-realm <id>`, `-map`, `-locked`, `-introstep growing -previewform <stage>`. Never send `-freshjourney` or `-seedjourney` to the real phone for a visual update.
 - Phone: Release `prototypes/p2-spikes/dd-spikelab-dev`, device `00008120-001411043639A01E`, bundle `com.mathis.lifegamified.spikelab`.
 

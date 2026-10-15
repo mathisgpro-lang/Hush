@@ -23,5 +23,7 @@ Status: implemented; final Release build installed on Mathis’s iPhone on 2026-
 
 - Release builds succeeded for iPhone simulator and physical iPhone.
 - Device installation confirmed by devicectl (bundle `com.mathis.lifegamified.spikelab`, database sequence 13856). No journey-reset flags used on the phone.
-- Actual simulator screenshots inspected: composed Sanctuary/Beyond, Grove/Flame, map boundaries and Radiant onboarding silhouette. Final sweep of all six evolutions/seven worlds is running.
+- Actual simulator screenshots inspected: composed Sanctuary/Beyond, Grove/Flame, map boundaries and Radiant onboarding silhouette. The broader automated sweep was inconclusive: several captures were taken while loading. Do not count it as a completed all-form/all-world check.
 - The full-screen sketch is a design reference. Actual controls remain native and interactive. The first hard-outline atlas is superseded by `evolutions-atlas-v2.png`.
+
+- 2026-10-15: Sanctuary look-around restored and installed (sequence 13896); final left/right/up/down/rest captures inspected, full interface steady at 60.1 fps on iPhone 15. See `p32-sanctuary-look.md`.

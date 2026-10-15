@@ -311,3 +311,10 @@ Mathis asked for the actual app to match the dimensional six-stage studies: the 
 The first build with dimensional characters was installed and launched on the iPhone. The subsequent pass replaces Sanctuary's background with the sketch's environment, sizes characters within measured free space on a shared ground anchor, removes the daily quote/restoration header lines, strengthens quest contrast, and keeps all six named black onboarding silhouettes. Native movement remains; facial-animation refinement is deferred until composition is right, per Mathis.
 
 Mathis also requested a clearer discovery map. The map now gives each realm a bounded illustrated preview, readable two-line nameplate, realm color/symbol and lock/price state, with a more evenly spaced winding route. Navigation, purchases and progression remain the existing implementation. Camera limits were extended to let the starting and final realms sit away from screen edges, and markers stay clear of the header. Final simulator/device verification and installation are recorded in `docs/plan-2.0/p32-flame-presence.md`.
+
+
+## 2026-10-15 — Sanctuary look-around restored and installed
+
+Mathis resumed the queued Sanctuary look-around request. Extended the approved painting without changing its core coordinates, registered the generated continuation to avoid a duplicated brazier, restored the camera range and corrected the framing feedback that otherwise cancelled vertical swipes. No HomeView, quest-panel or other-world scene edits. Final simulator left/right/up/down/rest captures show continuous world at the edges.
+
+The real iPhone initially measured about 30 fps. Isolated checks showed 60 fps with navigation icons static or hidden. Removing the small animated glints’ screen blend retained their animation and restored the complete screen to steady 60.1 fps (17 ms worst steady frame). Signed Release installed (sequence 13896) and opened normally with -skipintro -nogift, no journey-reset or form-override flags. Brief/report: `docs/plan-2.0/p32-sanctuary-look.md`. Mathis’s feel check remains pending; no commit made.

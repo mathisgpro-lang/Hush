@@ -1,0 +1,51 @@
+iPhone 15 — 2026-10-15. Release, -skipintro -nogift -fps -push right.
+Console captures stopped by deliberate 22–45 second timeout; these timeout exits are not app crashes.
+
+Original full interface
+SCREEN fps 2.2 worst 6088 ms | 3D updates/s 2.2 | max 60 Hz
+SCREEN fps 41.2 worst 147 ms | 3D updates/s 41.2 | max 60 Hz
+SCREEN fps 34.3 worst 50 ms | 3D updates/s 34.3 | max 60 Hz
+SCREEN fps 30.3 worst 50 ms | 3D updates/s 30.3 | max 60 Hz
+SCREEN fps 30.3 worst 50 ms | 3D updates/s 30.3 | max 60 Hz
+SCREEN fps 29.8 worst 50 ms | 3D updates/s 29.8 | max 60 Hz
+SCREEN fps 30.3 worst 50 ms | 3D updates/s 30.3 | max 60 Hz
+SCREEN fps 30.0 worst 50 ms | 3D updates/s 30.0 | max 60 Hz
+SCREEN fps 29.9 worst 50 ms | 3D updates/s 29.9 | max 60 Hz
+SCREEN fps 30.3 worst 50 ms | 3D updates/s 30.3 | max 60 Hz
+SCREEN fps 29.8 worst 50 ms | 3D updates/s 29.8 | max 60 Hz
+SCREEN fps 30.3 worst 50 ms | 3D updates/s 30.3 | max 60 Hz
+SCREEN fps 29.8 worst 50 ms | 3D updates/s 29.8 | max 60 Hz
+SCREEN fps 30.3 worst 50 ms | 3D updates/s 30.3 | max 60 Hz
+SCREEN fps 29.8 worst 50 ms | 3D updates/s 29.8 | max 60 Hz
+
+World and header, quest/navigation hidden
+SCREEN fps 59.1 worst 50 ms | 3D updates/s 58.6 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+
+Full interface, static icons (diagnostic)
+SCREEN fps 59.6 worst 50 ms | 3D updates/s 59.6 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+
+Final full interface, animated icons, right camera limit
+SCREEN fps 60.1 worst 34 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | max 60 Hz

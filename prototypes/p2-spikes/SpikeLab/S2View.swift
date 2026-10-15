@@ -46,6 +46,9 @@ final class SanctuaryScene {
     /// The stone circle's center in the painting (uv, v up): the Flame's stage.
     var stageCircle: SIMD2<Float> { circle }
     private var composedStage: Bool { Bundle.main.url(forResource: "stage-home-paint", withExtension: "png") != nil }
+    private var expandedStage: Bool { composedStage && Bundle.main.url(forResource: "stage-home-surround", withExtension: "png") != nil }
+    private var stageCoverage = SIMD2<Float>(1, 1)
+    private var safeStagePan = SIMD2<Float>(0, 0)
     private lazy var circle: SIMD2<Float> = {
         if composedStage { return [0.5, 0.515] }                     // the true center of the rune circle (measured on the painting)
         if PixelMode.world, let u = Bundle.main.url(forResource: "px-home-features", withExtension: "json"), let d = try? Data(contentsOf: u),
@@ -142,6 +145,8 @@ final class SanctuaryScene {
         let aspect = Float(tex.width) / Float(tex.height)
         let (w, h) = (visibleH * aspect * 1.08, visibleH * 1.08)     // a little overscan so parallax never shows edges
         paintingW = w; paintingH = h
+        // Home coordinates and scale stay identical; only the mesh beyond the old canvas grows.
+        stageCoverage = expandedStage ? [1.8, 1.35] : [1, 1]
         let screen = UIScreen.main.bounds.size
         let camH = Self.visibleHeight, camW = camH * Float(screen.width / screen.height)
         // Sideways: up to ~28% of a screen, so the stone circle never leaves the view (and never past the world).
@@ -152,16 +157,18 @@ final class SanctuaryScene {
         let steps = (0...40).map { Float($0) / 40 }
         let edges = (l: nearest(steps.map { (0, $0) }), r: nearest(steps.map { (1, $0) }),
                      b: nearest(steps.map { ($0, 0) }), t: nearest(steps.map { ($0, 1) }))
-        let safe = EdgeSafety.limit(planeW: w, planeH: h, restDistance: Self.distance, edges: edges, fov: Self.fov,
+        let safe = EdgeSafety.limit(planeW: w * stageCoverage.x, planeH: h * stageCoverage.y, restDistance: Self.distance, edges: edges, fov: Self.fov,
                                     aspect: Float(screen.width / screen.height), margin: EdgeSafety.rubber + 0.03)
-        panLimit = [min(camW * EdgeSafety.lookAround, safe.x), safe.y]
+        safeStagePan = safe
+        panLimit = [min(camW * EdgeSafety.lookAround, safe.x), expandedStage ? min(camH * 0.10, safe.y) : safe.y]
 
         // The painting, bent in depth. Each vertex keeps its rest screen position (scaled along the camera ray),
         // so from the rest camera the painting looks untouched; moving the camera reveals the depth.
-        let (nx, ny) = (72, 156)
+        let (nx, ny) = expandedStage ? (144, 192) : (72, 156)
         var pos: [SIMD3<Float>] = [], uvs: [SIMD2<Float>] = [], idx: [UInt32] = []
         for j in 0...ny { for i in 0...nx {
-            let u = Float(i) / Float(nx), v = Float(j) / Float(ny)
+            let u = 0.5 + (Float(i) / Float(nx) - 0.5) * stageCoverage.x
+            let v = 0.5 + (Float(j) / Float(ny) - 0.5) * stageCoverage.y
             let rest = SIMD3<Float>((u - 0.5) * w, (v - 0.5) * h, -Self.distance)
             let d = Self.distance - (depth == nil ? Self.depthOffset(v) : relief(depthAt(u, v)))
             pos.append(rest * (d / Self.distance)); uvs.append([u, v])
@@ -177,7 +184,11 @@ final class SanctuaryScene {
         var material: any RealityKit.Material = unlit
         if let lib {
             var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: composedStage ? "stageWorld" : "stoneLive", in: lib))
-            if let lut = await SolarClock.lut() { m.emissiveColor = .init(texture: .init(lut)) }   // the looks of the hour
+            if expandedStage {
+                let surround = try await TextureResource(named: "stage-home-surround.png")
+                m.emissiveColor = .init(texture: .init(surround))
+                m.clearcoatRoughness = .init(floatLiteral: 1) // stageWorld: the surround texture is available
+            } else if let lut = await SolarClock.lut() { m.emissiveColor = .init(texture: .init(lut)) }
             m.custom.texture = .init(motion)
             m.custom.value = [1, 0.5, 0.5, 0]
             if layers != nil {        // the land is cut out where the sky and the sea live (soft edges, still writes depth)
@@ -503,6 +514,10 @@ final class SanctuaryScene {
             let d = CommandLine.arguments[i + 1]
             panTarget = [d == "left" ? -9 : d == "right" ? 9 : panTarget.x, d == "up" ? 9 : d == "down" ? -9 : panTarget.y]
         }
+        if expandedStage {
+            // Reserve the camera's home lift as well as the rubber band and drift: top/bottom remain covered.
+            panLimit.y = min(Self.visibleHeight * 0.10, max(0, safeStagePan.y - abs(liftNow * Self.visibleHeight)))
+        }
         let pt = simd_clamp(panTarget, -panLimit - EdgeSafety.rubber, panLimit + EdgeSafety.rubber)
         let w0: Float = 9
         if fingerDown {                       // 1:1 under the finger (no lag); its speed carries into the glide
@@ -529,7 +544,9 @@ final class SanctuaryScene {
         camera.look(at: camLook + panV - down, from: camPos + panV - down, relativeTo: root)
         if let f = feetTarget {          // where the feet really landed: nudge the lift until they're exactly there
             let f0 = WorldLayer.overscanAnchor + (f - WorldLayer.overscanAnchor) / WorldLayer.overscan
-            let rel = camera.transformMatrix(relativeTo: root).inverse * SIMD4<Float>(heroFeet.x, heroFeet.y, heroFeet.z, 1)
+            // Framing follows the layout, not the look-around gesture; otherwise it cancels vertical swipes.
+            let framingFeet = heroFeet + (expandedStage ? panV : .zero)
+            let rel = camera.transformMatrix(relativeTo: root).inverse * SIMD4<Float>(framingFeet.x, framingFeet.y, framingFeet.z, 1)
             let fy = 0.5 - rel.y / max(0.01, -rel.z) / tan(Self.fov / 2 * .pi / 180) * 0.5
             liftBias = max(-0.15, min(0.15, liftBias + (fy - f0) * dt * 1.5))
         }

@@ -977,9 +977,19 @@ void stageWorld(realitykit::surface_parameters params) {
     float t = params.uniforms().time();
     float4 c = params.uniforms().custom_parameter();
     constexpr sampler s(address::clamp_to_edge, filter::linear, mip_filter::linear);
-    float4 mask = float4(params.textures().custom().sample(s, tuv));
+    float edge = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+    float core = smoothstep(-0.05, 0.08, edge);
+    bool expanded = params.material_constants().clearcoat_roughness_scale() > 0.5;
+    float4 mask = float4(params.textures().custom().sample(s, tuv)) * (expanded ? core : 1.0);
     float2 flow = float2(sin(tuv.y * 190.0 - t * 1.4) * 0.0007, sin(t * 1.7 + tuv.x * 90.0) * 0.0004) * mask.r;
     float3 rgb = float3(params.textures().base_color().sample(s, tuv + flow).rgb);
+    if (expanded && core < 1.0) {
+        // The original painting remains untouched at home. Its continuation uses the same mesh and lighting.
+        // Registered against the delivered outpaint; its actual inset differs from the requested canvas.
+        float2 outerUV = (tuv - 0.5) * float2(0.547633, 0.723277) + float2(0.503511, 0.508919);
+        float3 outer = float3(params.textures().emissive_color().sample(s, outerUV).rgb);
+        rgb = mix(outer, rgb, core);
+    }
     rgb *= 1.0 + mask.b * (0.025 * sin(t * 3.1) + 0.015 * sin(t * 6.7));
     float night = s2night(params.material_constants().metallic_scale() * 24.0);
     rgb *= mix(float3(1.0), float3(0.76, 0.8, 0.96), night * 0.55);

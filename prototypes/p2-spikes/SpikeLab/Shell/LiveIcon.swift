@@ -76,7 +76,7 @@ struct LiveIcon: View {
                 .frame(width: 12, height: 12)
                 .scaleEffect(idle ? 1.25 : 0.55).opacity(idle ? 1 : 0.35)
                 .offset(kind == .world ? CGSize(width: -5, height: 1) : CGSize(width: 3, height: -6))
-                .blendMode(.screen)
+                // Alpha-composite the glint locally; screen blending over the live world costs a full-screen pass.
         }
     }
 
