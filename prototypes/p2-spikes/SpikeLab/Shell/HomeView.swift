@@ -114,7 +114,7 @@ struct HomeView: View {
                                        add: { withAnimation(.sheet) { satchelOpen = true } },
                                        open: { c in withAnimation(.sheet) { open = c } },
                                        tick: { c, p in finish(c, size: geo.size, from: p) },
-                                       streakOf: { model.journey.questStreak($0) }, alwaysOpen: true,
+                                       xpOf: { questXP($0) }, alwaysOpen: true,
                                        sheetUp: model.questsUp, toggleSheet: { withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) { model.questsUp.toggle() } })
                                 .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
@@ -141,7 +141,9 @@ struct HomeView: View {
                             .ignoresSafeArea(edges: .bottom)
                     }
                     .contentShape(Rectangle())
-                    .gesture(DragGesture(minimumDistance: 16).onEnded { v in          // swipe the list down or up too
+                    .gesture(DragGesture(minimumDistance: 16, coordinateSpace: .global).onEnded { v in   // swipe the panel down or up
+                        // Only from the panel's header (or when folded): a swipe on the list itself scrolls it, never folds it.
+                        guard !model.questsUp || v.startLocation.y < sheetTop + 52 else { return }
                         if v.translation.height > 40, model.questsUp { withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) { model.questsUp = false } }
                         else if v.translation.height < -40, !model.questsUp { withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) { model.questsUp = true } }
                     })
@@ -226,9 +228,10 @@ struct HomeView: View {
             if a.contains("-xpstack") {                              // (test: three quests done in a row, quickly)
                 for (i, p) in [Pillar6.body, .spirit, .world].enumerated() {
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) {
-                        rewards.append(XPItem(outcome: DeedOutcome(xp: 30, pillar: p, attributeBefore: 40 + i * 10, attributeAfter: 70 + i * 10,
+                        let before = [30, 140, 60][i]                     // Strength and Calm level up; the Flame passes 300
+                        rewards.append(XPItem(outcome: DeedOutcome(xp: 30, pillar: p, attributeBefore: before, attributeAfter: before + 30,
                                        levelBefore: 2, levelAfter: 2, streakBefore: 9, streakAfter: 9, milestone: nil, shieldEarned: false,
-                                       totalXPBefore: 140 + i * 30, totalXPAfter: 170 + i * 30)))
+                                       totalXPBefore: 240 + i * 30, totalXPAfter: 270 + i * 30)))
                     }
                     try? await Task.sleep(for: .milliseconds(450))
                 }
@@ -415,6 +418,9 @@ struct HomeView: View {
         model.perfStep = "done"; print("TOUR done")
     }
 
+    /// The XP a quest will bring now (the same rule as when it's done: its minutes and your streak, Progression.xp).
+    private func questXP(_ c: Call) -> Int { Progression.xp(minutes: c.minutes, streak: model.journey.streak().current) }
+
     private func placeFlame() {
         let h = UIScreen.main.bounds.height
         guard bandTop > 0, bandBottom > bandTop, h > 0 else { return }
@@ -554,7 +560,7 @@ struct HomeView: View {
                     Text(Consistency.line(call.title.count)).font(.story(14, .medium)).foregroundStyle(Theme.accent)
                 }
                 .multilineTextAlignment(.center)
-                QuestMeta(call: call, streak: model.journey.questStreak(call.title), ink: ink)
+                QuestMeta(call: call, xp: questXP(call), ink: ink)
                 let live = model.calls.first { $0.id == call.id } ?? call
                 if let p = live.pillar {
                     // Your way counts; ideas only if you want one (decision 166).
@@ -787,14 +793,12 @@ struct QuestJournal: View {
     }
 }
 
-/// "9d · Daily · Medium · 0 / 20 reps": a quest's detail line (its own streak, how often, how hard, how far).
+/// "+30 XP · Daily · Medium · 0 / 20 reps": a quest's detail line (what it brings, how often, how hard, how far).
 struct QuestMeta: View {
-    let call: Call, streak: Int, ink: Color
+    let call: Call, xp: Int, ink: Color
     var body: some View {
         HStack(spacing: 8) {
-            if streak > 0 {
-                Label("\(streak)d", systemImage: "flame.fill").foregroundStyle(Color(red: 0.85, green: 0.4, blue: 0.1))
-            }
+            Label("+\(xp) XP", systemImage: "sparkle").foregroundStyle(Color(red: 0.85, green: 0.4, blue: 0.1))
             Label(call.frequency, systemImage: "arrow.triangle.2.circlepath")
             Label(call.difficulty, systemImage: call.difficulty == "Hard" ? "cellularbars" : call.difficulty == "Medium" ? "chart.bar.fill" : "chart.bar")
             if call.pillar == nil { Text(call.counted ? "\(call.progress) / \(call.target) \(call.unit)" : "\(call.minutes) min") }
@@ -832,7 +836,7 @@ struct QuestCardRow: View {
             HStack(alignment: .bottom, spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(call.title).font(.story(21, .semibold)).foregroundStyle(.white)
-                    QuestMeta(call: call, streak: model.journey.questStreak(call.title), ink: .white)
+                    QuestMeta(call: call, xp: Progression.xp(minutes: call.minutes, streak: model.journey.streak().current), ink: .white)
                 }
                 Spacer()
                 if call.done {

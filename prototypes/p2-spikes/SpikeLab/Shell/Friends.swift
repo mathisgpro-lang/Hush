@@ -121,7 +121,7 @@ struct FriendProfile: View {
                                 .frame(width: 30, height: 30).background(Circle().fill(Theme.night.opacity(0.85)))
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(d.title).font(.ui(14, .semibold)).foregroundStyle(ink)
-                                Text("\(d.daysAgo == 0 ? "today" : d.daysAgo == 1 ? "yesterday" : "\(d.daysAgo) days ago") · \(d.streak)-day streak")
+                                Text(d.daysAgo == 0 ? "today" : d.daysAgo == 1 ? "yesterday" : "\(d.daysAgo) days ago")      // (no per-quest streaks)
                                     .font(.ui(11)).foregroundStyle(ink.opacity(0.55))
                             }
                             Spacer()

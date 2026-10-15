@@ -486,6 +486,7 @@ enum PerfTour {
     nonisolated static let on = PerfTour.on || CommandLine.arguments.contains("-fps")
     private var link: CADisplayLink?, last: CFTimeInterval = 0, frames = 0, worst: CFTimeInterval = 0, since: CFTimeInterval = 0
     var updates = 0                       // the 3D's update events in the same window (counted by ShellModel.tick)
+    var rowBodies = 0                     // quest cards redrawn in the same window (scroll smoothness)
     func start() {
         guard link == nil else { return }
         link = CADisplayLink(target: self, selector: #selector(step(_:))); link?.add(to: .main, forMode: .common)
@@ -496,8 +497,8 @@ enum PerfTour {
         last = t; frames += 1
         if since == 0 { since = t }
         if t - since >= 2 {
-            print(String(format: "SCREEN fps %.1f worst %.0f ms | 3D updates/s %.1f | max %d Hz", Double(frames) / (t - since), worst * 1000, Double(updates) / (t - since), UIScreen.main.maximumFramesPerSecond))
-            frames = 0; worst = 0; since = t; updates = 0
+            print(String(format: "SCREEN fps %.1f worst %.0f ms | 3D updates/s %.1f | quest cards redrawn %d | max %d Hz", Double(frames) / (t - since), worst * 1000, Double(updates) / (t - since), rowBodies, UIScreen.main.maximumFramesPerSecond) + " | \(FrameMeter.thermalName(ProcessInfo.processInfo.thermalState)) | low power \(ProcessInfo.processInfo.isLowPowerModeEnabled ? "ON" : "off")")
+            frames = 0; worst = 0; since = t; updates = 0; rowBodies = 0
         }
     }
 }

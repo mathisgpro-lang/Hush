@@ -10,7 +10,8 @@ struct QuestBoard: View {
     let add: () -> Void
     let open: (Call) -> Void
     let tick: (Call, CGPoint) -> Void
-    var streakOf: (String) -> Int = { _ in 0 }
+    /// The XP a quest will bring (shown on its card, like the Embers).
+    var xpOf: (Call) -> Int = { _ in 0 }
     /// The quest floor shows every quest as a list (decision 157); the stack is for small spaces.
     var alwaysOpen = false
     /// (Quest floor) the list is shown, or folded down to its header (Mathis: the toggle is back).
@@ -75,13 +76,23 @@ struct QuestBoard: View {
             } else if alwaysOpen && !sheetUp {
                 EmptyView()                                          // folded: just the header
             } else if alwaysOpen {
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: rowGap) {
-                        ForEach(calls) { c in QuestRow(call: c, streak: streakOf(c.title), open: { open(c) }, tick: { p in tick(c, p) }) }
+                ScrollViewReader { reader in
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: rowGap) {
+                            ForEach(calls) { c in QuestRow(call: c, xp: xpOf(c), open: { open(c) }, tick: { p in tick(c, p) }).id(c.id) }
+                        }
+                        .padding(.bottom, 4)
                     }
-                    .padding(.bottom, 4)
+                    .scrollBounceBehavior(.basedOnSize)
+                    .task {                                                // (test: -scrolltest scrolls the list by itself)
+                        guard CommandLine.arguments.contains("-scrolltest"), calls.count > 3 else { return }
+                        try? await Task.sleep(for: .seconds(6))
+                        for k in 0..<40 {
+                            withAnimation(.easeInOut(duration: 0.6)) { reader.scrollTo(k.isMultiple(of: 2) ? calls.last?.id : calls.first?.id) }
+                            try? await Task.sleep(for: .milliseconds(800))
+                        }
+                    }
                 }
-                .scrollBounceBehavior(.basedOnSize)
                 // As tall as three quests at most (then it scrolls): the sheet hugs them, right above the bar.
                 .frame(height: CGFloat(min(n, Self.visible)) * rowHeight + CGFloat(max(0, min(n, Self.visible) - 1)) * rowGap + 4)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -89,7 +100,7 @@ struct QuestBoard: View {
                 ZStack(alignment: .top) {
                     ForEach(Array(calls.enumerated()), id: \.element.id) { i, c in
                         let behind = !expanded && i > 0
-                        QuestRow(call: c, streak: streakOf(c.title), open: { open(c) }, tick: { p in tick(c, p) })
+                        QuestRow(call: c, xp: xpOf(c), open: { open(c) }, tick: { p in tick(c, p) })
                             .brightness(behind ? -0.06 * Double(min(i, 2)) : 0)
                             .scaleEffect(x: behind ? 1 - CGFloat(min(i, 2)) * 0.05 : 1, y: 1)
                             .offset(y: expanded ? CGFloat(i) * (Self.rowH + Self.gap) : CGFloat(min(i, 2)) * Self.peek)
@@ -123,14 +134,17 @@ struct QuestBoard: View {
 
 struct QuestRow: View {
     let call: Call
-    var streak: Int = 0                   // days in a row for this quest
+    var xp: Int = 0                       // the XP it brings (no per-quest streaks: one streak, yours, Mathis 2026-10-15)
     let open: () -> Void
     let tick: (CGPoint) -> Void
-    @State private var tickCenter: CGPoint = .zero
+    /// Where the tick sits on screen, kept outside SwiftUI's state: it changes on every frame of a scroll, and as state
+    /// it redrew every card on every frame (the scroll felt laggy). Read only when the tick is tapped.
+    @State private var tickSpot = PointBox()
     @State private var pressed = false
     @State private var popped = 0          // bumps when the quest is done: the tick pops, a ring ripples, the card bounces
 
     var body: some View {
+        let _ = ScreenFPS.on ? ScreenFPS.shared.rowBodies += 1 : ()
         HStack(spacing: 10) {
             Button(action: open) {
                 HStack(spacing: 12) {
@@ -145,11 +159,9 @@ struct QuestRow: View {
                             // An intention: your way, or the idea you picked (decision 166).
                             Text(call.pillar != nil ? (call.idea.map { "Idea: \($0)" } ?? "Your way") : call.counted && !call.done ? "\(call.progress)/\(call.target) \(call.unit)" : "\(call.minutes) min")
                                 .lineLimit(1)
-                            if streak > 0 {                                  // its own unbroken run: what counts
-                                Text("·")
-                                HStack(spacing: 2) { Image(systemName: "flame.fill").font(.system(size: 9)); Text("\(streak)d") }
-                                    .foregroundStyle(Theme.accent)
-                            }
+                            Text("·")
+                            HStack(spacing: 2) { Image(systemName: "sparkle").font(.system(size: 9, weight: .bold)); Text("+\(xp) XP") }
+                                .foregroundStyle(Theme.accent)
                             Text("·")
                             HStack(spacing: 3) { EmberCoin(size: 11); Text("+10") }
                         }
@@ -163,7 +175,7 @@ struct QuestRow: View {
             // The tick: one tap and it's done.
             Button {
                 guard !call.done else { return }
-                tick(tickCenter)
+                tick(tickSpot.p)
             } label: {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -189,7 +201,7 @@ struct QuestRow: View {
                         }
                         .allowsHitTesting(false)
                 }
-                .onGeometryChange(for: CGPoint.self) { CGPoint(x: $0.frame(in: .global).midX, y: $0.frame(in: .global).midY) } action: { tickCenter = $0 }
+                .onGeometryChange(for: CGPoint.self) { CGPoint(x: $0.frame(in: .global).midX, y: $0.frame(in: .global).midY) } action: { tickSpot.p = $0 }
             }
             .buttonStyle(PressableStyle())
             .disabled(call.done)
@@ -265,4 +277,7 @@ struct IntentionIdeas: View {
         .transition(.opacity.combined(with: .scale(scale: 0.96)))
     }
 }
+
+/// A point that can change without redrawing anything (see QuestRow.tickSpot).
+final class PointBox { var p: CGPoint = .zero }
 
