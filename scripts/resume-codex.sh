@@ -67,6 +67,7 @@ run_brief docs/reviews/briefs/p2-plan-review.md \
 "$ROOT/scripts/p31-extend.sh"
 "$ROOT/scripts/p32-flame.sh"
 "$ROOT/scripts/p32-sanctuary-look.sh"
+"$ROOT/scripts/p32-sanctuary-zoom.sh"
 
 # Design & Feel cohesion frames first (decision 106)
 "$ROOT/scripts/cohesion-frames.sh"
