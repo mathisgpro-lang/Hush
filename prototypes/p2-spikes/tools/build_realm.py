@@ -19,7 +19,8 @@ opts = sys.argv[4:]
 def opt(name, default=None):
     return opts[opts.index(name) + 1] if name in opts else default
 A = "SpikeLab/Assets"; D = "../../docs/design/realms"
-PIXEL = "--pixel" in opts       # decision 149: the realm as native pixel art (Codex's docs/design/p29/px-<id>.png)
+NATIVE = "--native" in opts     # Codex's painting exactly as painted: no grid snap, no palette (Mathis, 2026-10-15)
+PIXEL = "--pixel" in opts or NATIVE   # decision 149: the realm from Codex's docs/design/p29/px-<id>.png
 if PIXEL:
     # Snap to its true grid (~2.2 source px per art pixel, like the Sanctuary), a fixed palette, then 4× with hard
     # edges so it stays crisp on screen. One single view (no side panels).
@@ -33,9 +34,13 @@ if PIXEL:
         src = src.crop((int(left * sw), int(top * sh), int(sw - right * sw), int(sh - bottom * sh)))
         print("cropped to centre the circle", src.size)
     gw, gh = round(src.width / 2.2), round(src.height / 2.2)
-    art = src.resize((gw, gh), Image.BOX).quantize(colors=72, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
-    W, H = gw * 4, gh * 4
-    main = art.resize((W, H), Image.NEAREST)
+    W, H = gw * 4, gh * 4                # (the masks and lights are found at this scale in both modes)
+    if NATIVE:
+        main = src.resize((W, H), Image.LANCZOS)
+        json.dump({"w": src.width, "h": src.height}, open(f"{A}/{rid}-native.json", "w"))   # the size it ships at
+    else:
+        art = src.resize((gw, gh), Image.BOX).quantize(colors=72, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
+        main = art.resize((W, H), Image.NEAREST)
     panels = ["/nonexistent-left", "/nonexistent-right"]
     print("pixel grid", gw, "x", gh)
 else:

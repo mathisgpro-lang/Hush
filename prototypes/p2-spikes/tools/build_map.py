@@ -18,6 +18,8 @@ if PIXEL:
     W, H = src.size
     big = src.resize((W * 4, H * 4), Image.NEAREST)
     print("pixel map grid", W, "x", H)
+elif "--native" in sys.argv:          # Codex's map exactly as painted: no grid, no palette, no sharpening (2026-10-15)
+    big = src
 else:
     big = src.resize((int(W * K), int(H * K)), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=1.6, percent=70, threshold=2))
 big.save(f"{A}/map-paint.png")

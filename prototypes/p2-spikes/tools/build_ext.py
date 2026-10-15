@@ -36,11 +36,14 @@ for w in (sys.argv[1:] or WORLDS):
     sy = H / (b - t)                                   # art pixels per source pixel (vertical)
     ext_src = tall.crop((l, b, r, tall.height))
     eh = round(ext_src.height * sy)
-    small = ext_src.resize((W, eh), Image.BOX)
+    small = ext_src.resize((W, eh), Image.LANCZOS)
     # The painting's own palette (≤72 colours), so the ground is drawn with exactly the same colours.
     cols = np.unique(np.asarray(paint).reshape(-1, 3), axis=0)
-    pal = Image.new("P", (1, 1)); flat = cols.flatten().tolist(); pal.putpalette(flat + flat[:3] * (256 - len(cols)))
-    ext = small.quantize(palette=pal, dither=Image.Dither.NONE).convert("RGB")
+    if len(cols) > 256:                                # a painting with no pixel filter: the strip as painted
+        ext = small
+    else:                                              # (a pixel-filtered painting: the same palette)
+        pal = Image.new("P", (1, 1)); flat = cols.flatten().tolist(); pal.putpalette(flat + flat[:3] * (256 - len(cols)))
+        ext = small.quantize(palette=pal, dither=Image.Dither.NONE).convert("RGB")
     ext.save(f"{A}/{asset}-ext.png")
     # What moves in it, as the scene's shader reads it: water ripples, waterfalls fall, flames flicker.
     hsv = np.asarray(ext.convert("HSV")).astype(float) / 255

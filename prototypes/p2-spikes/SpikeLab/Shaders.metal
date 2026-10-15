@@ -138,19 +138,11 @@ float3 s2hourLight(float3 rgb, float2 uv, float skyM, float seaM, float hour, fl
 // colours are cut to a small palette with a light ordered dither. Off (white tint): untouched.
 inline bool s2isPixel(half3 tint) { return tint.b < 0.75h; }
 inline float2 s2grid(half3 tint) { return max(float2(8.0), float2(tint.rg) * 4096.0); }
-inline float2 s2pixelUV(float2 uv, half3 tint, float2 unused)
-{
-    if (!s2isPixel(tint)) return uv;
-    float2 n = s2grid(tint);
-    return (floor(uv * n) + 0.5) / n;
-}
+// No pixel filter any more (Mathis, 2026-10-15: "is there a pixelized filter on top of the worlds? … take that away"):
+// lookups are never snapped to a grid; the pixel-mode marker now only means "show the art's own colours exactly".
+inline float2 s2pixelUV(float2 uv, half3 tint, float2 unused) { return uv; }
 /// A texture lookup in pixel mode lands on a pixel's centre (even mid-motion), so pixel art stays crisp at any size.
-inline float2 s2snap(float2 uv, half3 tint)
-{
-    if (!s2isPixel(tint)) return uv;
-    float2 n = s2grid(tint);
-    return (floor(uv * n) + 0.5) / n;
-}
+inline float2 s2snap(float2 uv, half3 tint) { return uv; }
 inline float3 s2pixelColor(float3 rgb, float2 uv, half3 tint, float2 unused)
 {
     if (!s2isPixel(tint)) return rgb;
@@ -723,7 +715,6 @@ void stoneLive(realitykit::surface_parameters params)
 
     rgb = depthStoneLight(rgb, uv, c.yz, c.w, t);
     params.surface().set_emissive_color(half3(rgb));
-    if (s2isPixel(pxTint)) col.a = col.a > 0.5h ? 1.0h : 0.0h;          // crisp edges in pixel mode
     params.surface().set_opacity(col.a);      // the land layer is cut out where the sky and the sea show
 }
 
@@ -827,7 +818,6 @@ void seaLive(realitykit::surface_parameters params)
     params.surface().set_base_color(half3(0));
     if (s2isPixel(pxTint)) rgb = float3(col.rgb);           // pixel art: its own colours
     params.surface().set_emissive_color(half3(rgb));
-    if (s2isPixel(pxTint)) col.a = col.a > 0.5h ? 1.0h : 0.0h;      // crisp edges
     params.surface().set_opacity(col.a);
 }
 
@@ -917,7 +907,6 @@ void sparkFire(realitykit::surface_parameters params)
     rgb *= 1.0 + night * 0.08;
     params.surface().set_base_color(half3(0));
     // (pixel art: its own colours; no palette cut)
-    if (s2isPixel(pxTint)) a = a > 0.5 ? 1.0 : 0.0;                   // crisp outline
     params.surface().set_emissive_color(half3(rgb * c.y));
     params.surface().set_opacity(half(a));
 }
