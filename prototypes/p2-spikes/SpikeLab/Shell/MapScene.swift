@@ -98,11 +98,9 @@ final class MapScene {
     func panRange(zoom z: Float) -> (lo: SIMD2<Float>, hi: SIMD2<Float>) {
         let lim = panLimit(zoom: z)
         let visH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180) / max(0.5, z)
-        let f = uv(RealmID.veil.mapPoint)
-        let top = spot(f.x, f.y).y - visH * 0.20                        // the Forge about a quarter down the screen
-        let home = uv(RealmID.sanctuary.mapPoint)
-        let bottom = spot(home.x, home.y).y - visH * 0.18
-        return ([-lim.x, min(-lim.y, bottom)], [lim.x, max(lim.y, top)])
+        let f = uv(RealmID.forge.mapPoint)
+        let top = spot(f.x, f.y).y - visH * 0.24                        // the Forge about a quarter down the screen
+        return ([-lim.x, -lim.y], [lim.x, max(lim.y, top)])
     }
     func clampPan(_ p: SIMD2<Float>, zoom z: Float, slack: Float = 0) -> SIMD2<Float> {
         let r = panRange(zoom: z)
@@ -177,7 +175,7 @@ final class MapScene {
         if let bTex = try? await TextureResource(named: "map-backdrop.png") {
             var u = UnlitMaterial(); u.color = .init(tint: UIColor(white: 0.92, alpha: 1), texture: .init(bTex))
             let back: Float = 0.06, k = (Self.distance + back) / Self.distance
-            let bw = planeW * 1.6 * k, bh = planeH * 2.4 * k
+            let bw = planeW * 1.3 * k, bh = planeH * 1.3 * k
             let b = ModelEntity(mesh: .generatePlane(width: bw, height: bh), materials: [u])
             b.position = [0, 0, -(Self.distance + back)]
             root.addChild(b)

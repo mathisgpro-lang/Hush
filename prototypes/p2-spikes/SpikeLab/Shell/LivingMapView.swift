@@ -90,7 +90,7 @@ struct LivingMapView: View {
 
     private func mapLayer(_ full: CGSize) -> some View {
         ZStack {
-            Color(red: 0.055, green: 0.075, blue: 0.09).opacity(0.42) // a quiet atlas beneath the distinct realm islands
+            Color.clear                                  // the map is drawn by the app's one 3D view underneath
             .contentShape(Rectangle())
             .simultaneousGesture(moveAround(full))
             .simultaneousGesture(pinch)
@@ -100,29 +100,12 @@ struct LivingMapView: View {
             if model.mapBuilt && !diving {
                 TimelineView(.animation) { _ in
                     ZStack {
-                        Canvas { context, _ in
-                            for i in 1..<roadOrder.count {
-                                let a = scene.screenPoint(roadOrder[i - 1].mapPoint, in: full)
-                                let b = scene.screenPoint(roadOrder[i].mapPoint, in: full)
-                                var path = Path(); path.move(to: a)
-                                path.addCurve(to: b, control1: CGPoint(x: a.x, y: (a.y + b.y) / 2), control2: CGPoint(x: b.x, y: (a.y + b.y) / 2))
-                                let awake = model.open.contains(roadOrder[i])
-                                context.stroke(path, with: .color(awake ? Theme.champagne.opacity(0.8) : Theme.cream.opacity(0.28)), style: StrokeStyle(lineWidth: awake ? 2.5 : 1.5, lineCap: .round, dash: awake ? [] : [4, 7]))
-                            }
-                        }
                         ForEach(roadOrder) { r in
                             let p = scene.screenPoint(r.mapPoint, in: full)
-                            marker(r).position(p).opacity(p.y < 150 ? max(0, Double(p.y - 115) / 35) : 1)   // fades only right under the header
+                            marker(r).position(inside(p, full)).opacity(p.y < 150 ? max(0, Double(p.y - 115) / 35) : 1)   // fades only right under the header
                         }
                     }
                     .frame(width: full.width, height: full.height)
-                }
-                .mask(alignment: .top) {
-                    VStack(spacing: 0) {
-                        Color.clear.frame(height: 114)
-                        LinearGradient(colors: [.clear, .white], startPoint: .top, endPoint: .bottom).frame(height: 14)
-                        Color.white
-                    }
                 }
                 .allowsHitTesting(false)
             }
@@ -179,63 +162,50 @@ struct LivingMapView: View {
 
     // MARK: Realms
 
-    /// Each realm is a bounded, illustrated place. Text shares the same stable hit region as its island.
+    /// A label near the screen's side slides in to stay whole (never cut off); far off screen it leaves with its realm.
+    private func inside(_ p: CGPoint, _ size: CGSize) -> CGPoint {
+        guard p.x > -30, p.x < size.width + 30 else { return p }
+        return CGPoint(x: min(max(p.x, 92), size.width - 92), y: p.y)
+    }
+
+    /// A realm's label, floating over it (visual only: taps on the map pick the nearest realm).
     private func marker(_ r: RealmID) -> some View {
-        let isOpen = model.open.contains(r), isSelected = selected == r
-        let next = r == model.journey.nextToBuy(among: ShellModel.builtRealms)
-        let image = r == .sanctuary ? "stage-home-paint.png" : "\(r.rawValue)-world-paint.png"
-        return VStack(spacing: -4) {
-            ZStack(alignment: .bottomTrailing) {
-                ZStack {
-                    if r != .veil, let art = UIImage(named: image) {
-                        Image(uiImage: art).resizable().interpolation(.high).scaledToFill()
-                            .frame(width: 116, height: 88).clipped()
-                            .saturation(isOpen ? 1 : next ? 0.65 : 0.15)
-                            .brightness(isOpen ? 0 : -0.18)
-                    } else {
-                        LinearGradient(colors: [r.color.opacity(0.4), Theme.night], startPoint: .topLeading, endPoint: .bottomTrailing)
-                        Image(systemName: "sparkles").font(.system(size: 26)).foregroundStyle(r.color.opacity(0.7))
-                    }
+        let isOpen = model.open.contains(r), isNew = model.newHere.contains(r), isSelected = selected == r
+        // Quiet labels (decision 146): the realm's name in italic on a soft shade, a small price or a small mark below.
+        return VStack(spacing: 2) {
+            Text(r.name).font(.story(isSelected ? 16 : 14, isSelected ? .medium : .regular).italic())
+                .foregroundStyle(Theme.cream.opacity(isOpen ? 1 : 0.7))
+                .shadow(color: .black.opacity(0.9), radius: 4).shadow(color: .black.opacity(0.5), radius: 12)
+            if !isOpen && r == model.journey.nextToBuy(among: ShellModel.builtRealms) {   // the next world: its price
+                HStack(spacing: 3) {
+                    EmberCoin(size: 11)
+                    Text("\(r.price)").font(.num(11, .bold))
                 }
-                .frame(width: 116, height: 88)
-                .clipShape(Ellipse())
-                .overlay(Ellipse().strokeBorder(isSelected ? Theme.cream : isOpen ? r.color : next ? Theme.champagne : Theme.cream.opacity(0.3), lineWidth: isSelected ? 3 : 2))
-                .background(Ellipse().fill(Theme.night).padding(-5))
-                Image(systemName: isOpen ? r.symbol : "lock.fill")
-                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(isOpen ? r.color : Theme.cream)
-                    .frame(width: 28, height: 28).background(Circle().fill(Theme.night))
-                    .overlay(Circle().stroke(r.color.opacity(0.65), lineWidth: 1))
-                    .offset(x: 0, y: -4)
+                .foregroundStyle(model.journey.embers >= r.price ? Theme.champagne : Theme.cream.opacity(0.7))
+                .shadow(color: .black.opacity(0.9), radius: 4)
+            } else if !isOpen {
+                Image(systemName: "lock.fill").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.cream.opacity(0.5))
+                    .shadow(color: .black.opacity(0.9), radius: 3)
             }
-            VStack(spacing: 3) {
-                Text(r.name).font(.story(14, .semibold)).multilineTextAlignment(.center)
-                    .foregroundStyle(Theme.cream).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                if !isOpen && next {
-                    HStack(spacing: 3) { EmberCoin(size: 11); Text("\(r.price)").font(.num(11, .bold)) }
-                        .foregroundStyle(Theme.champagne)
-                } else if model.newHere.contains(r) {
-                    Text("New").font(.ui(10, .bold)).foregroundStyle(Theme.champagne)
-                }
+            if isNew {
+                Text("something new").font(.story(11).italic()).foregroundStyle(Theme.champagne)
+                    .shadow(color: .black.opacity(0.9), radius: 4)
             }
-            .padding(.horizontal, 9).padding(.vertical, 7).frame(width: 146)
-            .background(RoundedRectangle(cornerRadius: 13).fill(Theme.night.opacity(0.96)))
-            .overlay(RoundedRectangle(cornerRadius: 13).stroke(isSelected ? Theme.champagne : r.color.opacity(isOpen ? 0.5 : 0.2), lineWidth: 1))
         }
-        .frame(width: 150, height: 150)
-        .scaleEffect(isSelected ? 1.04 : 1)
         .animation(Motion.soft, value: isSelected)
+        .offset(y: -34)
     }
 
     /// A tap on the map: the nearest realm (its painted place or its label) within reach is selected.
     private func tapped(at p: CGPoint, in size: CGSize) {
-        guard !diving, p.y >= 128 else { return }
+        guard !diving else { return }
         let hits = roadOrder.map { r -> (RealmID, CGFloat) in
             let c = scene.screenPoint(r.mapPoint, in: size)
-            let dl = hypot(p.x - c.x, p.y - (c.y + 42))             // the label
+            let dl = hypot(p.x - c.x, p.y - (c.y - 34))             // the label
             let dp = hypot(p.x - c.x, p.y - c.y)                    // the place itself
             return (r, min(dl, dp))
         }
-        guard let best = hits.min(by: { $0.1 < $1.1 }), best.1 < 80 else {
+        guard let best = hits.min(by: { $0.1 < $1.1 }), best.1 < 90 else {
             if selected != nil { withAnimation(.sheet) { selected = nil } }
             return
         }
@@ -329,14 +299,11 @@ struct LivingMapView: View {
             }
             .buttonStyle(PressableStyle())
             Spacer()
-            Text("The Emberlands").font(.story(21, .medium)).foregroundStyle(Theme.cream)
-                .lineLimit(1).minimumScaleFactor(0.8)
+            Text("The Emberlands").font(.story(21, .medium).italic()).foregroundStyle(Theme.cream)
                 .shadow(color: .black.opacity(0.8), radius: 6)
             Spacer()
             EmbersBadge(value: shownEmbers ?? model.journey.embers)       // your Embers (decision 141)
         }
-        .padding(.horizontal, 8).padding(.vertical, 7)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Theme.night.opacity(0.90)))
         .padding(.top, 4)
     }
 
