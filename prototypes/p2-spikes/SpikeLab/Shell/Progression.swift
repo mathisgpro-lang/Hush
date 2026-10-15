@@ -68,6 +68,17 @@ enum Progression {
         return Int((Double(base) * (1 + Double(min(streak, 30)) / 60)).rounded())
     }
 
+    /// A skill's level from its XP (Strength, Wisdom…, Mathis 2026-10-15): a skill gets about a quarter of your quests,
+    /// so its curve is half the Flame's: level 2 at 50, 3 at 150, 4 at 300, 5 at 500… (often at first, then slower).
+    static func skill(xp: Int) -> (level: Int, into: Int, span: Int) {
+        var n = 1
+        while 25 * n * (n + 1) <= xp { n += 1 }
+        let start = 25 * (n - 1) * n, end = 25 * n * (n + 1)
+        return (n, xp - start, end - start)
+    }
+    /// The Embers a new Flame level brings (collected on the level-up screen): 10 × the level.
+    static func levelBonus(_ level: Int) -> Int { 10 * level }
+
     /// Level from total XP: level 2 at 100, 3 at 300, 4 at 600, 5 at 1,000… (gentle at first, then slower).
     static func level(xp: Int) -> (level: Int, into: Int, span: Int) {
         var n = 1

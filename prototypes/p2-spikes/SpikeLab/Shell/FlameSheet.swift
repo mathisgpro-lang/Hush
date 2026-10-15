@@ -49,16 +49,15 @@ struct FlameSheet: View {
                     Rectangle().fill(Theme.cream.opacity(0.15)).frame(width: 0.5, height: 34)
                     figure("\(j.embers)", "Embers")
                 }
-                // XP: one hairline, filling.
-                VStack(spacing: 6) {
-                    GeometryReader { g in
-                        Capsule().fill(Theme.cream.opacity(0.12))
-                        Capsule().fill(Theme.champagne.opacity(0.85)).frame(width: g.size.width * CGFloat(l.into) / CGFloat(max(1, l.span)))
+                // Your Flame's level: its badge and its bar (the same as the XP moment after a quest, 2026-10-15).
+                HStack(spacing: 12) {
+                    LevelBadge(level: l.level, pop: 0, size: 34)
+                    VStack(alignment: .leading, spacing: 5) {
+                        XPBar(fill: CGFloat(l.into) / CGFloat(max(1, l.span)), height: 8)
+                        Text("\(l.into) / \(l.span) XP · \(l.span - l.into) to level \(l.level + 1)").font(.ui(11, .semibold)).foregroundStyle(Theme.cream.opacity(0.6))
                     }
-                    .frame(height: 2)
-                    Text("\(l.span - l.into) XP to level \(l.level + 1)").font(.story(13).italic()).foregroundStyle(Theme.cream.opacity(0.55))
                 }
-                .padding(.horizontal, 60).padding(.top, 14)
+                .padding(.horizontal, 44).padding(.top, 14)
                 Spacer(minLength: 22)
                 tabsRow
                 Group {
@@ -183,18 +182,23 @@ struct FlameSheet: View {
         }
     }
 
-    /// Six emblems, each with its number (Day 1 → today in a quiet line under it).
+    /// Your six skills: each with its level and its bar, where you are toward the next (2026-10-15).
     private var characterPanel: some View {
-        HStack(spacing: 0) {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 12) {
             ForEach(Pillar6.allCases, id: \.self) { p in
-                let v = j.attribute(p)
-                VStack(spacing: 5) {
+                let sk = Progression.skill(xp: j.attribute(p))
+                HStack(spacing: 9) {
                     Image(uiImage: UIImage(named: "pillar-\(p.rawValue.lowercased()).png") ?? UIImage()).resizable().scaledToFit()
-                        .frame(width: 40, height: 40).opacity(v > 0 ? 1 : 0.55)
-                    Text("\(v)").font(.num(16, .bold)).foregroundStyle(Theme.cream.opacity(v > 0 ? 1 : 0.45)).monospacedDigit()
-                    Text(p.attribute).font(.story(10).italic()).foregroundStyle(Theme.cream.opacity(0.5)).lineLimit(1).minimumScaleFactor(0.8)
+                        .frame(width: 30, height: 30).opacity(j.attribute(p) > 0 ? 1 : 0.55)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 4) {
+                            Text(p.attribute).font(.story(13, .medium)).foregroundStyle(Theme.cream)
+                            Spacer(minLength: 0)
+                            Text("Lv \(sk.level)").font(.num(12, .bold)).foregroundStyle(Theme.champagne).monospacedDigit()
+                        }
+                        XPBar(fill: CGFloat(sk.into) / CGFloat(max(1, sk.span)), height: 5, colors: [p.realm.color.opacity(0.75), p.realm.color])
+                    }
                 }
-                .frame(maxWidth: .infinity)
             }
         }
     }

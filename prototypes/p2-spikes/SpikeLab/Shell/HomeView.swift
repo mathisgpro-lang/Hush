@@ -18,6 +18,8 @@ struct HomeView: View {
     @State private var dragBegan: CGPoint?            // where the current swipe began (a new start = a new swipe)
     @State private var focused: Spot?
     @State private var reward: DeedOutcome?
+    @State private var levelUp: DeedOutcome?               // a new Flame level: its full screen (after the XP card)
+    @State private var celebrate: DeedOutcome?             // a new form or a streak milestone: its card
     @State private var backdrop: Double = 0           // the blurred world behind full sheets (0 = live world)
     private var covered: Bool { satchelOpen || bookOpen || flameOpen }
     @State private var meter = FrameMeter()
@@ -150,7 +152,27 @@ struct HomeView: View {
 
                 if let s = focused { VStack { Spacer(); spotCard(s).padding(.horizontal, 16) } }
                 if let call = open { card(call, size: geo.size) }
-                if let r = reward { RewardBurst(outcome: r) { withAnimation { reward = nil } }.id(r.xp ^ r.streakAfter << 8 ^ r.attributeAfter << 16) }
+                if let r = reward {                                     // the XP card, after every quest (2026-10-15)
+                    XPGainCard(outcome: r) {
+                        reward = nil
+                        if r.levelAfter > r.levelBefore { withAnimation(.easeOut(duration: 0.25)) { levelUp = r } }
+                        else if r.evolvedTo != nil || r.milestone != nil { withAnimation(.spring(response: 0.4)) { celebrate = r } }
+                    }
+                    .id(r.xp ^ r.streakAfter << 8 ^ r.attributeAfter << 16 ^ r.totalXPAfter << 4)
+                }
+                if let l = levelUp {
+                    LevelUpScreen(outcome: l, journey: model.journey) { from in
+                        let bonus = Progression.levelBonus(l.levelAfter)
+                        model.journey.grant(bonus, id: "level-\(l.levelAfter)")
+                        coins(from: from, amount: bonus)
+                        withAnimation(.easeOut(duration: 0.3)) { levelUp = nil }
+                        if l.evolvedTo != nil || l.milestone != nil {
+                            Task { try? await Task.sleep(for: .milliseconds(900)); withAnimation(.spring(response: 0.4)) { celebrate = l } }
+                        }
+                    }
+                    .transition(.opacity)
+                }
+                if let c = celebrate { RewardBurst(outcome: c, celebrationOnly: true) { withAnimation { celebrate = nil } } }
                 tourLayer
                 if model.journey.roundComplete && model.dailyGift == 0 && model.tour == nil && built && open == nil && reward == nil && !(satchelOpen || bookOpen || flameOpen) {
                     let j = model.journey
@@ -197,6 +219,16 @@ struct HomeView: View {
             if CommandLine.arguments.contains("-satchel") { satchelOpen = true }      // (test)
         }
         .task { await homeTour() }
+        .task {                                                    // (test: -xpdemo / -xpsmall show the XP moment)
+            let a = CommandLine.arguments
+            guard world == .sanctuary, a.contains("-xpdemo") || a.contains("-xpsmall") else { return }
+            while !built { try? await Task.sleep(for: .milliseconds(300)) }
+            try? await Task.sleep(for: .seconds(3))
+            let big = a.contains("-xpdemo")
+            reward = DeedOutcome(xp: 34, pillar: .body, attributeBefore: big ? 130 : 60, attributeAfter: big ? 164 : 94,
+                                 levelBefore: big ? 3 : 2, levelAfter: big ? 4 : 2, streakBefore: 9, streakAfter: 9,
+                                 milestone: nil, shieldEarned: false, totalXPBefore: big ? 580 : 140, totalXPAfter: big ? 614 : 174)
+        }
         .onPreferenceChange(EmberTargetKey.self) { p in if let p { coinTarget = p } }
         .onReceive(NotificationCenter.default.publisher(for: .perfCommand)) { n in       // (-uitest)
             switch n.object as? String {

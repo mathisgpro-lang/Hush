@@ -57,6 +57,7 @@ func streakLine(_ j: Journey, light: Int) -> String {
 /// gets its own celebration.
 struct RewardBurst: View {
     let outcome: DeedOutcome
+    var celebrationOnly = false           // straight to the card (home shows XP with its own card, XPGain.swift)
     let done: () -> Void
     @State private var shown = false
     @State private var counted: Int = 0
@@ -129,6 +130,7 @@ struct RewardBurst: View {
     }
 
     private func run() {
+        if celebrationOnly { UINotificationFeedbackGenerator().notificationOccurred(.success); stage = 1; return }
         counted = outcome.attributeBefore
         withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) { shown = true }
         Task { @MainActor in

@@ -29,6 +29,7 @@ struct DeedOutcome {
     let shieldEarned: Bool
     var embers = 0              // Embers it earned (they fly into the counter, decision 141)
     var evolvedTo: Evolution?   // a new form reached with this quest (decision 152)
+    var totalXPBefore = 0, totalXPAfter = 0   // the Flame's XP around this quest (its bar fills between them)
 }
 
 @MainActor @Observable
@@ -153,7 +154,7 @@ final class Journey {
         let embersBefore = embers
         let formBefore = reachedForm
         let pillar = Pillar6.of(realm)
-        let attrBefore = attribute(pillar), lvlBefore = Progression.level(xp: totalXP).level
+        let attrBefore = attribute(pillar), xpBefore = totalXP, lvlBefore = Progression.level(xp: totalXP).level
         let gain = Progression.xp(minutes: minutes, streak: before.current)
         deeds.append(Deed(date: date, realm: realm.rawValue, title: title, xp: gain))
         let after = streak(at: date)
@@ -169,6 +170,7 @@ final class Journey {
                                   streakBefore: before.current, streakAfter: after.current,
                                   milestone: milestone, shieldEarned: after.shields > before.shields)
         outcome.embers = embers - embersBefore
+        outcome.totalXPBefore = xpBefore; outcome.totalXPAfter = totalXP
         if reachedForm.rawValue > formBefore.rawValue {
             outcome.evolvedTo = reachedForm
             chosenForm = reachedForm                        // you see your new form at once (you can pick another)
