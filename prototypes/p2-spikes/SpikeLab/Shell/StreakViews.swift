@@ -157,7 +157,7 @@ func flameLine(_ j: Journey) -> String { DailyWhy.today() }
 
 enum DailyWhy {
     static let messages = [
-        "1% better each day is 37 times better in a year. That's why we never skip.",
+        "A little every day adds up to more than you'd guess.",
         "One push-up won't change you. One every day for a year will.",
         "Every quest is a vote for who you're becoming.",
         "Big changes are just small days, stacked.",
@@ -166,7 +166,7 @@ enum DailyWhy {
         "After about two months, the things you do daily start doing themselves.",
         "Small enough to do every day is strong enough to change a life.",
         "Your brain rewires around what you repeat. Let's repeat the good.",
-        "A missed day is a bump. Two in a row is a new habit. Let's never miss twice.",
+        "A missed day is just a bump. Coming back is what counts.",
         "I grow from the days you keep, not the hours you spend.",
         "Ten pages a day is a dozen books a year. Small adds up.",
         "Strength isn't built in one workout. It's built in the next one, and the next.",
@@ -180,8 +180,8 @@ enum DailyWhy {
         "Consistency beats intensity. Every single time.",
         "Each quest you finish tells your brain: this is who we are now.",
         "A little every day is how mountains are climbed.",
-        "Don't break the chain. That's the whole secret.",
-        "Hard days count double. Showing up on them is how you get strong.",
+        "Showing up is the whole secret. The size of the step matters less.",
+        "The hard days are where showing up matters most.",
         "It's not about today's quest. It's about the person who does it every day.",
         "Small and daily beats big and someday.",
         "Your future self is built from today's tiny choices.",

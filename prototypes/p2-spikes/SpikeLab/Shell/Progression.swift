@@ -87,23 +87,41 @@ enum Progression {
         return (n, xp - start, end - start)
     }
 
-    /// The streak, walked day by day through what you've lived.
-    static func streak(deeds: [Deed], now: Date = Date(), calendar cal: Calendar = .current) -> StreakStatus {
+    /// The streak, walked day by day through what you've lived and the days you came (decision 184: opening the app on a
+    /// day counts that day).
+    static func streak(deeds: [Deed], checkIns: [Date] = [], now: Date = Date(), calendar cal: Calendar = .current) -> StreakStatus {
+        walk(deeds: deeds, checkIns: checkIns, now: now, calendar: cal).status
+    }
+
+    /// What each past day was for the streak (the daily screen's week row, decision 183).
+    enum DayMark: Equatable { case lived, missed, shielded, repaired }
+
+    /// The streak's walk, with what each day was and how long the last streak that ended had lasted.
+    /// A day counts with its first open of the app (Mathis, decision 184: "advancing one day and reconnecting on the app")
+    /// or a quest; the open counts as one, each quest as one, so the day after a miss, coming back plus one quest
+    /// repairs it.
+    static func walk(deeds: [Deed], checkIns: [Date] = [], now: Date = Date(), calendar cal: Calendar = .current)
+        -> (status: StreakStatus, marks: [Date: DayMark], ended: Int) {
         var perDay: [Date: Int] = [:]
         for d in deeds { perDay[cal.startOfDay(for: d.date), default: 0] += 1 }
-        guard let first = perDay.keys.min() else { return StreakStatus() }
+        for day in Set(checkIns.map { cal.startOfDay(for: $0) }) { perDay[day, default: 0] += 1 }
+        guard let first = perDay.keys.min() else { return (StreakStatus(), [:], 0) }
         let today = cal.startOfDay(for: now)
         var s = StreakStatus()
+        var marks: [Date: DayMark] = [:]
+        var ended = 0
         var pendingMiss = false
+        var missedDay: Date?
         var day = first
         while day <= today {
             let n = perDay[day] ?? 0
             let isToday = day == today
             if n > 0 {
+                marks[day] = .lived
                 if pendingMiss {
-                    if n >= 2 { pendingMiss = false; s.current += 1 }             // repaired
+                    if n >= 2 { pendingMiss = false; s.current += 1; if let m = missedDay { marks[m] = .repaired } }   // repaired
                     else if isToday { s.state = .repairable(need: 1); s.current += 0; break }
-                    else { pendingMiss = false; s.current = 1 }                   // not repaired: begins again
+                    else { pendingMiss = false; ended = s.current; s.current = 1 }                   // not repaired: begins again
                 } else {
                     s.current += 1
                 }
@@ -111,10 +129,11 @@ enum Progression {
                 s.best = max(s.best, s.current)
                 s.state = isToday ? .livedToday : .waiting
             } else if !isToday {
-                if pendingMiss { s.current = 0; pendingMiss = false; s.state = .broken }      // two missed days
+                marks[day] = .missed
+                if pendingMiss { ended = s.current; s.current = 0; pendingMiss = false; s.state = .broken }      // two missed days
                 else if s.current > 0 {
-                    if s.shields > 0 { s.shields -= 1; s.state = .shieldedYesterday }          // a shield catches it
-                    else { pendingMiss = true }
+                    if s.shields > 0 { s.shields -= 1; s.state = .shieldedYesterday; marks[day] = .shielded }  // a shield catches it
+                    else { pendingMiss = true; missedDay = day }
                 }
             } else {
                 // Today, nothing yet.
@@ -124,7 +143,14 @@ enum Progression {
             }
             day = cal.date(byAdding: .day, value: 1, to: day)!
         }
-        return s
+        return (s, marks, ended)
+    }
+
+    /// The next form and how many more days in a row reach it (decision 183). A form is reached the day the *current*
+    /// streak hits its count (only then can the best pass it), so the days left count from the current streak.
+    static func formProgress(current: Int, best: Int) -> (next: Evolution?, left: Int) {
+        guard let next = Evolution.reached(best: best).next else { return (nil, 0) }
+        return (next, max(1, next.days - current))
     }
 
     /// How many days in a row this quest has been done (its own small streak, "9d" on its card).

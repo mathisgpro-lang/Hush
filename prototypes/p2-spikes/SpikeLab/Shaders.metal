@@ -3,6 +3,15 @@
 #include <RealityKit/RealityKit.h>
 using namespace metal;
 
+// The game's overall saturation (Mathis, 2026-10-22: "make the whole game less saturated all in all"): every world, the
+// map and the Flame send their final colour through gameGrade. 1 = the paintings exactly as painted; keep it well above
+// grey (decision 123: never grey).
+constant half kGameSaturation = 0.82h;
+static inline half3 gameGrade(half3 c) {
+    half l = dot(c, half3(0.2126h, 0.7152h, 0.0722h));
+    return max(mix(half3(l), c, kGameSaturation), half3(0.0h));
+}
+
 // Flame hair: continuous sway, stronger toward the tips (tips sit higher in model space).
 [[visible]]
 void hairSway(realitykit::geometry_parameters params)
@@ -105,7 +114,7 @@ void heroFireSurface(realitykit::surface_parameters params)
     }
     // Output as emissive so the painting shows its own colors whether the material is treated as lit or unlit.
     params.surface().set_base_color(half3(0));
-    params.surface().set_emissive_color(col.rgb * half(bright));
+    params.surface().set_emissive_color(gameGrade(half3(col.rgb * half(bright))));
     params.surface().set_opacity(col.a);
 }
 
@@ -119,7 +128,7 @@ void glowPulse(realitykit::surface_parameters params)
     half4 col = params.textures().base_color().sample(s, float2(uv.x, 1.0 - uv.y));
     float beat = 0.75 + 0.15 * pow(0.5 + 0.5 * sin(t * 2.3), 8.0) + 0.1 * sin(t * 7.7) * sin(t * 3.1);
     params.surface().set_base_color(half3(0));
-    params.surface().set_emissive_color(col.rgb);
+    params.surface().set_emissive_color(gameGrade(half3(col.rgb)));
     params.surface().set_opacity(col.a * half(beat * params.uniforms().custom_parameter().x));
 }
 
@@ -224,7 +233,7 @@ void sanctuaryLive(realitykit::surface_parameters params)
     c *= (1.0 - hush * 0.35);
 
     params.surface().set_base_color(half3(0));
-    params.surface().set_emissive_color(half3(c));
+    params.surface().set_emissive_color(gameGrade(half3(half3(c))));
     params.surface().set_opacity(1.0);
 }
 
@@ -238,7 +247,7 @@ void mistDrift(realitykit::surface_parameters params)
     float n = s2fbm(float2(uv.x * 3.0 + t * c.y + c.z, uv.y * 2.0 + c.z * 0.5));
     float edge = smoothstep(0.0, 0.25, uv.y) * (1.0 - smoothstep(0.6, 1.0, uv.y)) * smoothstep(0.0, 0.1, uv.x) * (1.0 - smoothstep(0.9, 1.0, uv.x));
     params.surface().set_base_color(half3(0));
-    params.surface().set_emissive_color(half3(0.8, 0.8, 0.86));
+    params.surface().set_emissive_color(gameGrade(half3(half3(0.8, 0.8, 0.86))));
     params.surface().set_opacity(half(saturate(n * 1.6 - 0.35) * edge * c.x));
 }
 
@@ -254,7 +263,7 @@ void heroReflection(realitykit::surface_parameters params)
     half4 col = params.textures().base_color().sample(s, float2(uv.x, 1.0 - uv.y) + r);
     float fade = 1.0 - smoothstep(0.0, 0.55, uv.y);
     params.surface().set_base_color(half3(0));
-    params.surface().set_emissive_color(col.rgb * half(0.75 * params.uniforms().custom_parameter().y));
+    params.surface().set_emissive_color(gameGrade(half3(col.rgb * half(0.75 * params.uniforms().custom_parameter().y))));
     params.surface().set_opacity(col.a * half(0.38 * fade));
 }
 
@@ -263,8 +272,14 @@ void heroReflection(realitykit::surface_parameters params)
 //         z = order of the lantern relit last, w = seconds since it relit (for its flare).
 // custom texture: lantern order map (0 = not a lantern; (0,1] = the order in which it relights).
 // roughness_scale = wind.
-[[visible]]
-void groveRestore(realitykit::surface_parameters params)
+// A finished outpaint is one continuous color surface. Never crossfade different architecture at its old border.
+half4 worldPaint(realitykit::surface_parameters params, float2 uv, float4 registration) {
+    constexpr sampler s(address::clamp_to_edge, filter::linear, mip_filter::linear);
+    return registration.x > 0.0
+        ? params.textures().ambient_occlusion().sample(s, (uv - 0.5) * registration.xy + registration.zw)
+        : params.textures().base_color().sample(s, uv);
+}
+void groveRestoreImpl(realitykit::surface_parameters params, float4 registration)
 {
     float2 uv = params.geometry().uv0();
     half3 pxTint = half3(params.material_constants().emissive_color());
@@ -289,7 +304,7 @@ void groveRestore(realitykit::surface_parameters params)
     float flowing = newRealm ? 1.0 : smoothstep(0.15, 0.4, r);     // new realms: the water always moves
     float2 ripple = float2(sin(uv.y * 150.0 - t * 1.4 + sin(uv.x * 10.0 + t * 0.5)) * 0.002,
                            sin(uv.x * 60.0 + t * 1.0) * 0.001) * water * flowing;
-    half4 base0 = params.textures().base_color().sample(s, tuv);
+    half4 base0 = worldPaint(params, tuv, registration);
     float wind = params.material_constants().roughness_scale();
     float green = smoothstep(0.02, 0.12, float(base0.g) - max(float(base0.r) * 0.85, float(base0.b)));
     float2 sway = float2(sin(t * 2.0 + uv.y * 28.0 + uv.x * 7.0) * 0.003 * wind * green * (0.4 + uv.y), 0);
@@ -325,11 +340,11 @@ void groveRestore(realitykit::surface_parameters params)
     float core0 = float(lm.g);
     float2 lick = float2(sin(uv.y * 520.0 - t * 11.0 + uv.x * 90.0) * 0.0007 + sin(uv.y * 210.0 - t * 6.3) * 0.0004,
                          -(0.5 + 0.5 * sin(t * 8.0 + uv.x * 400.0 + uv.y * 60.0)) * 0.0011) * core0;
-    half4 col = params.textures().base_color().sample(s, s2snap(tuv + ripple * (1.0 - paleW) + sway + flow + breeze + cloud + lick, pxTint));
+    half4 col = worldPaint(params, s2snap(tuv + ripple * (1.0 - paleW) + sway + flow + breeze + cloud + lick, pxTint), registration);
     if (hasLife && skyM > 0.01) {
         // The sky drifts gently, one sharp reading (blending two shifted copies smeared the distant castles).
         float2 drift = float2(sin(t * 0.045) * 0.005 + sin(t * 0.017) * 0.003, sin(t * 0.03) * 0.0012);
-        col = mix(col, params.textures().base_color().sample(s, s2snap(tuv + drift + cloud, pxTint)), half(skyM));
+        col = mix(col, worldPaint(params, s2snap(tuv + drift + cloud, pxTint), registration), half(skyM));
     }
     float3 rgb = float3(col.rgb);
     float3 rgbRaw = rgb;                              // (its lanterns keep their own fire, whatever the hour)
@@ -406,9 +421,12 @@ void groveRestore(realitykit::surface_parameters params)
     }
     float3 anchor = float3(params.material_constants().base_color_tint().rgb);
     if (anchor.b < 0.5) graded = depthStoneLight(graded, uv, anchor.rg, 1.0, t);
-    params.surface().set_emissive_color(half3(graded));
+    params.surface().set_emissive_color(gameGrade(half3(half3(graded))));
     params.surface().set_opacity(1.0);
 }
+
+[[visible]]
+void groveRestore(realitykit::surface_parameters params) { groveRestoreImpl(params, float4(0)); }
 
 // The light strand an action sends from the Flame to the world: a soft glowing orb (opacity from custom.x).
 [[visible]]
@@ -418,7 +436,7 @@ void strandGlow(realitykit::surface_parameters params)
     float d = length(uv - float2(0.5));
     float a = pow(saturate(1.0 - d * 2.0), 2.2) * params.uniforms().custom_parameter().x;
     params.surface().set_base_color(half3(0));
-    params.surface().set_emissive_color(half3(1.0, 0.82, 0.5) * half(1.0 + (1.0 - d * 2.0)));
+    params.surface().set_emissive_color(gameGrade(half3(half3(1.0, 0.82, 0.5) * half(1.0 + (1.0 - d * 2.0)))));
     params.surface().set_opacity(half(a));
 }
 
@@ -444,7 +462,7 @@ void layerBodyFire(realitykit::surface_parameters params)
     col.rgb += half3(0.42, 0.28, 0.08) * half(core * beat * 0.6 * energy);
     col.rgb *= half(1.0 + 0.06 * w1 * flameAmt);
     params.surface().set_base_color(half3(0));
-    params.surface().set_emissive_color(col.rgb * half(c.y));
+    params.surface().set_emissive_color(gameGrade(half3(col.rgb * half(c.y))));
     params.surface().set_opacity(col.a);
 }
 
@@ -461,7 +479,7 @@ void tongueFire(realitykit::surface_parameters params)
     half4 col = params.textures().base_color().sample(s, float2(uv.x, 1.0 - uv.y) + d);
     col.rgb *= half(1.0 + 0.1 * w * uv.y);
     params.surface().set_base_color(half3(0));
-    params.surface().set_emissive_color(col.rgb * half(c.z));
+    params.surface().set_emissive_color(gameGrade(half3(col.rgb * half(c.z))));
     params.surface().set_opacity(col.a);
 }
 
@@ -579,7 +597,7 @@ void stoneLive(realitykit::surface_parameters params)
     // Where the land is cut out (the sky and sea layers show), do no work at all.
     if (base0.a < 0.004) {
         params.surface().set_base_color(half3(0));
-        params.surface().set_emissive_color(half3(0));
+        params.surface().set_emissive_color(gameGrade(half3(half3(0))));
         params.surface().set_opacity(0.0);
         return;
     }
@@ -714,7 +732,7 @@ void stoneLive(realitykit::surface_parameters params)
     }
 
     rgb = depthStoneLight(rgb, uv, c.yz, c.w, t);
-    params.surface().set_emissive_color(half3(rgb));
+    params.surface().set_emissive_color(gameGrade(half3(half3(rgb))));
     params.surface().set_opacity(col.a);      // the land layer is cut out where the sky and the sea show
 }
 
@@ -759,7 +777,7 @@ void skyLive(realitykit::surface_parameters params)
     rgb = s2hush(rgb, uv, c.x, t);
     params.surface().set_base_color(half3(0));
     if (s2isPixel(pxTint)) rgb = float3(params.textures().base_color().sample(s, tuv).rgb);   // pixel art: its own colours
-    params.surface().set_emissive_color(half3(rgb));
+    params.surface().set_emissive_color(gameGrade(half3(half3(rgb))));
     params.surface().set_opacity(1.0);
 }
 
@@ -817,7 +835,7 @@ void seaLive(realitykit::surface_parameters params)
     rgb = s2hush(rgb, uv, c.x, t);
     params.surface().set_base_color(half3(0));
     if (s2isPixel(pxTint)) rgb = float3(col.rgb);           // pixel art: its own colours
-    params.surface().set_emissive_color(half3(rgb));
+    params.surface().set_emissive_color(gameGrade(half3(half3(rgb))));
     params.surface().set_opacity(col.a);
 }
 
@@ -907,26 +925,34 @@ void sparkFire(realitykit::surface_parameters params)
     rgb *= 1.0 + night * 0.08;
     params.surface().set_base_color(half3(0));
     // (pixel art: its own colours; no palette cut)
-    params.surface().set_emissive_color(half3(rgb * c.y));
+    params.surface().set_emissive_color(gameGrade(half3(half3(rgb * c.y))));
     params.surface().set_opacity(half(a));
 }
 
 
 // Decision 169: high-fidelity painted volume with an animated crown and independently phased outer flames.
-// The central face remains rigid; no second pixel grid or palette reduction.
+// Shared rising flow: silhouette curl and inner heat travel together, rather than wobbling independently.
+float depthFireRegion(float2 uv, float faceY) {
+    float face = 1.0 - smoothstep(0.78, 1.06, length((uv - float2(0.52, faceY)) / float2(0.32, 0.17)));
+    float crown = smoothstep(max(0.65, faceY + 0.14), 0.98, uv.y);
+    float fringe = smoothstep(0.30, 0.48, abs(uv.x - 0.5));
+    return max(crown, fringe * 0.8) * smoothstep(0.12, 0.30, uv.y) * (1.0 - face);
+}
+float2 depthFireFlow(float2 uv, float t) {
+    float2 q = float2(uv.x * 10.0, uv.y * 8.0 - t * 1.4);
+    float curl = s2noise(q) - 0.5;
+    float wisps = s2noise(q * 2.1 + float2(3.7, -t * 0.55)) - 0.5;
+    return float2(curl + wisps * 0.4, wisps);
+}
+// Feet and the central face remain rigid.
 [[visible]]
 void depthLive(realitykit::geometry_parameters params) {
     float2 uv = params.geometry().uv0();
     float t = params.uniforms().time();
-    float4 c = params.uniforms().custom_parameter();
-    float crown = smoothstep(0.70, 1.0, uv.y);
-    float side = smoothstep(0.22, 0.43, abs(uv.x - 0.5)) * smoothstep(0.08, 0.25, uv.y);
-    float move = max(crown, side * 0.7);
-    float wave = sin(t * 2.2 + uv.y * 9.0 + uv.x * 7.0) + 0.35 * sin(t * 4.3 - uv.y * 14.0);
-    params.geometry().set_model_position_offset(float3(
-        wave * 0.004 * move + c.z * crown * 0.45,
-        sin(t * 2.8 + uv.x * 11.0) * 0.0025 * move + c.w * crown * 0.4,
-        sin(t * 1.7 + uv.x * 9.0) * 0.0015 * side));
+    float faceY = params.uniforms().custom_parameter().z;
+    float fire = depthFireRegion(uv, faceY > 0.0 ? faceY : 0.58);
+    float2 flow = depthFireFlow(uv, t);
+    params.geometry().set_model_position_offset(float3(flow.x * 0.012 * fire, flow.y * 0.006 * fire, 0));
 }
 
 [[visible]]
@@ -935,18 +961,50 @@ void depthFire(realitykit::surface_parameters params) {
     float t = params.uniforms().time();
     float4 c = params.uniforms().custom_parameter();
     constexpr sampler s(address::clamp_to_edge, filter::linear, mip_filter::linear);
-    half4 col = params.textures().base_color().sample(s, float2(uv.x, 1.0 - uv.y));
     float faceY = params.material_constants().roughness_scale();
-    float face = 1.0 - smoothstep(0.7, 1.0, length((uv - float2(0.52, faceY)) / float2(0.32, 0.16)));
-    float edge = smoothstep(0.2, 0.46, abs(uv.x - 0.5));
-    float fire = max(smoothstep(0.72, 1.0, uv.y), edge) * (1.0 - face);
-    float pulse = 1.0 + 0.025 * sin(t * 2.3) + 0.018 * sin(t * 5.1 + uv.y * 15.0) * fire;
+    float fire = depthFireRegion(uv, faceY);
+    float2 flow = depthFireFlow(uv, t);
+    // Broad tongues bend as heat rises; the fine flow splits their thinning tips.
+    float tongue = sin(uv.y * 13.0 - t * 3.8 + sin(uv.x * 19.0 + t * 1.1));
+    float2 heat = float2(flow.x * 0.055 + tongue * 0.018, flow.y * 0.030) * fire;
+    float2 sourceUV = float2(uv.x + heat.x, uv.y + heat.y);
+    half4 col = params.textures().base_color().sample(s, float2(sourceUV.x, 1.0 - sourceUV.y));
+    float inImage = step(0.0, sourceUV.x) * step(sourceUV.x, 1.0) * step(0.0, sourceUV.y) * step(sourceUV.y, 1.0);
+    float tip = smoothstep(0.80, 1.02, uv.y) * fire;
+    float breakup = smoothstep(0.56, 0.78, s2noise(float2(uv.x * 23.0, uv.y * 16.0 - t * 4.5)));
+    float a = float(col.a) * inImage * (1.0 - breakup * tip * 0.92);
+    float pulse = 1.0 + (flow.x * 0.18 + flow.y * 0.08) * fire;
     float3 rgb = float3(col.rgb) * pulse * clamp(c.y, 0.7, 1.03);
+
+    // A pair of occasional detached flame tips uses the character's own painted palette.
+    // The extended transparent mesh gives them room without stretching the body or shifting its feet.
+    half4 palette = params.textures().base_color().sample(s, float2(0.5, 0.20));
+    half4 p1 = params.textures().base_color().sample(s, float2(0.35, 0.20));
+    half4 p2 = params.textures().base_color().sample(s, float2(0.65, 0.20));
+    if (p1.a > palette.a) palette = p1;
+    if (p2.a > palette.a) palette = p2;
+    for (int i = 0; i < 2; ++i) {
+        float phase = t * 0.65 + float(i) * 0.53;
+        float life = fract(phase), seed = floor(phase) + float(i) * 7.0;
+        float cx = 0.50 + sin(seed * 2.4) * 0.065 + sin(life * 5.0 + seed) * life * 0.045;
+        float cy = 0.94 + life * 0.21;
+        float2 d = uv - float2(cx, cy);
+        d.x += sin(d.y * 65.0 - life * 4.0) * 0.012;
+        float width = (0.022 * (1.0 - life) + 0.003) * clamp(1.0 - d.y * 12.0, 0.25, 1.3);
+        float shape = length(d / float2(width, 0.042 * (1.0 - life) + 0.009));
+        float wa = (1.0 - smoothstep(0.62, 1.0, shape)) * smoothstep(0.0, 0.12, life) * (1.0 - smoothstep(0.60, 0.95, life)) * float(palette.a);
+        wa *= smoothstep(0.87, 0.94, uv.y);
+        float3 wrgb = float3(palette.rgb) * (1.0 + 0.12 * (1.0 - saturate(shape)));
+        float combined = a + wa * (1.0 - a);
+        rgb = (rgb * a + wrgb * wa * (1.0 - a)) / max(0.0001, combined);
+        a = combined;
+    }
+    float edge = smoothstep(0.30, 0.48, abs(uv.x - 0.5));
     float night = s2night(params.material_constants().metallic_scale() * 24.0);
     rgb *= mix(float3(1.0), float3(0.98, 0.98, 1.025), night * edge * 0.4);
     params.surface().set_base_color(half3(0));
-    params.surface().set_emissive_color(half3(rgb));
-    params.surface().set_opacity(col.a);
+    params.surface().set_emissive_color(gameGrade(half3(half3(rgb))));
+    params.surface().set_opacity(half(a));
 }
 
 [[visible]]
@@ -954,13 +1012,12 @@ void depthContact(realitykit::surface_parameters params) {
     float2 d = (params.geometry().uv0() - 0.5) * 2.0;
     float a = exp(-dot(d, d) * 4.0) * 0.52 * (1.0 - smoothstep(0.7, 1.0, length(d)));
     params.surface().set_base_color(half3(0));
-    params.surface().set_emissive_color(half3(0.085, 0.035, 0.018));
+    params.surface().set_emissive_color(gameGrade(half3(half3(0.085, 0.035, 0.018))));
     params.surface().set_opacity(half(a));
 }
 
 // The composed Sanctuary keeps the approved painting's palette and perspective intact.
-[[visible]]
-void stageWorld(realitykit::surface_parameters params) {
+void stageWorldImpl(realitykit::surface_parameters params, float4 registration) {
     float2 uv = params.geometry().uv0();
     float2 tuv = float2(uv.x, 1.0 - uv.y);
     float t = params.uniforms().time();
@@ -968,15 +1025,19 @@ void stageWorld(realitykit::surface_parameters params) {
     constexpr sampler s(address::clamp_to_edge, filter::linear, mip_filter::linear);
     float edge = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
     float core = smoothstep(-0.05, 0.08, edge);
-    bool expanded = params.material_constants().clearcoat_roughness_scale() > 0.5;
+    float2 registeredUV = (tuv - 0.5) * registration.xy + registration.zw;
+    bool registered = registration.x > 0.0;
+    bool expanded = registered || params.material_constants().clearcoat_roughness_scale() > 0.5;
     float4 mask = float4(params.textures().custom().sample(s, tuv)) * (expanded ? core : 1.0);
     float2 flow = float2(sin(tuv.y * 190.0 - t * 1.4) * 0.0007, sin(t * 1.7 + tuv.x * 90.0) * 0.0004) * mask.r;
-    float3 rgb = float3(params.textures().base_color().sample(s, tuv + flow).rgb);
-    if (expanded && core < 1.0) {
+    float3 rgb = float3(worldPaint(params, tuv + flow, registration).rgb);
+    if (!registered && expanded && core < 1.0) {
         // The original painting remains untouched at home. Its continuation uses the same mesh and lighting.
         // Registered against the delivered outpaint; its actual inset differs from the requested canvas.
         float2 outerUV = (tuv - 0.5) * float2(0.547633, 0.723277) + float2(0.503511, 0.508919);
-        float3 outer = float3(params.textures().emissive_color().sample(s, outerUV).rgb);
+        float3 outer = registered
+            ? float3(params.textures().ambient_occlusion().sample(s, registeredUV).rgb)
+            : float3(params.textures().emissive_color().sample(s, outerUV).rgb);
         rgb = mix(outer, rgb, core);
     }
     rgb *= 1.0 + mask.b * (0.025 * sin(t * 3.1) + 0.015 * sin(t * 6.7));
@@ -984,6 +1045,11 @@ void stageWorld(realitykit::surface_parameters params) {
     rgb *= mix(float3(1.0), float3(0.76, 0.8, 0.96), night * 0.55);
     rgb = depthStoneLight(rgb, uv, c.yz, c.w * 0.45, t);
     params.surface().set_base_color(half3(0));
-    params.surface().set_emissive_color(half3(rgb));
+    params.surface().set_emissive_color(gameGrade(half3(half3(rgb))));
     params.surface().set_opacity(1.0);
 }
+
+[[visible]]
+void stageWorld(realitykit::surface_parameters params) { stageWorldImpl(params, float4(0)); }
+
+#include "WorldSurroundRegistration.h"

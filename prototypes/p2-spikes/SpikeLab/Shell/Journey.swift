@@ -155,13 +155,23 @@ final class Journey {
     }
     /// A fresh start without the introduction: born today, level 1, no streak, no worlds bought; your name, why you
     /// came and your Day 1 answers stay. (The beta's starter purse stays too.)
-    func resetProgress() {
+    func resetProgress(bornOn date: Date = Date()) {
         let keepName = name, keepEmber = ember
         deeds = []; pages = []; checkIns = []; bought = []; newPages = 0
         grants = grants.filter { $0.key == "beta-purse" }
         roundStart = nil; roundsDone = 0; chosenForm = nil; skipLog = [:]; skippedToday = []; xpBase = 0
         bornOn = nil
-        born(name: keepName, ember: keepEmber)
+        born(name: keepName, ember: keepEmber, on: date)
+        save()
+    }
+    /// A fresh start on day 2 (Mathis, 2026-10-22: "reset the game as if I was connecting on day two and therefore
+    /// seeing the second streak"): your Spark was born yesterday, you came and did your first quest (as the introduction
+    /// has you do); today's first open makes it 2.
+    func startAtDayTwo(now: Date = Date()) {
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: now)!
+        resetProgress(bornOn: yesterday)
+        checkIns = [yesterday]
+        did("Three slow breaths", detail: "Your very first light.", realm: .stillwater, minutes: 1, on: yesterday)
         save()
     }
     /// Everything erased (the next launch starts with the introduction).
@@ -188,11 +198,7 @@ final class Journey {
         deeds.append(Deed(date: date, realm: realm.rawValue, title: title, xp: gain))
         let after = streak(at: date)
         let milestone = StreakStatus.milestones.first { $0 > before.current && $0 <= after.current }
-        if let m = milestone {
-            write("streak-\(m)", world: RealmID.sanctuary.rawValue, title: "\(m) days in a row",
-                  m >= 66 ? "Sixty-six days. The runes around the circle burned gold all night, and your Spark could not stop glowing. Something had changed for good: not a streak anymore, a part of who you are."
-                          : "For \(m) days in a row, you kept your word to yourself. Your Spark burned a little steadier each morning, and the Sanctuary noticed.", on: date)
-        }
+        if let m = milestone { writeMilestone(m, on: date) }
         defer { save() }
         var outcome = DeedOutcome(xp: gain, pillar: pillar, attributeBefore: attrBefore, attributeAfter: attribute(pillar),
                                   levelBefore: lvlBefore, levelAfter: Progression.level(xp: totalXP).level,
@@ -202,9 +208,7 @@ final class Journey {
         outcome.totalXPBefore = xpBefore; outcome.totalXPAfter = totalXP
         if reachedForm.rawValue > formBefore.rawValue {
             outcome.evolvedTo = reachedForm
-            chosenForm = reachedForm                        // you see your new form at once (you can pick another)
-            write("form-\(reachedForm.rawValue)", world: "emberlands", title: "A new form: \(reachedForm.name)",
-                  "\(reachedForm.days) days in a row. Your Flame grew into a \(reachedForm.name), and it will never lose that.", on: date)
+            reachedNewForm(on: date)
         }
         let n = dayNumber(of: date)
         let today = deeds.filter { Calendar.current.isDate($0.date, inSameDayAs: date) }
@@ -233,10 +237,34 @@ final class Journey {
 
     // MARK: Embers (decision 136): earned only by living, they buy the next worlds. Calculated from the record.
 
-    /// The daily check-in: the first open of a day counts once.
+    /// What the day's first open just did (decision 184): the form shown before it, a new form, a streak milestone.
+    struct CheckInOutcome { let shownBefore: Evolution; var evolvedTo: Evolution?; var milestone: Int? }
+    private(set) var lastCheckIn: CheckInOutcome?
+    /// The daily check-in: the first open of a day counts once, and lights the day for the streak (decision 184).
     @discardableResult func checkIn(on date: Date = Date()) -> Bool {
         guard !checkIns.contains(where: { Calendar.current.isDate($0, inSameDayAs: date) }) else { return false }
-        checkIns.append(date); save(); return true
+        let before = streak(at: date), formBefore = reachedForm, shown = form
+        checkIns.append(date)
+        let after = streak(at: date)
+        var o = CheckInOutcome(shownBefore: shown, evolvedTo: nil,
+                               milestone: StreakStatus.milestones.first { $0 > before.current && $0 <= after.current })
+        if bornOn != nil {                                  // (the very first open is the introduction's, before the birth)
+            if let m = o.milestone { writeMilestone(m, on: date) }
+            if reachedForm.rawValue > formBefore.rawValue { o.evolvedTo = reachedForm; reachedNewForm(on: date) }
+        }
+        lastCheckIn = o
+        save(); return true
+    }
+    private func writeMilestone(_ m: Int, on date: Date) {
+        write("streak-\(m)", world: RealmID.sanctuary.rawValue, title: "\(m) days in a row",
+              m >= 66 ? "Sixty-six days. The runes around the circle burned gold all night, and your Spark could not stop glowing. Something had changed for good: not a streak anymore, a part of who you are."
+                      : "For \(m) days in a row, you kept your word to yourself. Your Spark burned a little steadier each morning, and the Sanctuary noticed.", on: date)
+    }
+    /// A new form reached: you see it at once (you can pick another in Your Flame), and the Book remembers it.
+    private func reachedNewForm(on date: Date) {
+        chosenForm = reachedForm
+        write("form-\(reachedForm.rawValue)", world: "emberlands", title: "A new form: \(reachedForm.name)",
+              "\(reachedForm.days) days in a row. Your Flame grew into a \(reachedForm.name), and it will never lose that.", on: date)
     }
     static let dailyGift = 5
     /// Quests 10 each, every day lived 5 (keeping your streak), each streak milestone reached 25, the daily gift 5,
@@ -252,12 +280,16 @@ final class Journey {
     func nextToBuy(among built: Set<RealmID>) -> RealmID? {
         roadOrder.first { built.contains($0) && $0.price > 0 && $0 != .veil && !bought.contains($0.rawValue) }
     }
+    /// Your Flame's level (from its XP).
+    var flameLevel: Int { Progression.level(xp: totalXP).level }
+    /// Your Flame has reached this world's island on the level path (decision 189).
+    func reached(_ r: RealmID) -> Bool { flameLevel >= r.islandLevel }
     func buy(_ r: RealmID, among built: Set<RealmID>) -> Bool {
-        guard r == nextToBuy(among: built), embers >= r.price else { return false }
+        guard r == nextToBuy(among: built), reached(r), embers >= r.price else { return false }
         bought.insert(r.rawValue); save(); return true
     }
 
-    func streak(at date: Date = Date()) -> StreakStatus { Progression.streak(deeds: deeds, now: date) }
+    func streak(at date: Date = Date()) -> StreakStatus { Progression.streak(deeds: deeds, checkIns: checkIns, now: date) }
     /// Your Flame's XP: everything your quests earned, minus a reset point (Mathis asked to replay level 1 → 2;
     /// the record itself is never touched).
     var totalXP: Int { max(0, deeds.reduce(0) { $0 + ($1.xp ?? 20) } - xpBase) }
@@ -307,7 +339,7 @@ final class Journey {
         guard let start = cal.dateInterval(of: .weekOfYear, for: Date())?.start else { return Array(repeating: false, count: 7) }
         return (0..<7).map { i in
             let day = cal.date(byAdding: .day, value: i, to: start)!
-            return deeds.contains { cal.isDate($0.date, inSameDayAs: day) }
+            return deeds.contains { cal.isDate($0.date, inSameDayAs: day) } || checkIns.contains { cal.isDate($0, inSameDayAs: day) }
         }
     }
     /// How many things you've done for each pillar (its light).

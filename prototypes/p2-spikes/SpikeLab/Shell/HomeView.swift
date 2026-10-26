@@ -19,7 +19,7 @@ struct HomeView: View {
     @State private var focused: Spot?
     @State private var rewards: [XPItem] = []                 // the XP cards on screen, one per quest just done
     @State private var levelUp: DeedOutcome?               // a new Flame level: its full screen (after the XP card)
-    @State private var celebrate: DeedOutcome?             // a new form or a streak milestone: its card
+    @State private var afterLit: DeedOutcome?              // the XP card waiting for the lit daily screen to close (decision 183)
     @State private var backdrop: Double = 0           // the blurred world behind full sheets (0 = live world)
     private var covered: Bool { satchelOpen || bookOpen || flameOpen }
     @State private var meter = FrameMeter()
@@ -160,7 +160,7 @@ struct HomeView: View {
                     rewards.removeAll { $0.id == item.id }
                     let r = item.outcome
                     if r.levelAfter > r.levelBefore, levelUp == nil { withAnimation(.easeOut(duration: 0.25)) { levelUp = r } }
-                    else if r.evolvedTo != nil || r.milestone != nil, celebrate == nil { withAnimation(.spring(response: 0.4)) { celebrate = r } }
+                    // (A new form or a streak milestone is told by the lit daily screen, before the XP cards.)
                 }
                 if let l = levelUp {
                     LevelUpScreen(outcome: l, journey: model.journey) { from in
@@ -168,13 +168,9 @@ struct HomeView: View {
                         if !CommandLine.arguments.contains("-xpdemo") { model.journey.grant(bonus, id: "level-\(l.levelAfter)") }   // (the demo pays nothing)
                         coins(from: from, amount: bonus)
                         withAnimation(.easeOut(duration: 0.3)) { levelUp = nil }
-                        if l.evolvedTo != nil || l.milestone != nil {
-                            Task { try? await Task.sleep(for: .milliseconds(900)); withAnimation(.spring(response: 0.4)) { celebrate = l } }
-                        }
                     }
                     .transition(.opacity)
                 }
-                if let c = celebrate { RewardBurst(outcome: c, celebrationOnly: true) { withAnimation { celebrate = nil } } }
                 if confirmReset { resetCard.transition(.opacity.combined(with: .scale(scale: 0.94))).zIndex(50) }
                 tourLayer
                 if model.journey.roundComplete && model.dailyGift == 0 && model.tour == nil && built && open == nil && rewards.isEmpty && !(satchelOpen || bookOpen || flameOpen) {
@@ -184,7 +180,7 @@ struct HomeView: View {
                     }
                     .transition(.scale(scale: 0.85).combined(with: .opacity))       // springs in (task 5)
                 }
-                if model.dailyGift > 0 && !PerfTest.noGift && model.tour == nil && built && open == nil && !(satchelOpen || bookOpen || flameOpen) {
+                if model.dailyGift > 0 && model.daily == nil && !PerfTest.noGift && model.tour == nil && built && open == nil && !(satchelOpen || bookOpen || flameOpen) {
                     DailyPouch(amount: model.dailyGift) { pt in
                         let a = model.dailyGift
                         withAnimation(.easeOut(duration: 0.25)) { model.dailyGift = 0 }
@@ -217,6 +213,9 @@ struct HomeView: View {
             }
             .simultaneousGesture(lookAround(geo.size), including: satchelOpen || bookOpen || flameOpen || open != nil ? .subviews : .all)
         }
+        // The daily screen above home, in its own layer: it always gets exactly the screen (inside home's stack, layers
+        // that reach under the screen's edges could make it taller than the screen and push "Let's go" off the bottom).
+        .overlay { dailyLayer }
         .onAppear {
             meter.start(); setUpWorld()
             if CommandLine.arguments.contains("-satchel") { satchelOpen = true }      // (test)
@@ -278,6 +277,8 @@ struct HomeView: View {
                 }
             }
         }
+        .onChange(of: model.daily != nil) { _, shown in restUnderDaily(shown) }
+        .onChange(of: model.coreReady) { _, _ in restUnderDaily(model.daily != nil) }
         .onChange(of: built) { _, _ in setUpWorld(); placeFlame() }
         .onChange(of: model.form) { _, _ in placeFlame() }
         .onDisappear { meter.stop(); director?.stop(); model.overlayOpen = false; model.worldPaused = false }
@@ -422,13 +423,17 @@ struct HomeView: View {
             Color.black.opacity(0.4).ignoresSafeArea().onTapGesture { withAnimation { confirmReset = false } }
             VStack(spacing: 12) {
                 Text("Reset").font(.story(24, .medium)).foregroundStyle(Theme.ink)
-                Text("For testing. Reset progress: level 1, no streak, no worlds bought, your name stays. Start over: everything is erased and the app closes; open it again for the intro.")
+                Text("For testing. Reset progress: level 1, no streak, no worlds bought, your name stays. Day 2: the same, as if your Spark was born yesterday; today makes your streak 2. Start over: everything is erased and the app closes; open it again for the intro.")
                     .font(.ui(13)).foregroundStyle(Theme.ink.opacity(0.7)).multilineTextAlignment(.center)
                 Button {
                     withAnimation(.sheet) { confirmReset = false; model.resetProgress() }
                     flash("A fresh start · level 1")
                 } label: { GoldButtonLabel(text: "Reset progress") }
                 .buttonStyle(PressableStyle()).padding(.top, 6)
+                Button {
+                    withAnimation(.sheet) { confirmReset = false; model.startAtDayTwo() }
+                } label: { GoldButtonLabel(text: "Start at day 2") }
+                .buttonStyle(PressableStyle())
                 Button { model.startOver() } label: {
                     Text("Start over from the intro").font(.ui(15, .semibold)).foregroundStyle(Color(red: 0.7, green: 0.2, blue: 0.15))
                 }
@@ -475,10 +480,11 @@ struct HomeView: View {
     private func placeFlame() {
         let h = UIScreen.main.bounds.height
         guard bandTop > 0, bandBottom > bandTop, h > 0 else { return }
-        // One ground anchor in every form; growth rises into the available space, never into the quests/header.
-        let feet = bandBottom - 34
-        let available = max(48, feet - bandTop - 14)
-        let bodyHeight = min(available, h * 0.16 * CGFloat(model.form.growth))
+        // The wider camera gives scenery breathing room; keep the complete hero centered above the quests.
+        let top = bandTop + 14, bottom = bandBottom - 34
+        let available = max(48, bottom - top)
+        let bodyHeight = min(available, h * 0.16 * CGFloat(model.form.growth)) * 0.70
+        let feet = (top + bottom + bodyHeight) * 0.5
         scene.fitFlame(heightFraction: Float(bodyHeight / h), growth: model.form.growth)
         model.feetTarget = Float(feet / h)
     }
@@ -664,13 +670,26 @@ struct HomeView: View {
         withAnimation { open = nil }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         let outcome = withAnimation(.sheet) { model.complete(call.id) }
+        // If this quest lights today (decision 183; since 184 only a quest that repairs a missed day does, opening the
+        // app lights the others), its daily screen is fixed now, with the form shown before it: a
+        // second quick quest or midnight during the short wait can't change what it shows.
+        let lit: DailyShow? = outcome.flatMap { o in
+            guard o.streakAfter > o.streakBefore else { return nil }
+            let j = model.journey
+            return DailyShow(before: j.dailyReport(beforeLastQuest: true), after: j.dailyReport(), from: model.form,
+                             evolvedTo: o.evolvedTo, milestone: o.evolvedTo == nil ? o.milestone : nil, full: false)
+        }
         let started = Date()
         strand = (from, started)
         if let e = outcome?.embers, e > 0 { coins(from: from, amount: e) }      // the Embers burst out and fly up
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(300))                     // the XP card follows the tick at once
             UINotificationFeedbackGenerator().notificationOccurred(.success)
-            if let outcome {
+            if let outcome, let lit {
+                // This quest lights today (decision 183): the lit daily screen first, its XP card when it closes.
+                afterLit = outcome
+                withAnimation(.easeOut(duration: 0.3)) { model.daily = lit }
+            } else if let outcome {
                 withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) {
                     rewards.append(XPItem(outcome: outcome))
                     if rewards.count > 4 { rewards.removeFirst() }             // never more than four at once
@@ -681,6 +700,58 @@ struct HomeView: View {
             if let f = outcome?.evolvedTo { model.showForm(f) }                              // a new form, everywhere (decision 152)
             if call.realm == world { realmScene?.act() }        // done here, for this realm: its next lights relight
             director?.actionCompleted(call.realm == .grove ? .heart : call.realm == .library ? .mind : call.realm == .highlands ? .body : .spirit)
+        }
+    }
+
+    // The daily screen (decision 183): the morning one on the first open of a day; the lit one for the quest that
+    // lights today, before its XP card.
+    @ViewBuilder private var dailyLayer: some View {
+        if let d = model.daily, model.tour == nil {
+            // It opens under the launch veil (its Flame warms up while the world loads) and plays once the veil lifts.
+            DailyWelcome(show: d, form: model.form, stage: model.dailyStage, live: model.coreReady) { from in
+                if let from, model.dailyGift > 0 {                  // Let's go: the daily pouch, collected
+                    let a = model.dailyGift
+                    model.dailyGift = 0
+                    coins(from: from, amount: a)
+                }
+                withAnimation(.easeOut(duration: 0.35)) { model.daily = nil }
+                if let o = afterLit {
+                    afterLit = nil
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(380))
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) { rewards.append(XPItem(outcome: o)) }
+                    }
+                }
+            }
+            .id(d)
+            .transition(.opacity)
+            .zIndex(60)
+            .onAppear { model.dailyWarmed = true }           // its Flame is warm now: no warm-up needed later
+        } else if !model.dailyWarmed {
+            // Every launch, behind the veil: a new 3D view takes seconds to draw its first frames, so the daily Flame's
+            // is drawn once, invisibly, while the world loads; the lit screen after a quest then shows its Flame at once.
+            DailyFlameView(stage: model.dailyStage, interactive: false)
+                .frame(width: 120, height: 160).opacity(0.02).allowsHitTesting(false)
+                .task {
+                    model.dailyStage.prepare(form: model.journey.form)
+                    try? await Task.sleep(for: .seconds(6))
+                    model.dailyWarmed = true
+                }
+        }
+    }
+
+    /// The daily screen is opaque: once it has covered the screen, the world under it rests (its per-frame work and
+    /// its drawing, as under full sheets), so the screen's moment gets the whole phone; it wakes as the screen leaves.
+    private func restUnderDaily(_ shown: Bool) {
+        if shown {
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(400))
+                guard model.daily != nil, model.coreReady else { return }
+                model.overlayOpen = true; model.worldPaused = true
+            }
+        } else {
+            model.worldPaused = covered
+            model.overlayOpen = satchelOpen || bookOpen || flameOpen || open != nil
         }
     }
 

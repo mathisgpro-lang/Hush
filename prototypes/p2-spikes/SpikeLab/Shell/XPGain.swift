@@ -468,8 +468,10 @@ struct LevelUpScreen: View {
         return "NEXT FORM: \(n.name.uppercased())"
     }
     private var nextFormLine: String {
-        guard let n = journey.reachedForm.next else { return "Your Flame has reached its last form." }
-        let left = max(1, n.days - journey.streak().best)
+        let s = journey.streak()
+        let p = Progression.formProgress(current: s.current, best: s.best)      // from the streak you're on (decision 183)
+        guard p.next != nil else { return "Your Flame has reached its last form." }
+        let left = p.left
         return "\(left) more day\(left == 1 ? "" : "s") in a row and your Flame grows."
     }
 

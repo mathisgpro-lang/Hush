@@ -47,9 +47,11 @@ final class SanctuaryScene {
     var stageCircle: SIMD2<Float> { circle }
     private var composedStage: Bool { Bundle.main.url(forResource: "stage-home-paint", withExtension: "png") != nil }
     private var expandedStage: Bool { composedStage && Bundle.main.url(forResource: "stage-home-surround", withExtension: "png") != nil }
+    private let surround = WorldSurround.load("sanctuary")
     private var stageCoverage = SIMD2<Float>(1, 1)
     private var safeStagePan = SIMD2<Float>(0, 0)
     private lazy var circle: SIMD2<Float> = {
+        if let calibrated = surround?.circleUV { return calibrated }
         if composedStage { return [0.5, 0.515] }                     // the true center of the rune circle (measured on the painting)
         if PixelMode.world, let u = Bundle.main.url(forResource: "px-home-features", withExtension: "json"), let d = try? Data(contentsOf: u),
            let j = try? JSONSerialization.jsonObject(with: d) as? [String: Double], let cu = j["circleU"], let cv = j["circleV"] { return [Float(cu), Float(cv)] }
@@ -102,7 +104,7 @@ final class SanctuaryScene {
     /// The painting is sized for a 40° view; the camera looks a little closer (35°), which leaves room to peek
     /// up and down as well as sideways.
     static let paintFov: Float = 40
-    static let fov: Float = 30
+    static let fov: Float = 36 // wider than the former 30° view, with room for vertical look-around
 
     /// Depth from Apple's Depth Anything V2 (tools/depthmap), white = near. Read once into memory.
     private var depth: (w: Int, h: Int, px: [UInt8])?
@@ -141,12 +143,12 @@ final class SanctuaryScene {
         let tex = try await TextureResource(named: layers == nil ? "\(prefix)-paint.png" : "world-land.png")
         let motion = try await TextureResource(named: "\(prefix)-motion.png", options: .init(semantic: .raw))
         loadDepth("\(prefix)-depth.png")
-        let visibleH = 2 * Self.distance * tan((composedStage ? Self.fov : Self.paintFov) / 2 * .pi / 180)
+        let visibleH = 2 * Self.distance * tan((composedStage ? 30 : Self.paintFov) / 2 * .pi / 180)
         let aspect = Float(tex.width) / Float(tex.height)
         let (w, h) = (visibleH * aspect * 1.08, visibleH * 1.08)     // a little overscan so parallax never shows edges
         paintingW = w; paintingH = h
         // Home coordinates and scale stay identical; only the mesh beyond the old canvas grows.
-        stageCoverage = expandedStage ? [1.8, 1.35] : [1, 1]
+        stageCoverage = surround?.coverage ?? (expandedStage ? [1.8, 1.35] : [1, 1])
         let screen = UIScreen.main.bounds.size
         let camH = Self.visibleHeight, camW = camH * Float(screen.width / screen.height)
         // Sideways: up to ~28% of a screen, so the stone circle never leaves the view (and never past the world).
@@ -183,8 +185,11 @@ final class SanctuaryScene {
         unlit.color = .init(tint: .white, texture: .init(tex))
         var material: any RealityKit.Material = unlit
         if let lib {
-            var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: composedStage ? "stageWorld" : "stoneLive", in: lib))
-            if expandedStage {
+            var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: composedStage ? (surround == nil ? "stageWorld" : "sanctuaryWideWorld") : "stoneLive", in: lib))
+            if surround != nil {
+                let texture = try await TextureResource(named: "sanctuary-wide-surround.png", options: .init(semantic: .color))
+                m.ambientOcclusion = .init(texture: .init(texture))
+            } else if expandedStage {
                 let surround = try await TextureResource(named: "stage-home-surround.png")
                 m.emissiveColor = .init(texture: .init(surround))
                 m.clearcoatRoughness = .init(floatLiteral: 1) // stageWorld: the surround texture is available
@@ -251,7 +256,7 @@ final class SanctuaryScene {
         if let lib, layers == nil, let bTex = try? await TextureResource(named: composedStage ? "stage-home-paint.png" : "\(prefix)-backdrop.png") {
             let blank = try await TextureResource(named: "blank-mask.png", options: .init(semantic: .raw))
             var u = UnlitMaterial(); u.color = .init(tint: .white, texture: .init(bTex))
-            var m = try CustomMaterial(from: u, surfaceShader: .init(named: composedStage ? "stageWorld" : "stoneLive", in: lib))
+            var m = try CustomMaterial(from: u, surfaceShader: .init(named: composedStage ? (surround == nil ? "stageWorld" : "sanctuaryWideWorld") : "stoneLive", in: lib))
             if let lut = await SolarClock.lut() { m.emissiveColor = .init(texture: .init(lut)) }   // the looks of the hour
             m.custom.texture = .init(blank); m.custom.value = [1, 0.5, 0.5, 0]
             let back: Float = layers == nil ? 0.5 : 3.0, k = (Self.distance + back) / Self.distance   // behind the sky when it exists
@@ -297,7 +302,7 @@ final class SanctuaryScene {
         let scale = (composedStage ? 0.145 : PixelMode.world ? 0.10 : 0.105) * h * k / 0.27   // the Spark: small, a newborn spirit (smaller in the pixel Sanctuary)
         let feet = SIMD3<Float>((hx(circle.x) - 0.5) * w * k, (circle.y + 0 - 0.5) * h * k, -d)   // feet on the centre
         hero.leanPivot.scale = .init(repeating: scale)
-        hero.leanPivot.position = feet + SIMD3(0, (PixelMode.world ? 0.0 : 0.09) * scale, 0)   // (pixel: in the middle of the circle)
+        hero.leanPivot.position = feet + SIMD3(0, (composedStage || PixelMode.world ? 0.0 : 0.09) * scale, 0)   // (pixel: in the middle of the circle)
         hero.stationary = true
         // Floating well above the runes (Mathis: like in the Grove). Seen from above, a floating thing shows higher
         // on screen than its light on the ground: its glow pool stays on the circle's center stone.
@@ -502,6 +507,7 @@ final class SanctuaryScene {
         let driftAmp: Float = PixelMode.world ? 0.008 : layers != nil ? 0.03 : (autoDrift ? 0.12 : 0.04)     // a calm breath, not a sway
         let drift = SIMD2(noise.sample(time * 0.08), noise.sample(time * 0.06 + 30)) * driftAmp
         var offset = SIMD3<Float>(tilt.x * 0.11 + drift.x, -tilt.y * 0.07 + drift.y * 0.6, sin(time * 0.11) * (PixelMode.world ? 0.006 : layers != nil ? 0.015 : 0.05))
+        if surround != nil { offset = .zero } // the world rests still; only deliberate look-around moves it
         if CommandLine.arguments.contains("-camtest") { offset = SIMD3(sin(time * 1.2) > 0 ? 0.1 : -0.1, cos(time * 0.9) > 0 ? 0.07 : -0.07, 0.05) }
         offset.x = max(-0.1, min(0.1, offset.x)); offset.y = max(-0.07, min(0.07, offset.y))
         let (wantPos, wantLook): (SIMD3<Float>, SIMD3<Float>) = focus.map { f0 in
@@ -512,7 +518,7 @@ final class SanctuaryScene {
         // Looking around: a critically damped spring toward the target (glides, never jerks, no overshoot).
         if let i = CommandLine.arguments.firstIndex(of: "-push"), i + 1 < CommandLine.arguments.count {   // (test: held past a limit)
             let d = CommandLine.arguments[i + 1]
-            panTarget = [d == "left" ? -9 : d == "right" ? 9 : panTarget.x, d == "up" ? 9 : d == "down" ? -9 : panTarget.y]
+            panTarget = [d.contains("left") ? -9 : d.contains("right") ? 9 : panTarget.x, d.contains("up") ? 9 : d.contains("down") ? -9 : panTarget.y]
         }
         if expandedStage {
             // Reserve the camera's home lift as well as the rubber band and drift: top/bottom remain covered.

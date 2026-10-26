@@ -2,3 +2,6 @@
 xcuserdata/
 *.xcuserstate
 .build/
+
+# Build output (rebuilt by xcodebuild; never needed in the backup)
+prototypes/p2-spikes/dd-spikelab-dev/

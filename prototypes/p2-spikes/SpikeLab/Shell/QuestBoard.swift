@@ -23,8 +23,9 @@ struct QuestBoard: View {
     @GestureState private var drag: CGFloat = 0
 
     private var left: Int { calls.filter { !$0.done }.count }
-    /// The panel shows three quests at most (Mathis, 2026-10-14); more on the day are a scroll away.
-    private static let visible = 3
+    /// The panel shows the day's four quests at once, no scrolling (Mathis, 2026-10-22; it was three, 2026-10-14);
+    /// only quests added beyond four are a scroll away.
+    private static let visible = 4
     private static let rowH: CGFloat = 60, gap: CGFloat = 8, peek: CGFloat = 9   // sleek cards (Mathis, 2026-10-14)
     private var rowHeight: CGFloat { Self.rowH }
     private var rowGap: CGFloat { Self.gap }
@@ -85,7 +86,7 @@ struct QuestBoard: View {
                     }
                     .scrollBounceBehavior(.basedOnSize)
                     .task {                                                // (test: -scrolltest scrolls the list by itself)
-                        guard CommandLine.arguments.contains("-scrolltest"), calls.count > 3 else { return }
+                        guard CommandLine.arguments.contains("-scrolltest"), calls.count > Self.visible else { return }
                         try? await Task.sleep(for: .seconds(6))
                         for k in 0..<40 {
                             withAnimation(.easeInOut(duration: 0.6)) { reader.scrollTo(k.isMultiple(of: 2) ? calls.last?.id : calls.first?.id) }
@@ -93,7 +94,7 @@ struct QuestBoard: View {
                         }
                     }
                 }
-                // As tall as three quests at most (then it scrolls): the sheet hugs them, right above the bar.
+                // As tall as four quests at most (then it scrolls): the sheet hugs them, right above the bar.
                 .frame(height: CGFloat(min(n, Self.visible)) * rowHeight + CGFloat(max(0, min(n, Self.visible) - 1)) * rowGap + 4)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             } else {

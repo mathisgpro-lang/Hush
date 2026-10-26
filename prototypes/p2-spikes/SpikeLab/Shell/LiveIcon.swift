@@ -18,14 +18,13 @@ struct LiveIcon: View {
         ZStack {
             glow
             Image(uiImage: image ?? UIImage()).resizable().interpolation(PixelMode.world && (image?.size.width ?? 0) < 200 ? .none : .high).scaledToFit().frame(width: 42, height: 36)   // pixel icons stay crisp (bigger, Mathis 2026-10-13)
-                .scaleEffect(x: kind == .flame ? (flicker ? 0.97 : 1.02) : 1,
-                             y: kind == .flame ? (flicker ? 1.06 : 0.98) : (kind == .satchel && idle ? 1.035 : 1), anchor: .bottom)
+                .scaleEffect(x: 1, y: kind == .satchel && idle ? 1.035 : 1, anchor: .bottom)
                 .rotationEffect(.degrees(rotation), anchor: .bottom)
                 .offset(y: kind == .world ? (idle ? -1.5 : 1) : 0)
             sparkle
         }
         .frame(width: 42, height: 36)
-        .keyframeAnimator(initialValue: Hop(), trigger: taps) { v, h in
+        .keyframeAnimator(initialValue: Hop(), trigger: kind == .flame ? 0 : taps) { v, h in
             v.scaleEffect(x: h.sx, y: h.sy, anchor: .bottom).offset(y: h.y)
         } keyframes: { _ in
             KeyframeTrack(\.y) {
@@ -55,7 +54,7 @@ struct LiveIcon: View {
         switch kind {
         case .world: idle ? 3 : -2
         case .book: idle ? -2.5 : 1.5
-        case .flame: flicker ? -2 : 2
+        case .flame: 0
         case .satchel: calling ? (idle ? 4 : -4) : 0
         }
     }

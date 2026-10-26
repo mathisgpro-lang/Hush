@@ -242,6 +242,10 @@ struct LivingMapView: View {
                 // One world after another: this one waits for the one before it on the road.
                 Label("Opens after \(next.name)", systemImage: "lock.fill")
                     .font(.ui(14, .semibold)).foregroundStyle(ink.opacity(0.7))
+            } else if canBuy && !model.journey.reached(r) {
+                // Decision 189: the next world waits on your Flame's level path, at its island's level.
+                Label("Your Flame reaches it at level \(r.islandLevel) (now level \(model.journey.flameLevel)).", systemImage: "flame.fill")
+                    .font(.ui(14, .semibold)).foregroundStyle(ink.opacity(0.7))
             } else if canBuy {
                 // Decision 136: Embers earned by living open the next world (never bought with money).
                 let have = model.journey.embers

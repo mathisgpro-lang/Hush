@@ -1,0 +1,27 @@
+2026-10-24 baseline measurement attempt — BLOCKED, no FPS samples captured.
+
+Requested simulator: FeelTest 448DC48F-484B-45CD-86CC-89FFF3182EC6
+Requested launch flags: -skipintro -nogift -map -perf -locked -maplevel 3
+Baseline source: /tmp/hush-IslandMapView-baseline.swift
+Source SHA-256: ba8ba0465618917168661e7dd6fd3fcd4fb1a88afd16a7edb549b108387f8dd3
+
+The sandbox denied CoreSimulator service access before installation or launch:
+- CoreSimulatorService connection became invalid.
+- Error opening log file under /Users/mathis/Library/Logs/CoreSimulator: Operation not permitted.
+- Failed to initialize simulator device set / Connection refused (NSPOSIXErrorDomain Code=61).
+- xcodebuild: Simulator device support disabled.
+
+No screenshot exists for this attempt. No app was installed or launched. No saved game was reset.
+baseline-build.log contains the exact xcodebuild diagnostics.
+The exact-device build exited 70 (destination unavailable).
+
+A second build using generic/platform=iOS Simulator and /tmp-only build/module caches reached
+the compile steps, then exited 65: cannot execute tool 'metal' due to missing Metal Toolchain.
+generic-build.log contains that attempt. No dependencies were installed or downloaded.
+
+PerfProbe interpretation for a future successful run:
+The -perf flag starts a CADisplayLink on the main run loop. It logs one-second windows of UI FPS,
+hitches, dropped-frame estimate, longest frame interval, current phase, and the five most frequent
+instrumented view-body evaluations. Hitches exceed max(24 ms, expected interval * 1.6). Intervals
+over 50 ms are individually logged. Use 8–12 settled one-second windows after loading, and report
+the simulator/device plus configuration; simulator timings do not establish real-phone FPS.

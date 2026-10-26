@@ -318,3 +318,76 @@ Mathis also requested a clearer discovery map. The map now gives each realm a bo
 Mathis resumed the queued Sanctuary look-around request. Extended the approved painting without changing its core coordinates, registered the generated continuation to avoid a duplicated brazier, restored the camera range and corrected the framing feedback that otherwise cancelled vertical swipes. No HomeView, quest-panel or other-world scene edits. Final simulator left/right/up/down/rest captures show continuous world at the edges.
 
 The real iPhone initially measured about 30 fps. Isolated checks showed 60 fps with navigation icons static or hidden. Removing the small animated glints’ screen blend retained their animation and restored the complete screen to steady 60.1 fps (17 ms worst steady frame). Signed Release installed (sequence 13896) and opened normally with -skipintro -nogift, no journey-reset or form-override flags. Brief/report: `docs/plan-2.0/p32-sanctuary-look.md`. Mathis’s feel check remains pending; no commit made.
+
+
+## 2026-10-15 — Wider-world sketches requested
+
+After the look-around installation, Mathis asked to zoom out Sanctuary, then requested sketches applying the same direction to every world. Prepared a detailed Sanctuary screen and two three-world comparison boards from the actual paintings and live UI reference. The brief keeps quests prominent, a smaller grounded Flame centered in the free area, extended world artwork for swipe safety, live lighting and a measured 60 fps target. No further runtime code changed for this sketch request. See `docs/design/flame-depth/wider-worlds/brief.md`.
+
+## 2026-10-16 — Wider-world installation and color correction
+
+The first wider-world build installed and launched on Mathis’s iPhone (installation sequence 14040). It includes all seven extended paintings, smaller Flame framing, and the current quest/XP UI. Mathis reported pale, bland sides. The surround texture was loaded without an explicit color semantic in an ambient-occlusion slot; the original painting uses a color slot. The revision explicitly loads the surround as color. Simulator camera verification also needs explicit world activation and screenshot acknowledgements; the initial automated capture batch did not reliably represent its labels and must not be used as acceptance evidence. Corrected verification and phone installation are in progress.
+
+### Final delivery, 2026-10-16
+
+Installed the continuous-color scenery fix, then the all-form foot alignment, then the final Sanctuary camera reservation (installation 14088). The initial crossfade was replaced with one continuous painted surface per world, eliminating the architectural joins. Explicit color semantics removed the pale sides. Circle centers were measured on all seven final paintings, and all six sprite foot contacts were measured independently from alpha pixels; the form mesh now scales around its own foot anchor. The original artwork, current quest/XP UI and journey data remain. Simulator rest/corner captures and signed build checks passed; final performance and normal relaunch recorded in the delivery report. No commit requested or made.
+
+### Fire-only animation, 2026-10-16
+
+Mathis rejected the character bouncing and swaying: its feet/body must remain fixed while the flame tongues burn. Implemented a fixed transform for every painted form, disabled body idle/reaction impulses and automatic world-camera drift, and replaced the periodic tip wave with upward-moving fire turbulence. Face, torso and foot region stay protected. Flame icon hopping/scaling/rotation removed. Independent screenshot comparisons found zero foot translation across four time intervals while the upper fire changed in every interval. The Spark no longer hovers. Phone installation and performance recorded in the delivery report.
+
+
+## 2026-10-17 — Fire video reference and phone delivery
+
+Mathis manually restored Xcode sign-in, allowing the previous fire-only refinement and icon fix to install (14128). He then supplied `IMG_8546.MOV` as the animation target. Its changing, curling fire silhouette informed a stronger flow, thinning crown and detached tips, while the character remains planted. Added transparent mesh room without changing artwork scale or foot anchoring. Both builds passed; five simulator frames showed changing fire with zero measured foot translation. Installed and opened the reference-inspired pass on his iPhone (14136), with progress preserved and no computer-control tools used. It is a first adaptation; Mathis’s visual acceptance remains pending. Detailed checks in `p32-sanctuary-zoom.md`.
+
+### Higgsfield and a fire that follows Vitality, 2026-10-17
+
+Mathis linked Higgsfield to get better motion for the Flame. Agreed its role: generate fire motion *references* (like `IMG_8546.MOV`) for Codex to art-direct against, while the shipped fire stays live-coded (119). Mathis's goal: every form burns like a real fire at all times, bigger and wilder after completed quests, smaller when they're missed. Checked the code: the `depthFire` shader uses Vitality only as a small brightness nudge (0.7–1.03); the fire's height, tongues, turbulence and detached tips are fixed constants, so Vitality doesn't yet change the fire's size. Claude asked whether size should jump per quest or follow the ~7-day Vitality trend with a momentary flare at completion; Mathis chose the latter (decision 182). Flagged: Higgsfield usage may cost credits (decision 87 says no spend), and this session doesn't see a Higgsfield connector directly.
+
+## 2026-10-20 — The daily screen (decision 183)
+
+Mathis asked for a screen met on the first open of every day, like the level-up screen and Finch's daily streak screen: the streak, the Flame and its form, the week, the Flame's level, the days to the next form, the improvement of the last few days and a motivational line, with bars that move right. He sent Finch's screen as inspiration (a Dofus screenshot found on the Desktop was unrelated).
+
+Pushed back on two points. (1) Opening the app must not count as a day: the streak stays about real quests (134), so the morning screen shows today *waiting*, and the first quest of the day brings back a short lit version (the payoff), which also reveals a new form. Mathis didn't pick, so the recommendation stands (63). (2) His list is longer than Finch's, so the screen keeps two levels: a Finch-simple top (Flame, number, week, one line) and a compact growth card of three bars. To make the bars move every day honestly, each bar shows a ghost of where you were 7 days ago and fills past it to today. The screen shows every day, with a comeback version after a break ("users never feel they've lost it all"). Found and fixed a bug: "days to the next form" counted from the best streak instead of the current one.
+
+Mathis chose "Codex sketches first" for the look. Codex is sketching four frames (`scripts/p33-daily-sketch.sh`: morning, lit, comeback, new form). Claude built the numbers behind the screen (`DailyReport`, `Progression.walk` with day marks, `formProgress`, `DeedOutcome.firstOfDay`), proved by `-dailycheck` (57 checks pass in the simulator). Plan: `docs/plan-2.0/p33-daily-welcome.md`.
+
+### Building the daily screen, 2026-10-20
+
+Mathis approved the morning sketch ("lets go"). Built `DailyWelcome` to Codex's four frames, using the level-up screen's bars, badge and haptics, Codex's two new icons (lit-day flame, shield) and a live Flame on its own small RealityKit stage. Mid-build Mathis asked to remove the rays: done, a soft warm light instead. Decisions taken by default (63): the lit moment comes with the quest whose streak goes up (on a repair day that's the second quest, not the first); the comeback quote is the "never miss twice" line; streak milestones that are not forms show on the lit screen and the old paper card is gone from home; the Flame keeps one size in every version.
+
+Problems found and fixed in the simulator: the moment played hidden under the launch veil (now it waits for the veil to lift); the Flame's size changed with the form switch (the rig builds at the Spark's size); a new RealityKit view takes seconds to draw its first frames, so the morning screen opens under the veil and an invisible warm-up view draws once per launch, and the moment waits for the Flame's first frames (mid-session lit: 41 ms instead of ~5 s). Installed on the iPhone (14324); the phone was locked, so device timings and fps are pending. Codex is reviewing the build against its sketches.
+
+### Mathis's phone test, 2026-10-20
+
+Mathis: no little flame in the week's boxes, and the streak never passes one day. Read his phone's record (read-only): only 4 quests from a week ago, and today's session holds only Next day presses, no quest; so each new day began a new flame. In the simulator the full flow works (tick → Next day → tick = 2; day 3 transforms the Spark into the Flame form). Explained that only a ticked quest counts (opening the app or Next day doesn't), made the morning lines say so ("One quest today makes it 13"), and fixed what the run exposed: the lit row's stale title, "Your Flame became a Flame", and the warm-up view (it can never take a touch now). Added a check of his exact flow (61 pass). Installed (14332).
+
+### Codex's review, 2026-10-20 (after 15:50)
+
+Codex found the direction right and the streak maths correct, with six must-fix items, all accepted and fixed: the morning never came for an app left open overnight; the lit screen read its numbers and the form late (a real unlock would read "Your Kindled became a Kindled"); the form bar could jump back after a restart and its ghost was misplaced; pressure words ("save", "never miss twice") and four "why" lines that promised what the game doesn't calculate; the world kept drawing under the opaque screen and the warm-up repeated per world; the Spark's crown was clipped (my sizing made the smallest form the biggest). Replayed tick → Next day → tick end to end in the simulator (3 → 4, lit, XP cards). Installed 14340; the phone was locked, so on-device timing is still pending.
+
+## 2026-10-21 — Coming to the app lights the day (decision 184)
+
+Mathis, testing again: still no flame in the day boxes, the streak stuck at 1; and "if I press on go to the next day, it should consider that I'm advancing one day and reconnecting on the app, and therefore show me the streak of 2". His record again held no quest, only Next day presses: he expects a day he comes to to count. Stated the trade-off once (the streak then rewards showing up; growth stays in quests) and built it his way: the first open of a day counts; shields and repair stay (coming back + one quest repairs a miss); the morning screen now plays the lighting (+1, NOW LIT, a new form on opening). Found and fixed "Let's go" pushed below the screen mid-session (the screen sat inside home's stack). 76 checks pass; replayed in the simulator (real new day 4 → 5, Next day 6 → 7 with Blaze). Installed 14472; phone locked.
+
+## 2026-10-22 — The app icon (decision 185)
+
+Mathis asked for the app's logo, installed on his phone. The app had no icon at all. Codex painted four options in the game's style (face, little scene, emblem, night-blue); a home-screen preview at real size showed the face (A) reads best, D a close second. Installed A (14576) and showed all four for his pick.
+Mathis then pointed at option C (the flame emblem with two eyes) and asked for another background. Codex kept the flame exactly and painted night blue, dusk, teal and sunrise; at real size night blue contrasts best on light and dark wallpapers (teal close second; dusk and sunrise lose contrast at the flame's base). Installed night blue (14584).
+Mathis asked for all four quests at once without scrolling (the panel now shows four; decision 186) and to try the green (teal) icon. Both installed (14592). In the Debug simulator the world can still be loading for a few seconds behind the morning screen at launch; it comes back by itself.
+Mathis switched the icon back to night blue (14600), then asked to reset the game "as if I was connecting on day two". Added a test control: Reset → "Start at day 2" (born yesterday, the intro's first quest done yesterday, your name kept; today's first open makes it 2), plus a one-time signal file (`Documents/start-day-two`, or `-daytwo`) the Mac can drop into the app so it starts at day 2 on its next launch or return. Installed (14608), dropped the signal, launched: his record now shows born Wed 10-21, first quest that day, check-ins Wed + Thu (streak 2).
+
+## 2026-10-22 — Less saturation; the map by regions (decisions 187–188)
+
+Mathis asked for the whole game to be less saturated, and for the world map to show each world as its own region (a visual border, a world lighting up when pressed, names on nicely designed plates inside each world). Saturation: one setting at 82% on every shader colour (worlds, map, Flame), measured −16/−17%, installed. Map: the previous attempt (illustrated cards over the map, 170) was rejected, so the brief asks for the regions in the map itself; Codex designs and integrates (sketch first, region mask aligned to the painting, nameplates with real text, a shader for borders and the lit region, tap by region), then Claude checks and installs.
+Mathis then sent a Plants vs. Zombies 2 world map and asked for a complete redesign: floating islands, little paths of level stones from one world to the next, worlds still bought with coins. Stopped Codex's regions job (no file changed) and asked one question: what is each stone? His answer: the Flame's levels. Built the rule (islands at levels 1, 2, 4, 6, 8, 10, 12; buying gated by reaching the island) and checks; the sketches hit Codex's usage limit and are queued for 23:30.
+
+## 2026-10-23 — The floating-islands map, built
+
+Codex's queued run never started overnight (the wait doesn't run while the Mac sleeps); Mathis asked to restart it, and Codex painted the remaining islands, the stone, an islet and a cloud, then hit its limit again (until 16:57) before building. Asked Mathis: wait, or Claude builds now from Codex's art and sketches with a Codex review later. He chose Claude builds. Built `IslandMapView` (layout tuned to match the sketch: islands pushed to the sides, the path winding up the middle; thinner mist on far islands), checked tapping, the card, flying into the Grove and coming back. The iPhone was unavailable for the install.
+
+## 2026-10-24 — Journey map, 60 fps, signing (decision 190)
+
+Mathis couldn't open Hush: the free 7-day signing had expired. Re-signed (to 2026-10-31); he re-trusted the developer on the phone. He then asked for 60 fps everywhere, a better map background, a better Flame on the map, and the map as a journey ("go from one place to another… like a game would"). Stopped Codex's review (its half edits didn't compile, set aside) and restarted it with his feedback; it built a UIKit/CALayer journey engine (walk, hops, dash, dusk sky) before its limit. Measured the whole game on the phone: 60 fps on every screen; the map dipped on the first walk (fixed by decoding paintings at launch) and some sessions sat at 40 idle (two drawing loops: the 3D view is now hidden on the map). Codex's finishing pass is queued for 15:45.
+

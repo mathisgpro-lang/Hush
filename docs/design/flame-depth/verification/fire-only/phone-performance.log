@@ -1,0 +1,14 @@
+Launched application with com.mathis.lifegamified.spikelab bundle identifier.
+Waiting for the application to terminate…
+2026-10-17 09:13:44.134 SpikeLab[23669:4467223] PSO compilation completed for compute pipeline mipGenPolyphaseFast_Wodd_Hodd in 0
+2026-10-17 09:13:44.134 SpikeLab[23669:4467223] PSO compilation completed for compute pipeline mipGenPolyphaseFast_Weven_Hodd in 0
+2026-10-17 09:13:44.134 SpikeLab[23669:4467223] PSO compilation completed for compute pipeline mipGenPolyphaseFast_Wodd_Heven in 0
+2026-10-17 09:13:44.134 SpikeLab[23669:4467223] PSO compilation completed for compute pipeline mipGenPolyphaseFast_Weven_Heven in 0
+SCREEN fps 32.8 worst 51 ms | 3D updates/s 32.3 | quest cards redrawn 8 | max 60 Hz | nominal | low power off
+SCREEN fps 39.7 worst 116 ms | 3D updates/s 39.7 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+SCREEN fps 60.1 worst 17 ms | 3D updates/s 60.1 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+ERROR: Command timeout of 20.0 seconds exceeded. Assuming command got stuck and aborting.

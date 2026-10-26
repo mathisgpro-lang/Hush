@@ -4,12 +4,16 @@ import RealityKit
 
 struct AppShellView: View {
     @State private var model = ShellModel()
+    @Environment(\.scenePhase) private var phase
 
     var body: some View {
         let _ = PerfProbe.body("Shell")
         ZStack {
             Color.black.ignoresSafeArea()
             WorldLayer(model: model)
+                // On the islands map nothing of the 3D view shows: it's taken off the screen so it stops drawing, and
+                // only the map's own loop runs (two loops at once dropped whole sessions to 40 fps on the iPhone 15).
+                .opacity(model.screen == .map && ShellModel.islandMap ? 0 : 1)
                 .onAppear { if CommandLine.arguments.contains("-perf") { print(String(format: "LAUNCH first screen %.0f ms", (CACurrentMediaTime() - AppTimer.start) * 1000)) } }                 // the one 3D view: the worlds live here, screens float on top
             switch model.screen {
             case .intro:
@@ -18,12 +22,18 @@ struct AppShellView: View {
                 HomeView(model: model).overlay(DiveArrival(model: model))
                     .transition(.asymmetric(insertion: .scale(scale: 1.06).combined(with: .opacity), removal: .opacity))
             case .map:
-                LivingMapView(model: model).transition(.asymmetric(insertion: .scale(scale: 0.94).combined(with: .opacity), removal: .opacity))
+                Group {
+                    if ShellModel.islandMap { IslandMapView(model: model) } else { LivingMapView(model: model) }
+                }
+                .transition(.asymmetric(insertion: .scale(scale: 0.94).combined(with: .opacity), removal: .opacity))
             case .realm(let r):
                 HomeView(model: model, world: r).id(r).overlay(DiveArrival(model: model)).transition(.opacity)   // the same interface in every world
             }
         }
         .overlay { LaunchVeil(visible: model.screen != .intro && !model.coreReady) }
+        // A new day while the app stayed open or in the background: its morning arrives like at launch (decision 183).
+        .onChange(of: phase) { _, p in if p == .active { model.refreshDay() } }
+        .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in model.refreshDay() }
         .buttonStyle(PressableStyle())          // every button reacts the instant it's touched
         .task {                                  // (-realm X) test: travel to a realm the way a user does, through home
             guard let i = CommandLine.arguments.firstIndex(of: "-realm"), i + 1 < CommandLine.arguments.count,
@@ -82,6 +92,7 @@ struct WorldLayer: View {
             }
             model.showActive()
             if ScreenFPS.on { ScreenFPS.shared.start() }
+            if CommandLine.arguments.contains("-framingcheck") { Task { await runFramingCheck(model) } }
             if PerfTour.on { Task { await PerfTour.run(model) } }          // (task 6: the self-running tour)
             model.updates = content.subscribe(to: SceneEvents.Update.self) { e in model.tick(Float(e.deltaTime)) }
         }

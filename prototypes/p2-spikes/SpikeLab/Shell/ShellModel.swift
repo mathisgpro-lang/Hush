@@ -21,6 +21,20 @@ enum RealmID: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Where this world's island sits on your Flame's level path (decision 189, the map of floating islands): it can be
+    /// bought once your Flame has reached this level (and, as before, after the world before it, with Embers).
+    var islandLevel: Int {
+        switch self {
+        case .sanctuary: 1
+        case .grove: 2
+        case .stillwater: 4
+        case .highlands: 6
+        case .library: 8
+        case .wilds: 10
+        case .forge: 12
+        case .veil: 15
+        }
+    }
     var name: String {
         switch self {
         case .sanctuary: "The Sanctuary"
@@ -154,6 +168,68 @@ final class ShellModel {
     }
     /// A daily pouch waiting to be collected on home (its Embers are already counted; collecting makes them fly).
     var dailyGift = 0
+    /// The daily screen (decision 183): the morning one on the first open of a day (not the day your Spark was born),
+    /// the lit one for the quest that lights today. Its "Let's go" collects the daily pouch.
+    var daily: DailyShow? { didSet { if let daily { prepareDailyFlame(for: daily) } } }
+    /// The daily screen's live Flame, built while the app loads so the screen opens with it there.
+    @ObservationIgnored let dailyStage = DailyFlameStage()
+    /// Its 3D view has drawn once in this run (a new 3D view takes seconds to draw its first frames): until then home
+    /// draws an invisible one behind the launch veil, once per run, whatever world you open.
+    var dailyWarmed = false
+    /// A new calendar day while the app was running or in the background (decision 183, Codex review): the day's
+    /// check-in, quests, pouch and morning screen arrive as they would at launch.
+    func refreshDay() {
+        if takeDayTwoSignal() { startAtDayTwo(); return }
+        guard journey.bornOn != nil, screen != .intro, journey.checkIn() else { return }
+        light = 0
+        makeCalls(); planDay()
+        dailyGift = Journey.dailyGift
+        form = journey.form
+        planDaily()
+    }
+    private func prepareDailyFlame(for d: DailyShow) { dailyStage.prepare(form: d.from) }   // the form before any reveal
+    /// The morning screen, if today is due one: today's first open has just lit the day (decision 184), so it shows the
+    /// numbers before and after that open, and the form it reached, if any.
+    func planDaily(force: Bool = false) {
+        guard force || (dailyGift > 0 && journey.bornOn.map { !Calendar.current.isDateInToday($0) } == true) else { return }
+        let o = journey.lastCheckIn
+        let evolved = o?.evolvedTo
+        daily = DailyShow(before: journey.dailyReport(pouch: dailyGift, beforeToday: true), after: journey.dailyReport(pouch: dailyGift),
+                          from: o?.shownBefore ?? journey.form, evolvedTo: evolved, milestone: evolved == nil ? o?.milestone : nil)
+        if let f = evolved { showForm(f) }                        // the worlds show it too (under the screen)
+    }
+    /// (Test flags) A made-up daily screen: -welcomestate <alive|comeback|first|shield|repair|allforms|almostform> (a
+    /// morning: that history, then today's first open), -welcomeform (a new form on opening), -welcomelit and
+    /// -welcomelitlater (the lit screen after the quest that repairs a missed day; later: 10 s into the session).
+    private func testDaily() {
+        let a = CommandLine.arguments
+        let now = Date()
+        func show(_ name: String, extraQuestToday: Bool = false, full: Bool = true) -> DailyShow {
+            let deeds = DailyReportCheck.sample(name, now: now)
+            let open: [Date] = extraQuestToday ? [now] : []
+            let b = DailyReport.make(deeds: deeds, checkIns: open, now: now, pouch: 5)
+            let afterDeeds = extraQuestToday ? deeds + [Deed(date: now, realm: RealmID.library.rawValue, title: "q", xp: 30)] : deeds
+            let r = DailyReport.make(deeds: afterDeeds, checkIns: [now], now: now, pouch: 5)
+            let from = Evolution.reached(best: b.best), to = Evolution.reached(best: r.best)
+            let m = StreakStatus.milestones.first { $0 > b.streak && $0 <= r.streak }
+            return DailyShow(before: b, after: r, from: from, evolvedTo: to != from ? to : nil, milestone: to != from ? nil : m, full: full)
+        }
+        if let i = a.firstIndex(of: "-welcomestate"), i + 1 < a.count {
+            daily = show(a[i + 1])
+        } else if a.contains("-welcomeform") {
+            daily = show("almostform")
+        } else if a.contains("-welcomelitlater") {             // mid-session, as after a real quest (its Flame's first frames)
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(10))
+                daily = show("repair", extraQuestToday: true, full: false)
+            }
+        } else if a.contains("-welcomelit") {
+            daily = show("repair", extraQuestToday: true, full: false)
+        } else if a.contains("-welcome") {
+            if dailyGift == 0 { dailyGift = Journey.dailyGift }
+            planDaily(force: true)
+        }
+    }
     var newHere: Set<RealmID> = [.grove]              // the glow + badge: "something new waits here"
     var flameAt: RealmID = .sanctuary
     var calls: [Call] = []
@@ -192,10 +268,14 @@ final class ShellModel {
         }
     }
     private var activeCamera: Entity? {
-        switch activeWorld { case .sanctuary: sanctuary.camera; case .map: mapScene.camera; case .realm(let r): realmScenes[r]?.camera }
+        switch activeWorld { case .sanctuary: sanctuary.camera; case .map: Self.islandMap ? voidCamera : mapScene.camera; case .realm(let r): realmScenes[r]?.camera }
     }
     var sanctuaryBuilt = false
     var mapBuilt = false
+    /// The world map is the floating islands (decision 189, SwiftUI, IslandMapView): the 3D view draws nothing under it,
+    /// its camera looks into empty space far away. (-oldmap: the painted RealityKit map, MapScene.)
+    static let islandMap = !CommandLine.arguments.contains("-oldmap")
+    @ObservationIgnored let voidCamera = PerspectiveCamera()
     var realmsBuilt: Set<RealmID> = []
     var groveBuilt: Bool { realmsBuilt.contains(.grove) }
     /// One 3D view for the whole app (like a game): every world lives under this root; switching screens only
@@ -220,7 +300,7 @@ final class ShellModel {
                     await wearForm(sanctuary.hero, root: sanctuary.root)
                     place(sanctuary.root, sanctuary.camera, slot: 0); sanctuaryBuilt = true
                 }
-            case .map where !mapBuilt:
+            case .map where !mapBuilt && !Self.islandMap:
                 let lastOpen = roadIndex(roadOrder.last { open.contains($0) } ?? .sanctuary)
                 if (try? await mapScene.build(open: open, flameAt: flameAt, lastOpenRoadIndex: lastOpen, ember: emberID)) != nil {
                     place(mapScene.root, mapScene.camera, slot: 1); mapBuilt = true
@@ -251,7 +331,9 @@ final class ShellModel {
     private func showActiveNow() {
         let a = activeWorld
         sanctuary.camera.isEnabled = a == .sanctuary && sanctuaryBuilt
-        mapScene.camera.isEnabled = a == .map && mapBuilt
+        mapScene.camera.isEnabled = a == .map && mapBuilt && !Self.islandMap
+        if voidCamera.parent == nil { voidCamera.position = [-90000, 90000, 0]; worldRoot.addChild(voidCamera) }
+        voidCamera.isEnabled = a == .map && Self.islandMap
         for (r, sc) in realmScenes { sc.camera.isEnabled = a == .realm(r) && realmsBuilt.contains(r) }
         if !isBuilt(a) { Task { @MainActor in await ensure(a); showActive() } }
     }
@@ -295,7 +377,7 @@ final class ShellModel {
         switch screen { case .home, .realm: return 0.215; default: return 0 }
     }
     func isBuilt(_ w: World) -> Bool {
-        switch w { case .sanctuary: sanctuaryBuilt; case .map: mapBuilt; case .realm(let r): realmsBuilt.contains(r) }
+        switch w { case .sanctuary: sanctuaryBuilt; case .map: Self.islandMap || mapBuilt; case .realm(let r): realmsBuilt.contains(r) }
     }
 
     /// Every frame: only the world on screen moves.
@@ -342,8 +424,8 @@ final class ShellModel {
     /// Prepares the map and the Grove (at launch behind the dusk veil, or during the intro's "preparing" moment), so
     /// building never competes with what you see (measured: 30 fps for seconds when it happened during home).
     func preloadCore() async {
-        await ensure(.map)
-        await warm(mapScene.root)
+        if !Self.islandMap { await ensure(.map); await warm(mapScene.root) }
+        else { await MapSceneArt.prepare(forms: Evolution.allCases) }      // the map's paintings, decoded ahead (60 fps from its first walk)
         await ensure(.realm(.grove))
         await warm(realmScene(.grove).root)
         coreReady = true
@@ -377,7 +459,10 @@ final class ShellModel {
         if screen == .intro, journey.bornOn != nil, !a.contains("-introstep"), !a.contains("-autointro") { screen = .home }
         for e in Set(Friend.samples.map(\.ember)) { SparkTint.warmUp(ember: e) }      // friends' Sparks, ready too
         makeCalls()
+        if takeDayTwoSignal() { journey.startAtDayTwo() }                 // (test: a fresh start on day 2)
         if (journey.checkIn() || CommandLine.arguments.contains("-gift")) && journey.bornOn != nil { dailyGift = Journey.dailyGift }   // the daily pouch (decision 141; -gift: test)
+        planDaily()                                       // the daily screen (decision 183)
+        testDaily()
         journey.grant(200, id: "beta-purse")              // the test's starter purse: enough to buy a world right away
         if CommandLine.arguments.contains("-quests") { for id in ["a", "c", "d"] { toggleChosen(id) } }   // (test: three taken)
         planDay()
@@ -397,6 +482,26 @@ final class ShellModel {
         makeCalls(); planDay()
         if journey.checkIn() { dailyGift = Journey.dailyGift }
         form = journey.form
+        planDaily()                                       // a new morning: its daily screen
+    }
+    /// Test control: a fresh start on day 2 (born yesterday, first quest done): today's first open shows 1 → 2.
+    func startAtDayTwo() {
+        journey.startAtDayTwo()
+        light = 0; dailyGift = 0
+        makeCalls(); planDay()
+        if journey.checkIn() { dailyGift = Journey.dailyGift }
+        showForm(journey.form)
+        planDaily()
+    }
+    /// (Test) A one-time signal to start at day 2 on the next launch or return to the app: `-daytwo`, or the file
+    /// Documents/start-day-two dropped into the app from the Mac (so the phone needn't be unlocked to launch it).
+    static let dayTwoSignal = URL.documentsDirectory.appending(path: "start-day-two")
+    @ObservationIgnored private var dayTwoFlagUsed = false
+    private func takeDayTwoSignal() -> Bool {
+        if CommandLine.arguments.contains("-daytwo") && !dayTwoFlagUsed { dayTwoFlagUsed = true; return true }
+        guard FileManager.default.fileExists(atPath: Self.dayTwoSignal.path) else { return false }
+        try? FileManager.default.removeItem(at: Self.dayTwoSignal)
+        return true
     }
     /// Test control: start fresh at level 1, still at home.
     func resetProgress() {

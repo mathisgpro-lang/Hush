@@ -89,9 +89,8 @@ final class RealmScene {
     var lanternTotal = 0
     var litCount: Int { _ = heartDepth; return lanterns.filter { $0.order <= Restoration.amount(depth: heartDepth) }.count }
 
-    /// As in the Sanctuary: the painting is laid out for a 40° view but seen through 35°, so it reaches past every
-    /// edge of the screen and looking around never shows its end (Mathis, 2026-10-13: "no corners and no borders").
-    static let distance: Float = 1.2, fov: Float = 30, paintFov: Float = 40
+    /// Wider framing: the original painting keeps its scale; registered outpainting covers look-around.
+    static let distance: Float = 1.2, fov: Float = 40, paintFov: Float = 40
 
     /// Which realm this is (one engine for every realm: the Grove, the Stillwater, the Highlands…). Its assets are
     /// named after it: <id>-world-paint/-lights/-depth.png and <id>-layout.json (tools/build_realm.py).
@@ -118,6 +117,8 @@ final class RealmScene {
     @ObservationIgnored private(set) var panLimit = SIMD2<Float>(0, 0)
     @ObservationIgnored var fingerDown = false
     @ObservationIgnored private var homeShift: Float = 0
+    @ObservationIgnored private var safePan = SIMD2<Float>(0, 0)
+    @ObservationIgnored private lazy var surround = WorldSurround.load(id)
     var homeCenterX: Float { homeShift }
 
     private func relief(_ g: Float) -> Float { 0.2 * pow(g, 0.6) - 0.065 }      // gentle: no smeared gaps (as the Sanctuary)
@@ -149,6 +150,7 @@ final class RealmScene {
            let d = try? JSONSerialization.jsonObject(with: data) as? [String: Double], let cu = d["circleU"], let cv = d["circleV"] {
             circleUV = [Float(cu), Float(cv)]
         }
+        if let calibrated = surround?.circleUV { circleUV = calibrated }
         if let img = UIImage(named: wide ? "\(id)-world-depth.png" : "\(id)-depth.png")?.cgImage {
             var px = [UInt8](repeating: 0, count: img.width * img.height)
             let ctx = CGContext(data: &px, width: img.width, height: img.height, bitsPerComponent: 8, bytesPerRow: img.width,
@@ -167,12 +169,13 @@ final class RealmScene {
         let steps = (0...40).map { Float($0) / 40 }
         let edges = (l: nearest(steps.map { (0, $0) }), r: nearest(steps.map { (1, $0) }),
                      b: nearest(steps.map { ($0, 0) }), t: nearest(steps.map { ($0, 1) }))
-        let safe = EdgeSafety.limit(planeW: w, planeH: h, restDistance: Self.distance, edges: edges, fov: Self.fov,
+        let coverage = surround?.coverage ?? SIMD2<Float>(1, 1)
+        let safe = EdgeSafety.limit(planeW: w * coverage.x, planeH: h * coverage.y, restDistance: Self.distance, edges: edges, fov: Self.fov,
                                     aspect: Float(screen.width / screen.height), margin: EdgeSafety.rubber + 0.03)
-        _ = camH
+        safePan = safe
         // The view rests on the home painting (the circle), even when the world isn't centered on it (a panel
         // still missing): looking around stays inside the nearer edge.
-        homeShift = (hx(0.5) - 0.5) * w
+        homeShift = (hx(circleUV.x) - 0.5) * w
         panLimit = [max(0, min(camW * EdgeSafety.lookAround, safe.x - abs(homeShift))), safe.y]   // as in the Sanctuary; no edge ever shows
         func point(_ u: Float, _ v: Float, nearer extra: Float = 0) -> SIMD3<Float> {
             let rest = SIMD3<Float>((u - 0.5) * w, (v - 0.5) * h, -Self.distance)
@@ -180,10 +183,11 @@ final class RealmScene {
             return rest * (d / Self.distance)
         }
 
-        let (nx, ny) = (wide ? 150 : 72, 162)
+        let (nx, ny) = (surround != nil ? 180 : wide ? 150 : 72, surround != nil ? 210 : 162)
         var pos: [SIMD3<Float>] = [], uvs: [SIMD2<Float>] = [], idx: [UInt32] = []
         for j in 0...ny { for i in 0...nx {
-            let u = Float(i) / Float(nx), v = Float(j) / Float(ny)
+            let u = 0.5 + (Float(i) / Float(nx) - 0.5) * coverage.x
+            let v = 0.5 + (Float(j) / Float(ny) - 0.5) * coverage.y
             pos.append(point(u, v)); uvs.append([u, v])
         } }
         for j in 0..<ny { for i in 0..<nx {
@@ -196,8 +200,12 @@ final class RealmScene {
         unlit.color = .init(tint: .white, texture: .init(tex))
         var material: any RealityKit.Material = unlit
         if let lib {
-            var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: "groveRestore", in: lib))
+            var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: surround == nil ? "groveRestore" : "\(id)WideWorld", in: lib))
             if let lut = await SolarClock.lut() { m.emissiveColor = .init(texture: .init(lut)) }   // the looks of the hour
+            if surround != nil {
+                let texture = try await TextureResource(named: "\(id)-wide-surround.png", options: .init(semantic: .color))
+                m.ambientOcclusion = .init(texture: .init(texture))
+            }
             m.custom.texture = .init(lanternTex)
             m.custom.value = [0, 1, -1, 10]
             func encoded(_ v: Float) -> CGFloat { CGFloat(v <= 0.0031308 ? v * 12.92 : 1.055 * pow(v, 1 / 2.4) - 0.055) }
@@ -214,14 +222,14 @@ final class RealmScene {
         }
         let p = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
         root.addChild(p); painting = p
-        if PixelMode.world && wide, let pm = material as? CustomMaterial,
+        if surround == nil && PixelMode.world && wide, let pm = material as? CustomMaterial,
            let g = await WorldGround.make(asset: "\(id)-world", mask: "lights", from: pm, paintTexH: tex.height, width: w, height: h,
                                           distance: Self.distance, bottomDistance: { u in Self.distance - self.relief(self.depthAt(u, 0)) }) {
             root.addChild(g); ground = g
         }
 
         // The floaters, each at its own depth a little in front of the painting (so they move against it).
-        if let url = Bundle.main.url(forResource: "\(id)-floaters", withExtension: "json"), let data = try? Data(contentsOf: url),
+        if surround == nil, let url = Bundle.main.url(forResource: "\(id)-floaters", withExtension: "json"), let data = try? Data(contentsOf: url),
            let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
             for (k, f) in list.enumerated() {
                 guard let file = f["file"] as? String, let tex = try? await TextureResource(named: "\(file).png"),
@@ -298,7 +306,7 @@ final class RealmScene {
         heroScale = (PixelMode.world ? 0.10 : 0.105) * h * k / 0.27                            // the Spark's size, as in the Sanctuary
         hero.leanPivot.scale = .init(repeating: heroScale)
         // Standing right in the middle of its circle (Mathis): feet on the centre stone, only a breath of hover.
-        hero.leanPivot.position = circle + SIMD3(0, (PixelMode.world ? 0.0 : 0.09) * heroScale, 0)
+        hero.leanPivot.position = circle + SIMD3(0, (surround != nil || PixelMode.world ? 0.0 : 0.09) * heroScale, 0)
         if PixelMode.world { hero.hoverHeight = 0; hero.hoverBob = 0 }   // feet exactly on the centre
         hero.stationary = true
         root.addChild(hero.leanPivot)
@@ -412,7 +420,7 @@ final class RealmScene {
         }
         flies?.position.x = life.wind * 0.03
         let drift = SIMD2(noise.sample(time * 0.09), noise.sample(time * 0.07 + 30)) * (PixelMode.world ? 0.008 : 0.025)
-        let offset = SIMD3<Float>(drift.x, drift.y * 0.6, 0)
+        let offset = surround != nil ? SIMD3<Float>.zero : SIMD3<Float>(drift.x, drift.y * 0.6, 0)
         let (wantPos, wantLook): (SIMD3<Float>, SIMD3<Float>) = focus.map { f0 in
             // Glide toward the spot but keep the view inside the painting (side spots would show its edge).
             let f = SIMD3<Float>(max(-0.09, min(0.09, f0.x)), f0.y, f0.z)
@@ -425,7 +433,11 @@ final class RealmScene {
         // Looking around, added on top so the spots floating over the Grove move exactly with it.
         if let i = CommandLine.arguments.firstIndex(of: "-push"), i + 1 < CommandLine.arguments.count {   // (test: held past a limit)
             let d = CommandLine.arguments[i + 1]
-            panTarget = [d == "left" ? -9 : d == "right" ? 9 : panTarget.x, d == "up" ? 9 : d == "down" ? -9 : panTarget.y]
+            panTarget = [d.contains("left") ? -9 : d.contains("right") ? 9 : panTarget.x, d.contains("up") ? 9 : d.contains("down") ? -9 : panTarget.y]
+        }
+        if surround != nil {
+            let viewH = 2 * Self.distance * tan(Self.fov / 2 * .pi / 180)
+            panLimit.y = min(viewH * 0.07, max(0, safePan.y - abs(liftNow * viewH)))
         }
         let pt = simd_clamp(panTarget, -panLimit - EdgeSafety.rubber, panLimit + EdgeSafety.rubber)
         let w0: Float = 9
@@ -446,7 +458,8 @@ final class RealmScene {
         camera.look(at: camLook + pv - down, from: camPos + pv - down, relativeTo: root)
         if let f = feetTarget {          // where the feet really landed: nudge the lift until they're exactly there
             let f0 = WorldLayer.overscanAnchor + (f - WorldLayer.overscanAnchor) / WorldLayer.overscan
-            let rel = camera.transformMatrix(relativeTo: root).inverse * SIMD4<Float>(heroFeet.x, heroFeet.y, heroFeet.z, 1)
+            let framingFeet = heroFeet + SIMD3<Float>(pan.x, pan.y, 0)
+            let rel = camera.transformMatrix(relativeTo: root).inverse * SIMD4<Float>(framingFeet.x, framingFeet.y, framingFeet.z, 1)
             let fy = 0.5 - rel.y / max(0.01, -rel.z) / tan(Self.fov / 2 * .pi / 180) * 0.5
             liftBias = max(-0.15, min(0.15, liftBias + (fy - f0) * dt * 1.5))
         }

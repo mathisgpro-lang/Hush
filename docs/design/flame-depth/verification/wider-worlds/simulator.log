@@ -1,0 +1,13 @@
+SCREEN fps 45.4 worst 501 ms | 3D updates/s 45.4 | quest cards redrawn 8 | max 60 Hz | nominal | low power off
+SCREEN fps 60.0 worst 17 ms | 3D updates/s 60.0 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+SCREEN fps 60.0 worst 17 ms | 3D updates/s 60.0 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+FRAME_CAPTURE sanctuary rest limits 0.100429185 0.037771855
+SCREEN fps 60.0 worst 17 ms | 3D updates/s 60.0 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+FRAME_CAPTURE sanctuary left-up limits 0.100429185 0.037879393
+SCREEN fps 60.0 worst 17 ms | 3D updates/s 60.0 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+FRAME_CAPTURE sanctuary right-up limits 0.100429185 0.03786637
+SCREEN fps 60.0 worst 17 ms | 3D updates/s 60.0 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+SCREEN fps 59.0 worst 46 ms | 3D updates/s 59.0 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+FRAME_CAPTURE sanctuary left-down limits 0.100429185 0.037796207
+SCREEN fps 60.0 worst 17 ms | 3D updates/s 60.0 | quest cards redrawn 0 | max 60 Hz | nominal | low power off
+FRAME_CAPTURE sanctuary right-down limits 0.100429185 0.037938327

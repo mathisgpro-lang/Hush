@@ -67,6 +67,14 @@ run_brief docs/reviews/briefs/p2-plan-review.md \
 "$ROOT/scripts/p31-extend.sh"
 "$ROOT/scripts/p32-flame.sh"
 "$ROOT/scripts/p32-sanctuary-look.sh"
+"$ROOT/scripts/p33-daily-sketch.sh"
+"$ROOT/scripts/p33-daily-icons.sh"
+run_brief docs/reviews/briefs/p33-daily-review.md \
+  docs/reviews/2026-10-20-codex-daily-screen.md
+"$ROOT/scripts/p34-app-icon.sh"
+"$ROOT/scripts/p34-app-icon-c2.sh"
+"$ROOT/scripts/p36-map-islands.sh"
+"$ROOT/scripts/p36-map-journey.sh"
 
 # Design & Feel cohesion frames first (decision 106)
 "$ROOT/scripts/cohesion-frames.sh"

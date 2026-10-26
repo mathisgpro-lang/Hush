@@ -69,13 +69,25 @@ final class HeroRig: FlameRig {
         walkPivot.addChild(reflectPivot)
     }
 
+    /// Visible foot contact, measured from the opaque bottom band of each delivered sprite.
+    /// Growth changes around this point, so switching forms cannot move the feet off the world anchor.
+    private func spriteOffset(aspect: Float) -> SIMD3<Float> {
+        guard dimensional else { return [0, -footInset * 0.27, 0] }
+        let anchors: [String: SIMD2<Float>] = [
+            "depth-spark": [0.50741, 0.98246], "depth-flame": [0.58027, 0.99362],
+            "depth-blaze": [0.50242, 0.99793], "depth-kindled": [0.54566, 0.99022],
+            "depth-radiant": [0.58559, 0.99025], "depth-beyond": [0.46848, 0.99018]]
+        let a = anchors[base] ?? [0.5, 1]
+        return [(0.5 - a.x) * 0.27 * growth * aspect, -(1 - a.y) * 0.27 * growth, 0]
+    }
+
     func build() async throws {
         let tex = try await TextureResource(named: "\(base)-keyed.png")
         faces = ["open": tex,
                  "blink": (try? await TextureResource(named: "\(base)-blink.png")) ?? tex,
                  "happy": (try? await TextureResource(named: "\(base)-happy.png")) ?? tex]
         let h: Float = 0.27
-        let desc = Self.bodyDescriptor(aspect: Float(tex.width) / Float(tex.height), height: h * growth)
+        let desc = Self.bodyDescriptor(aspect: Float(tex.width) / Float(tex.height), height: h * growth, firePadding: dimensional)
         var unlit = UnlitMaterial()
         unlit.color = .init(tint: .white, texture: PaintedRig.clamped(tex))
         unlit.blending = .transparent(opacity: .init(floatLiteral: 1.0))
@@ -85,14 +97,14 @@ final class HeroRig: FlameRig {
         if let lib {
             var m = try CustomMaterial(from: unlit, surfaceShader: .init(named: dimensional ? "depthFire" : (spirit ? "sparkFire" : "heroFireSurface"), in: lib),
                                        geometryModifier: .init(named: dimensional ? "depthLive" : (spirit ? "sparkLive" : "heroLive"), in: lib))
-            m.custom.value = [0.8, 1, 0, 0]       // x mood, y brightness, zw hair follow-through
+            m.custom.value = [0.8, 1, dimensional ? faceHeight : 0, 0]       // x mood, y brightness, zw hair follow-through
             m.blending = .transparent(opacity: .init(floatLiteral: 1.0))
             m.writesDepth = false
             material = m
         }
         let e = ModelEntity(mesh: try MeshResource.generate(from: [desc]), materials: [material])
         e.name = dimensional ? "depth-flame-body" : "legacy-flame-body"
-        e.position = [0, dimensional ? -0.002 : -footInset * h, 0]
+        e.position = spriteOffset(aspect: Float(tex.width) / Float(tex.height))
         e.components.set(ModelSortGroupComponent(group: sortGroup, order: 2))
         lookPivot.addChild(e); hero = e
 
@@ -101,7 +113,7 @@ final class HeroRig: FlameRig {
             var u = unlit; u.faceCulling = .none
             var m = try CustomMaterial(from: u, surfaceShader: .init(named: "heroReflection", in: lib),
                                        geometryModifier: .init(named: "heroLive", in: lib))
-            m.custom.value = [0.8, 1, 0, 0]; m.faceCulling = .none
+            m.custom.value = [0.8, 1, dimensional ? faceHeight : 0, 0]; m.faceCulling = .none
             m.blending = .transparent(opacity: .init(floatLiteral: 1.0)); m.writesDepth = false
             let r = ModelEntity(mesh: e.model!.mesh, materials: [m])
             r.position = [0, -0.012, 0]
@@ -178,28 +190,28 @@ final class HeroRig: FlameRig {
         if stationary { body.bias = 0 }
         hoverTime += dt
         body.extraRoll = behaviorRoll + fingerRoll - wind * 0.03
-        body.step(dt: dt)
-        walkPivot.transform.translation = [stationary ? 0 : body.x, 0, 0]
+        if !dimensional { body.step(dt: dt) }
+        walkPivot.transform.translation = [dimensional || stationary ? 0 : body.x, 0, 0]
         // A spirit floats: a slow bob (two rhythms so it never visibly loops) above the ground.
-        let hover: Float = dimensional ? (floating ? 0.016 + 0.005 * sin(hoverTime * 1.5) + 0.002 * sin(hoverTime * 0.63) : 0) : spirit ? hoverHeight + hoverBob * (0.01 * sin(hoverTime * 1.5) + 0.004 * sin(hoverTime * 0.63 + 1)) : 0
-        bodyPivot.transform = Transform(scale: [body.scaleX, body.scaleY, 1],
+        let hover: Float = dimensional ? 0 : spirit ? hoverHeight + hoverBob * (0.01 * sin(hoverTime * 1.5) + 0.004 * sin(hoverTime * 0.63 + 1)) : 0
+        bodyPivot.transform = dimensional ? Transform.identity : Transform(scale: [body.scaleX, body.scaleY, 1],
                                         rotation: simd_quatf(angle: body.roll, axis: [0, 0, 1]),
                                         translation: [0, groundY + body.y + hover, 0])
         if let groundPool {      // closer to the stones → a smaller, brighter pool
-            let k = (dimensional ? sqrt(growth) : 1) * (1 - max(0, body.y + hover) * 3)
+            let k = dimensional ? sqrt(growth) : (1 - max(0, body.y + hover) * 3)
             groundPool.scale = [k, k, 1]
         }
         reflectPivot.transform = Transform(scale: [body.scaleX, -body.scaleY, 1],
                                            rotation: simd_quatf(angle: -body.roll, axis: [0, 0, 1]),
                                            translation: [0, Self.feetY - body.y, 0])
-        let drag = body.hairDrag + SIMD2(wind * 0.012, 0)
+        let drag = dimensional ? SIMD2<Float>.zero : body.hairDrag + SIMD2(wind * 0.012, 0)
         let key = SIMD4<Float>(mood, brightness, drag.x, drag.y)
         let matChanged = simd_reduce_max(simd_abs(key - lastMatKey)) > 0.0015 || abs(hour - lastMatHour) > 0.02 || tint.angle != lastTintAngle || tint.strength != lastTintStrength
         if matChanged { lastMatKey = key; lastMatHour = hour; lastTintAngle = tint.angle; lastTintStrength = tint.strength }
         for e in [hero, reflection].compactMap({ $0 }) where matChanged {
             guard var comp = e.model, var m = comp.materials.first as? CustomMaterial else { continue }
             let b = (!dimensional && inScene && e === hero) ? brightness + 10 : brightness
-            m.custom.value = [mood, b, drag.x, drag.y]
+            m.custom.value = [mood, b, dimensional ? faceHeight : drag.x, drag.y]
             if dimensional {
                 m.metallic = .init(floatLiteral: hour / 24)
                 m.roughness = .init(floatLiteral: faceHeight)
@@ -220,6 +232,7 @@ final class HeroRig: FlameRig {
     // MARK: Behaviors set targets; the physics makes them fluid
 
     func perform(_ idle: IdleBehavior) {
+        guard !dimensional else { return }
         switch idle {
         case .glanceLeft: hold(roll: 0.08, for: 1.4)
         case .glanceRight: hold(roll: -0.08, for: 1.4)
@@ -248,6 +261,7 @@ final class HeroRig: FlameRig {
     }
 
     func react(_ reaction: Reaction) {
+        if dimensional { smile(0.6); return }
         switch reaction {
         case .giggle: smile(0.6); body.hop(height: 0.016)
         case .leanIn: body.stretchTarget = 1.07; after(0.7) { self.body.stretchTarget = 1 }
@@ -274,12 +288,13 @@ final class HeroRig: FlameRig {
     }
 
     func look(at point: SIMD2<Float>?) {
+        guard !dimensional else { return }
         let x = point?.x ?? 0
         body.bias = x * 0.03           // it drifts toward your finger…
         fingerRoll = -x * 0.08         // …and leans to look at it
     }
 
-    func lean(_ tilt: SIMD2<Float>) { leanPivot.orientation = simd_quatf(angle: -max(-0.35, min(0.35, tilt.x * 0.5)), axis: [0, 0, 1]) }
+    func lean(_ tilt: SIMD2<Float>) { guard !dimensional else { return }; leanPivot.orientation = simd_quatf(angle: -max(-0.35, min(0.35, tilt.x * 0.5)), axis: [0, 0, 1]) }
 
     func setMood(_ mood: Float, season: AliveInputs.Season, timeOfDay: AliveInputs.TimeOfDay) {
         self.mood = mood
@@ -299,12 +314,13 @@ final class HeroRig: FlameRig {
     }
 
     /// The body's mesh: a fine grid (so the fire shader can bend it), its feet at y = 0.
-    private static func bodyDescriptor(aspect: Float, height h: Float) -> MeshDescriptor {
+    private static func bodyDescriptor(aspect: Float, height h: Float, firePadding: Bool = false) -> MeshDescriptor {
         let w = h * aspect
         let (nx, ny) = (16, 32)
         var pos: [SIMD3<Float>] = [], uvs: [SIMD2<Float>] = [], idx: [UInt32] = []
         for j in 0...ny { for i in 0...nx {
-            let u = Float(i) / Float(nx), v = Float(j) / Float(ny)
+            let u = firePadding ? -0.08 + Float(i) / Float(nx) * 1.16 : Float(i) / Float(nx)
+            let v = Float(j) / Float(ny) * (firePadding ? 1.18 : 1)
             pos.append([(u - 0.5) * w, v * h, 0]); uvs.append([u, v])
         } }
         for j in 0..<ny { for i in 0..<nx {
@@ -325,11 +341,12 @@ final class HeroRig: FlameRig {
         let blink = (try? await TextureResource(named: "\(newBase)-blink.png")) ?? tex
         let happy = (try? await TextureResource(named: "\(newBase)-happy.png")) ?? tex
         faces = ["open": tex, "blink": blink, "happy": happy]
-        let desc = Self.bodyDescriptor(aspect: Float(tex.width) / Float(tex.height), height: 0.27 * g)
+        let desc = Self.bodyDescriptor(aspect: Float(tex.width) / Float(tex.height), height: 0.27 * g, firePadding: dimensional)
         guard let mesh = try? MeshResource.generate(from: [desc]) else { return }
         for e in [hero, reflection].compactMap({ $0 }) {
             guard var comp = e.model else { continue }
             comp.mesh = mesh
+            if e === hero { e.position = spriteOffset(aspect: Float(tex.width) / Float(tex.height)) }
             if var m = comp.materials.first as? CustomMaterial { m.baseColor = .init(tint: m.baseColor.tint, texture: .init(tex)); comp.materials = [m] }
             e.model = comp
         }
