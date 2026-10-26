@@ -6,7 +6,7 @@ Backed up to a private GitHub repository on 2026-10-26, before Mathis reset his 
 1. Install Xcode from the App Store and open it once (it installs its command-line tools).
 2. In Terminal, in the folder where the project should live (it used to be `~/AI Projects/Hush`):
    ```
-   git clone https://github.com/<your-username>/hush.git "Hush"
+   git clone https://github.com/mathisgpro-lang/Hush.git "Hush"
    ```
    GitHub asks for your username and, as the password, a personal access token (github.com → Settings → Developer settings → Personal access tokens).
 

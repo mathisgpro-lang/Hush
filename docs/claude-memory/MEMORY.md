@@ -1,1 +1,2 @@
 - [No design by Claude](no-design-by-claude.md) — Codex does all visual design and visual integration in Hush; Claude only logic, plumbing, verification
+- [GitHub backup](github-backup.md) — private repo mathisgpro-lang/Hush; restore via docs/RESTORE.md
